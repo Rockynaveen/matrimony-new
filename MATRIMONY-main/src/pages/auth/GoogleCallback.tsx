@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
+import { useApp, isUserProfileCompleted } from '../../context/AppContext';
 import { googleAuthApi } from '../../api/googleAuthApi';
 import { Loader2 } from 'lucide-react';
 
@@ -35,7 +35,8 @@ export const GoogleCallback: React.FC = () => {
           const res = await checkProfileStatus();
           showToast('Google Sign-In successful!');
 
-          const isDetailedDone = res.is_detailed_complete || localStorage.getItem('user_profile_completed') === 'true';
+          const email = localStorage.getItem('logged_in_email') || res.email || '';
+          const isDetailedDone = res.is_detailed_complete || isUserProfileCompleted(email);
 
           if (isDetailedDone) {
             // 2nd Time Login -> Redirect directly to matches

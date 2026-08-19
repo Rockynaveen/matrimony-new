@@ -115,7 +115,7 @@ function toSingleChoice<T extends string>(arr: string[], choices: readonly T[], 
 
 export const PreferencesPage: React.FC = () => {
   const navigate = useNavigate();
-  const { showToast } = useApp();
+  const { showToast, markProfileCompleted } = useApp();
   const [activeTab, setActiveTab] = useState<'basic' | 'religion' | 'education' | 'location' | 'lifestyle'>('basic');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -277,7 +277,7 @@ export const PreferencesPage: React.FC = () => {
 
       showToast('Partner preferences saved successfully! ✨ Redirecting to your matches...');
       localStorage.setItem('user_partner_preferences', JSON.stringify(prefs));
-      localStorage.setItem('user_profile_completed', 'true');
+      markProfileCompleted();
       refetch();
       // Flow rule: Preferences Saved -> Matching Profiles (/matches)
       const searchParams = new URLSearchParams(window.location.search);

@@ -25,7 +25,7 @@ export const CompleteProfile: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
-  const { showToast, checkProfileStatus, currentUser, updateCurrentUserAvatar } = useApp();
+  const { showToast, checkProfileStatus, currentUser, updateCurrentUserAvatar, markProfileCompleted } = useApp();
   const createProfileMutation = useCreateProfile();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -153,13 +153,13 @@ export const CompleteProfile: React.FC = () => {
 
       try {
         await createProfileMutation.mutateAsync(apiPayload);
+        markProfileCompleted();
         await checkProfileStatus();
-        localStorage.setItem('user_profile_completed', 'true');
         showToast('Profile created successfully! Please set your partner preferences next ✨');
       } catch (apiErr: any) {
         console.warn('[CompleteProfile] API call notice:', apiErr);
         localStorage.setItem('user_profile_draft', JSON.stringify(apiPayload));
-        localStorage.setItem('user_profile_completed', 'true');
+        markProfileCompleted();
         if (apiErr?.status === 502) {
           showToast('Railway server returned 502 (cold start). Your profile is saved! Proceeding to preferences...');
         } else {

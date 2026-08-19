@@ -48,6 +48,7 @@ interface AppContextType {
   googleLoginUser: (payload: GoogleLoginRequest) => Promise<ProfileApiResponse>;
   patchBasicProfile: (payload: PatchBasicProfileRequest) => Promise<void>;
   checkProfileStatus: () => Promise<ProfileApiResponse>;
+  markProfileCompleted: () => void;
   updateCurrentUserAvatar: (avatarUrl: string) => void;
   logout: () => void;
 }
@@ -78,6 +79,29 @@ const initialSearchFilter: SearchFilterState = {
   verifiedOnly: false,
   maritalStatus: 'All',
   keyword: ''
+};
+
+export const isUserProfileCompleted = (email?: string): boolean => {
+  if (localStorage.getItem('user_profile_completed') === 'true') return true;
+  if (!email) {
+    email = localStorage.getItem('logged_in_email') || '';
+  }
+  if (email) {
+    const key = `user_profile_completed_${email.toLowerCase().trim()}`;
+    if (localStorage.getItem(key) === 'true') return true;
+  }
+  return false;
+};
+
+export const markUserProfileCompleted = (email?: string): void => {
+  localStorage.setItem('user_profile_completed', 'true');
+  if (!email) {
+    email = localStorage.getItem('logged_in_email') || '';
+  }
+  if (email) {
+    const key = `user_profile_completed_${email.toLowerCase().trim()}`;
+    localStorage.setItem(key, 'true');
+  }
 };
 
 export const extractNameFromEmail = (email: string | undefined | null): string => {
@@ -187,24 +211,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     is_detailed_complete: boolean;
     completion_percentage: number;
   }>(() => {
-    const isDone = localStorage.getItem('user_profile_completed') === 'true';
+    const email = localStorage.getItem('logged_in_email') || '';
+    const isDone = isUserProfileCompleted(email);
     const token = Boolean(localStorage.getItem('access_token'));
     return {
       is_basic_complete: token ? isDone : false,
       is_detailed_complete: token ? isDone : false,
-      completion_percentage: token && isDone ? 90 : 0
+      completion_percentage: token && isDone ? 100 : 0
     };
   });
 
+  const markProfileCompleted = () => {
+    const email = localStorage.getItem('logged_in_email') || currentUser.email || '';
+    markUserProfileCompleted(email);
+    setProfileStatus({
+      is_basic_complete: true,
+      is_detailed_complete: true,
+      completion_percentage: 100
+    });
+  };
+
   const checkProfileStatus = async (): Promise<ProfileApiResponse> => {
+    const email = (localStorage.getItem('logged_in_email') || currentUser.email || '').toLowerCase();
+    const isDoneLocally = isUserProfileCompleted(email);
+
     try {
       const res = await profileApi.getProfile();
-      const isDetailedDone = res.is_detailed_complete || localStorage.getItem('user_profile_completed') === 'true';
+      const isBasicDone = res.is_basic_complete || isDoneLocally;
+      const isDetailedDone = res.is_detailed_complete || isDoneLocally;
       
       setProfileStatus({
-        is_basic_complete: res.is_basic_complete,
+        is_basic_complete: isBasicDone,
         is_detailed_complete: isDetailedDone,
-        completion_percentage: res.profile_completion_percentage
+        completion_percentage: isDoneLocally ? 100 : res.profile_completion_percentage
       });
       const storedName = localStorage.getItem('logged_in_name');
       const storedEmail = localStorage.getItem('logged_in_email') || res.email || '';
@@ -231,6 +270,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }));
       return {
         ...res,
+        is_basic_complete: isBasicDone,
         is_detailed_complete: isDetailedDone
       };
     } catch (err: any) {
@@ -247,28 +287,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         phone: currentUser.phone || '',
         gender: '',
         date_of_birth: '',
-        is_basic_complete: false,
-        is_detailed_complete: false,
-        profile_completion_percentage: 0
+        is_basic_complete: isDoneLocally,
+        is_detailed_complete: isDoneLocally,
+        profile_completion_percentage: isDoneLocally ? 100 : 0
       };
     }
   };
 
   useEffect(() => {
-    if (isAuthenticated && profileStatus.is_basic_complete) {
+    if (isAuthenticated) {
       checkProfileStatus();
     }
-  }, [isAuthenticated, profileStatus.is_basic_complete]);
+  }, [isAuthenticated]);
 
   const loginUser = async (payload: LoginRequest): Promise<ProfileApiResponse> => {
     const res = await authApi.login(payload);
     const userEmail = res.user?.email || payload.email || '';
     const prevEmail = localStorage.getItem('logged_in_email');
 
-    // If logging in with a new user account, clear old user profile flags!
+    // If logging in with a new user account, clear transient draft items
     if (!prevEmail || prevEmail.toLowerCase() !== userEmail.toLowerCase()) {
-      localStorage.removeItem('user_profile_completed');
-      localStorage.removeItem('user_partner_preferences');
       localStorage.removeItem('user_profile_draft');
       localStorage.removeItem('vivah_mock_profile');
       localStorage.removeItem('vivah_mock_user');
@@ -290,11 +328,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       email: userEmail
     }));
     showToast('Logged in successfully!');
-    const profileRes = await checkProfileStatus();
 
-    // If backend reports profile is not detailed complete, clear local completion flag!
-    if (!profileRes.is_detailed_complete && !(res.user as any)?.is_detailed_complete) {
-      localStorage.removeItem('user_profile_completed');
+    const profileRes = await checkProfileStatus();
+    const isDoneLocally = isUserProfileCompleted(userEmail);
+    if (isDoneLocally) {
+      markUserProfileCompleted(userEmail);
+      profileRes.is_basic_complete = true;
+      profileRes.is_detailed_complete = true;
+      setProfileStatus({
+        is_basic_complete: true,
+        is_detailed_complete: true,
+        completion_percentage: 100
+      });
     }
 
     return profileRes;
@@ -357,6 +402,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const googleLoginUser = async (payload: GoogleLoginRequest): Promise<ProfileApiResponse> => {
     const res = await googleAuthApi.googleLogin(payload);
+    let userEmail = res.user?.email || '';
     if (res.user) {
       const name = `${res.user.first_name || ''} ${res.user.last_name || ''}`.trim();
       if (name) {
@@ -364,12 +410,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       if (res.user.email) {
         localStorage.setItem('logged_in_email', res.user.email);
+        userEmail = res.user.email;
       }
     }
     localStorage.setItem('login_method', 'google');
     setIsAuthenticated(true);
     showToast('Google Login successful!');
-    return await checkProfileStatus();
+
+    const profileRes = await checkProfileStatus();
+    const isDoneLocally = isUserProfileCompleted(userEmail);
+    if (isDoneLocally) {
+      markUserProfileCompleted(userEmail);
+      profileRes.is_basic_complete = true;
+      profileRes.is_detailed_complete = true;
+      setProfileStatus({
+        is_basic_complete: true,
+        is_detailed_complete: true,
+        completion_percentage: 100
+      });
+    }
+    return profileRes;
   };
 
   const patchBasicProfile = async (payload: PatchBasicProfileRequest) => {
@@ -551,6 +611,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         googleLoginUser,
         patchBasicProfile,
         checkProfileStatus,
+        markProfileCompleted,
         updateCurrentUserAvatar,
         logout
       }}

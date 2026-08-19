@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormData } from '../utils/validationSchemas';
-import { useApp } from '../context/AppContext';
+import { useApp, isUserProfileCompleted } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Sparkles, Eye, EyeOff, Loader2, Mail, Lock, Heart, CheckCircle2 } from 'lucide-react';
@@ -38,8 +38,8 @@ export const Login: React.FC = () => {
       return;
     }
 
-    // Check if detailed profile is ALREADY completed by the user
-    const isDetailedDone = res.is_detailed_complete || localStorage.getItem('user_profile_completed') === 'true';
+    const email = localStorage.getItem('logged_in_email') || '';
+    const isDetailedDone = res.is_detailed_complete || isUserProfileCompleted(email);
 
     // Rule 3: 2nd Time Login / Profile ALREADY Completed -> Redirect DIRECTLY to /matches!
     if (isDetailedDone) {

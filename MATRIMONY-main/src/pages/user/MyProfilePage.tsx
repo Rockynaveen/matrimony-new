@@ -32,8 +32,8 @@ export const MyProfilePage: React.FC = () => {
 
   // Synthesize displayed profile values from API -> localDraft -> currentUser context
   const profile = {
-    name: currentUser.name || (apiProfile?.first_name ? `${apiProfile.first_name} ${apiProfile.last_name || ''}`.trim() : 'User Profile'),
-    email: currentUser.email || apiProfile?.email || '',
+    name: currentUser.name || ((apiProfile as any)?.first_name ? `${(apiProfile as any).first_name} ${(apiProfile as any).last_name || ''}`.trim() : 'User Profile'),
+    email: currentUser.email || (apiProfile as any)?.email || '',
     avatar: apiProfile?.profile_photo || localDraft?.profile_photo || currentUser.avatar || '',
     about_me: apiProfile?.about_me || localDraft?.about_me || 'No description provided yet. Click edit to add your bio.',
     height: apiProfile?.height || (localDraft?.height ? String(localDraft.height) : 'Not Specified'),

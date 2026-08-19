@@ -293,7 +293,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const profileRes = await checkProfileStatus();
 
     // If backend reports profile is not detailed complete, clear local completion flag!
-    if (!profileRes.is_detailed_complete && !res.user?.is_detailed_complete) {
+    if (!profileRes.is_detailed_complete && !(res.user as any)?.is_detailed_complete) {
       localStorage.removeItem('user_profile_completed');
     }
 

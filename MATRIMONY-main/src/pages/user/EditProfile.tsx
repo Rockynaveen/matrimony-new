@@ -250,25 +250,41 @@ export const EditProfile: React.FC = () => {
               </p>
             </div>
 
-            {/* Save Quick Action Button */}
-            <Button
-              type="button"
-              variant="primary"
-              size="md"
-              onClick={handleSaveProfile}
-              disabled={isSubmitting}
-              className="bg-[#8B1E3F] hover:bg-[#721733] text-white font-extrabold text-xs px-6 h-11 shadow-md shrink-0"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving Changes...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" /> Save All Changes 💾
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-4">
+              {/* Progress Meter Badge */}
+              <div className="hidden sm:block shrink-0 bg-stone-50 border border-stone-200/80 p-3 rounded-2xl text-center space-y-1 min-w-[140px]">
+                <div className="flex items-center justify-between text-[11px] font-bold text-stone-700">
+                  <span>Step {currentStep + 1} / {steps.length}</span>
+                  <span className="text-[#8B1E3F]">{completionPercentage}%</span>
+                </div>
+                <div className="h-1.5 w-full bg-stone-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#8B1E3F] via-[#C44569] to-[#D4AF37] rounded-full transition-all duration-500"
+                    style={{ width: `${completionPercentage}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Save Quick Action Button */}
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                onClick={handleSaveProfile}
+                disabled={isSubmitting}
+                className="bg-[#8B1E3F] hover:bg-[#721733] text-white font-extrabold text-xs px-6 h-11 shadow-md shrink-0"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving Changes...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" /> Save All Changes 💾
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
 

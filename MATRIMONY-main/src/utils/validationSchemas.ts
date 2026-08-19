@@ -46,7 +46,7 @@ export const basicProfileSchema = z.object({
     .string()
     .min(10, 'Phone number must be at least 10 digits')
     .regex(/^[0-9+\s-]+$/, 'Phone number can only contain digits'),
-  register_for: z.string().optional().default('SELF'),
+  register_for: z.string().default('SELF'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirm_password: z.string().min(6, 'Confirm password is required')
 }).refine((data) => data.password === data.confirm_password, {

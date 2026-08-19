@@ -42,7 +42,7 @@ export const CompleteBasicProfile: React.FC = () => {
     handleSubmit,
     formState: { errors }
   } = useForm<BasicProfileFormData>({
-    resolver: zodResolver(basicProfileSchema),
+    resolver: zodResolver(basicProfileSchema) as any,
     defaultValues: {
       gender: 'Male',
       date_of_birth: '',

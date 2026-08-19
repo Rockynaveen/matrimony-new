@@ -187,23 +187,23 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[90vh] bg-transparent py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+    <div className="h-screen w-full bg-stone-50/60 p-3 sm:p-6 flex items-center justify-center overflow-hidden">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 bg-white rounded-3xl shadow-2xl overflow-hidden border border-stone-200/80"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="max-w-5xl w-full h-full max-h-[720px] grid grid-cols-1 lg:grid-cols-12 bg-white rounded-3xl shadow-2xl overflow-hidden border border-stone-200/80"
       >
-        {/* Left Side Visual Banner (Hidden on mobile) */}
-        <div className="hidden lg:flex lg:col-span-5 relative overflow-hidden bg-stone-900 flex-col justify-end p-5">
+        {/* Left Side Visual Banner (Hidden on mobile/tablet) */}
+        <div className="hidden lg:flex lg:col-span-5 relative overflow-hidden bg-stone-900 flex-col justify-end p-6">
           <img
             src="/images/auth_couple_bg.jpg?v=3"
-            alt="Vivah Matrimony Bride and Groom Couple"
+            alt="Vivah Royal Matrimony"
             className="absolute inset-0 w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 pointer-events-none" />
 
-          <div className="relative z-10 space-y-3 bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-white/80 shadow-md">
+          <div className="relative z-10 space-y-3 bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-white/80 shadow-lg">
             <div className="space-y-2 text-xs font-semibold text-stone-800">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-[#8B1E3F] shrink-0" />
@@ -219,8 +219,8 @@ export const Register: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-2 border-t border-stone-200/80 flex items-center gap-2.5">
-              <div className="h-7.5 w-7.5 rounded-full bg-[#8B1E3F] text-amber-300 flex items-center justify-center font-bold text-xs shadow-sm">
+            <div className="pt-2.5 border-t border-stone-200/80 flex items-center gap-2.5">
+              <div className="h-7.5 w-7.5 rounded-full bg-[#8B1E3F] text-amber-300 flex items-center justify-center font-bold text-xs shadow-xs">
                 <Heart className="h-3.5 w-3.5 fill-amber-300 stroke-none" />
               </div>
               <div>
@@ -231,14 +231,14 @@ export const Register: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Side Form */}
-        <div className="lg:col-span-7 p-8 sm:p-10 flex flex-col justify-center">
+        {/* Right Side Form Panel */}
+        <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto">
           {/* Header */}
-          <div className="text-left space-y-2 mb-6">
-            <Badge variant="gold" className="px-3 py-1 text-[10px] uppercase tracking-widest font-extrabold">
+          <div className="text-left space-y-1">
+            <Badge variant="gold" className="px-2.5 py-0.5 text-[10px] uppercase tracking-widest font-extrabold">
               <Sparkles className="h-3 w-3 mr-1 text-[#8B1E3F]" /> Create Free Account
             </Badge>
-            <h1 className="font-serif text-3xl font-extrabold text-stone-900 tracking-tight">
+            <h1 className="font-serif text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
               Register Profile
             </h1>
             <p className="text-xs text-stone-500 font-medium">
@@ -247,16 +247,16 @@ export const Register: React.FC = () => {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5 my-auto py-1.5">
             
             {/* Register For Dropdown */}
             <div>
-              <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-1">
+              <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-0.5">
                 Creating Profile For
               </label>
               <select
                 {...register('register_for')}
-                className="w-full text-xs font-semibold bg-stone-50 border border-stone-200 rounded-xl p-3 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/40 focus:bg-white transition-all cursor-pointer"
+                className="w-full text-xs font-semibold bg-stone-50/80 border border-stone-200 rounded-xl p-2.5 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:bg-white transition-all cursor-pointer"
               >
                 <option value="SELF">Myself</option>
                 <option value="SON">Son</option>
@@ -267,125 +267,125 @@ export const Register: React.FC = () => {
                 <option value="RELATIVE">Relative</option>
               </select>
               {errors.register_for && (
-                <p className="text-xs font-semibold text-rose-500 mt-1">{errors.register_for.message}</p>
+                <p className="text-[11px] font-semibold text-rose-500 mt-0.5">{errors.register_for.message}</p>
               )}
             </div>
 
             {/* Name Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-1">
+                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-0.5">
                   First Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-3.5 h-4 w-4 text-stone-400" />
+                  <User className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400" />
                   <input
                     type="text"
                     placeholder="e.g. Ravi"
                     {...register('first_name')}
-                    className="w-full text-xs font-semibold bg-stone-50 border border-stone-200 rounded-xl p-3 pl-10 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/40 focus:bg-white transition-all"
+                    className="w-full text-xs font-semibold bg-stone-50/80 border border-stone-200 rounded-xl p-2.5 pl-9 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:bg-white transition-all"
                   />
                 </div>
                 {errors.first_name && (
-                  <p className="text-xs font-semibold text-rose-500 mt-1">{errors.first_name.message}</p>
+                  <p className="text-[11px] font-semibold text-rose-500 mt-0.5">{errors.first_name.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-1">
+                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-0.5">
                   Last Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-3.5 h-4 w-4 text-stone-400" />
+                  <User className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400" />
                   <input
                     type="text"
                     placeholder="e.g. Kumar"
                     {...register('last_name')}
-                    className="w-full text-xs font-semibold bg-stone-50 border border-stone-200 rounded-xl p-3 pl-10 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/40 focus:bg-white transition-all"
+                    className="w-full text-xs font-semibold bg-stone-50/80 border border-stone-200 rounded-xl p-2.5 pl-9 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:bg-white transition-all"
                   />
                 </div>
                 {errors.last_name && (
-                  <p className="text-xs font-semibold text-rose-500 mt-1">{errors.last_name.message}</p>
+                  <p className="text-[11px] font-semibold text-rose-500 mt-0.5">{errors.last_name.message}</p>
                 )}
               </div>
             </div>
 
             {/* Gender & DOB Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-1">
+                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-0.5">
                   Gender
                 </label>
                 <select
                   {...register('gender')}
-                  className="w-full text-xs font-semibold bg-stone-50 border border-stone-200 rounded-xl p-3 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/40 focus:bg-white transition-all"
+                  className="w-full text-xs font-semibold bg-stone-50/80 border border-stone-200 rounded-xl p-2.5 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:bg-white transition-all"
                 >
                   <option value="Male">Male (Groom)</option>
                   <option value="Female">Female (Bride)</option>
                 </select>
                 {errors.gender && (
-                  <p className="text-xs font-semibold text-rose-500 mt-1">{errors.gender.message}</p>
+                  <p className="text-[11px] font-semibold text-rose-500 mt-0.5">{errors.gender.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-1">
+                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-0.5">
                   Date of Birth
                 </label>
                 <div className="relative">
-                  <CalendarIcon className="absolute left-3.5 top-3.5 h-4 w-4 text-stone-400 pointer-events-none" />
+                  <CalendarIcon className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
                   <input
                     type="date"
                     {...register('date_of_birth')}
-                    className="w-full text-xs font-semibold bg-stone-50 border border-stone-200 rounded-xl p-3 pl-10 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/40 focus:bg-white transition-all"
+                    className="w-full text-xs font-semibold bg-stone-50/80 border border-stone-200 rounded-xl p-2.5 pl-9 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:bg-white transition-all"
                   />
                 </div>
                 {errors.date_of_birth && (
-                  <p className="text-xs font-semibold text-rose-500 mt-1">{errors.date_of_birth.message}</p>
+                  <p className="text-[11px] font-semibold text-rose-500 mt-0.5">{errors.date_of_birth.message}</p>
                 )}
               </div>
             </div>
 
             {/* Email & Phone Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-1">
+                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-0.5">
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-stone-400" />
+                  <Mail className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400" />
                   <input
                     type="email"
                     placeholder="e.g. ravi@gmail.com"
                     {...register('email')}
-                    className="w-full text-xs font-semibold bg-stone-50 border border-stone-200 rounded-xl p-3 pl-10 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/40 focus:bg-white transition-all"
+                    className="w-full text-xs font-semibold bg-stone-50/80 border border-stone-200 rounded-xl p-2.5 pl-9 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:bg-white transition-all"
                   />
                 </div>
                 {errors.email && (
-                  <p className="text-xs font-semibold text-rose-500 mt-1">{errors.email.message}</p>
+                  <p className="text-[11px] font-semibold text-rose-500 mt-0.5">{errors.email.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-1">
+                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-0.5">
                   Mobile Number
                 </label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <Phone className="absolute left-3.5 top-3.5 h-4 w-4 text-stone-400" />
+                    <Phone className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400" />
                     <input
                       type="tel"
                       placeholder="e.g. 9876543210"
                       {...register('phone')}
                       disabled={otpVerified}
-                      className={`w-full text-xs font-semibold border rounded-xl p-3 pl-10 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/40 transition-all ${
+                      className={`w-full text-xs font-semibold border rounded-xl p-2.5 pl-9 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 transition-all ${
                         otpVerified
                           ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
-                          : 'bg-stone-50 border-stone-200 text-stone-900 focus:bg-white'
+                          : 'bg-stone-50/80 border-stone-200 text-stone-900 focus:bg-white'
                       }`}
                     />
                     {otpVerified && (
-                      <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-emerald-600" />
+                      <CheckCircle2 className="absolute right-2.5 top-2.5 h-4 w-4 text-emerald-600" />
                     )}
                   </div>
                   {!otpVerified && (
@@ -396,10 +396,10 @@ export const Register: React.FC = () => {
                         handleSendOtp(phoneEl?.value || '');
                       }}
                       disabled={isSendingOtp || otpCooldown > 0}
-                      className="shrink-0 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider rounded-xl border transition-all disabled:opacity-50 bg-[#8B1E3F] text-white hover:bg-[#721733] border-[#8B1E3F]"
+                      className="shrink-0 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-xl border transition-all disabled:opacity-50 bg-[#8B1E3F] text-white hover:bg-[#721733] border-[#8B1E3F]"
                     >
                       {isSendingOtp ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <Loader2 className="h-3 w-3 animate-spin" />
                       ) : otpCooldown > 0 ? (
                         `${otpCooldown}s`
                       ) : otpSent ? (
@@ -411,25 +411,25 @@ export const Register: React.FC = () => {
                   )}
                 </div>
                 {errors.phone && (
-                  <p className="text-xs font-semibold text-rose-500 mt-1">{errors.phone.message}</p>
+                  <p className="text-[11px] font-semibold text-rose-500 mt-0.5">{errors.phone.message}</p>
                 )}
                 {otpVerified && (
-                  <p className="text-[11px] font-bold text-emerald-600 mt-1 flex items-center gap-1">
-                    <ShieldCheck className="h-3.5 w-3.5" /> Mobile verified successfully
+                  <p className="text-[10px] font-bold text-emerald-600 mt-0.5 flex items-center gap-1">
+                    <ShieldCheck className="h-3 w-3" /> Mobile verified successfully
                   </p>
                 )}
               </div>
             </div>
 
-            {/* OTP Input Section — appears after Send OTP */}
+            {/* OTP Input Section */}
             {otpSent && !otpVerified && (
-              <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-3">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-[#8B1E3F]" />
-                  <span className="text-xs font-bold text-stone-800">Enter 6-digit OTP sent to your mobile</span>
+              <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-[#8B1E3F]" />
+                  <span className="text-[11px] font-bold text-stone-800">Enter 6-digit OTP sent to mobile</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1.5">
                     {otpCode.map((digit, idx) => (
                       <input
                         key={idx}
@@ -441,7 +441,7 @@ export const Register: React.FC = () => {
                         onChange={e => handleOtpChange(idx, e.target.value)}
                         onKeyDown={e => handleOtpKeyDown(idx, e)}
                         onPaste={idx === 0 ? handleOtpPaste : undefined}
-                        className="h-11 w-10 text-center font-serif text-lg font-bold border-2 border-stone-200 rounded-xl bg-white focus:border-[#8B1E3F] focus:outline-none focus:ring-3 focus:ring-[#8B1E3F]/20 transition-all"
+                        className="h-9 w-8 text-center font-serif text-base font-bold border border-stone-200 rounded-lg bg-white focus:border-[#8B1E3F] focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/20 transition-all"
                       />
                     ))}
                   </div>
@@ -452,13 +452,13 @@ export const Register: React.FC = () => {
                       handleVerifyOtp(phoneEl?.value || '');
                     }}
                     disabled={isVerifyingOtp || otpCode.join('').length < 6}
-                    className="px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-all flex items-center gap-1.5"
+                    className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-all flex items-center gap-1"
                   >
                     {isVerifyingOtp ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <Loader2 className="h-3 w-3 animate-spin" />
                     ) : (
                       <>
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Verify
+                        <CheckCircle2 className="h-3 w-3" /> Verify
                       </>
                     )}
                   </button>
@@ -467,78 +467,78 @@ export const Register: React.FC = () => {
             )}
 
             {/* Passwords Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-1">
+                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-0.5">
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-stone-400" />
+                  <Lock className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     {...register('password')}
-                    className="w-full text-xs font-semibold bg-stone-50 border border-stone-200 rounded-xl p-3 pl-10 pr-10 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/40 focus:bg-white transition-all"
+                    className="w-full text-xs font-semibold bg-stone-50/80 border border-stone-200 rounded-xl p-2.5 pl-9 pr-9 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:bg-white transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-3.5 text-stone-400 hover:text-stone-700"
+                    className="absolute right-3 top-2.5 text-stone-400 hover:text-stone-700"
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-xs font-semibold text-rose-500 mt-1">{errors.password.message}</p>
+                  <p className="text-[11px] font-semibold text-rose-500 mt-0.5">{errors.password.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-1">
+                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-0.5">
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-stone-400" />
+                  <Lock className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400" />
                   <input
                     type="password"
                     placeholder="••••••••"
                     {...register('confirm_password')}
-                    className="w-full text-xs font-semibold bg-stone-50 border border-stone-200 rounded-xl p-3 pl-10 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/40 focus:bg-white transition-all"
+                    className="w-full text-xs font-semibold bg-stone-50/80 border border-stone-200 rounded-xl p-2.5 pl-9 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:bg-white transition-all"
                   />
                 </div>
                 {errors.confirm_password && (
-                  <p className="text-xs font-semibold text-rose-500 mt-1">{errors.confirm_password.message}</p>
+                  <p className="text-[11px] font-semibold text-rose-500 mt-0.5">{errors.confirm_password.message}</p>
                 )}
               </div>
             </div>
 
             {/* Terms Checkbox */}
-            <div className="pt-1">
+            <div>
               <label className="flex items-start gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   {...register('accept_terms')}
                   className="mt-0.5 rounded border-stone-300 text-[#8B1E3F] focus:ring-[#8B1E3F]"
                 />
-                <span className="text-xs font-medium text-stone-600">
+                <span className="text-[11px] font-medium text-stone-600">
                   I accept the{' '}
                   <span className="font-bold text-[#8B1E3F] underline">Terms & Conditions</span> and{' '}
                   <span className="font-bold text-[#8B1E3F] underline">Privacy Policy</span>.
                 </span>
               </label>
               {errors.accept_terms && (
-                <p className="text-xs font-semibold text-rose-500 mt-1">{errors.accept_terms.message}</p>
+                <p className="text-[11px] font-semibold text-rose-500 mt-0.5">{errors.accept_terms.message}</p>
               )}
             </div>
 
             {/* Submit & Google Buttons */}
-            <div className="space-y-3 pt-2">
+            <div className="space-y-2 pt-1">
               <Button
                 type="submit"
                 variant="primary"
                 size="lg"
                 disabled={isSubmitting || !otpVerified}
-                className="w-full font-bold shadow-xl bg-[#8B1E3F] hover:bg-[#721733] text-white text-xs h-11 uppercase tracking-wider"
+                className="w-full font-bold shadow-lg bg-[#8B1E3F] hover:bg-[#721733] text-white text-xs h-10 uppercase tracking-wider rounded-xl"
               >
                 {isSubmitting ? (
                   <>
@@ -549,11 +549,11 @@ export const Register: React.FC = () => {
                 )}
               </Button>
 
-              <div className="relative my-3 text-center">
+              <div className="relative my-2 text-center">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-stone-200" />
                 </div>
-                <span className="relative bg-white px-4 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest">
+                <span className="relative bg-white px-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest">
                   Or
                 </span>
               </div>
@@ -563,7 +563,7 @@ export const Register: React.FC = () => {
                 variant="outline"
                 size="lg"
                 onClick={() => setIsGoogleModalOpen(true)}
-                className="w-full font-bold border-stone-200 text-stone-800 hover:bg-stone-50 text-xs h-11 flex items-center justify-center gap-2.5 transition-all"
+                className="w-full font-bold border-stone-200 text-stone-800 hover:bg-stone-50 text-xs h-10 flex items-center justify-center gap-2 rounded-xl transition-all"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24">
                   <path
@@ -589,7 +589,7 @@ export const Register: React.FC = () => {
           </form>
 
           {/* Footer Link */}
-          <div className="mt-6 text-center text-xs font-medium text-stone-500 pt-4 border-t border-stone-100">
+          <div className="pt-2 text-center text-xs font-medium text-stone-500 border-t border-stone-100">
             Already have a matrimonial account?{' '}
             <Link to={redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : '/login'} className="font-bold text-[#8B1E3F] hover:underline">
               Login here

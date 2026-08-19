@@ -12,8 +12,8 @@ import { MOCK_PROFILES } from '../data/mockProfiles';
 import { MOCK_NOTIFICATIONS } from '../data/mockNotifications';
 import { authApi } from '../api/authApi';
 import { googleAuthApi } from '../api/googleAuthApi';
-import { profileApi } from '../api/profileApi';
 import { matchingApi } from '../api/matchingApi';
+import { notificationApi } from '../api/notificationApi';
 import { queryClient } from '../lib/queryClient';
 
 interface AppContextType {
@@ -26,7 +26,11 @@ interface AppContextType {
   interests: Interest[];
   sendInterest: (profileId: string) => void;
   notifications: NotificationItem[];
+  unreadCount: number;
   markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => Promise<void>;
+  deleteNotification: (id: string) => void;
+  fetchNotifications: () => Promise<void>;
   searchFilter: SearchFilterState;
   setSearchFilter: React.Dispatch<React.SetStateAction<SearchFilterState>>;
   resetSearchFilter: () => void;
@@ -196,7 +200,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       sentAt: '1 day ago'
     }
   ]);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [searchFilter, setSearchFilter] = useState<SearchFilterState>(initialSearchFilter);
   const [activeChatUserId, setActiveChatUserId] = useState<string | null>('MAT-1001');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -205,6 +210,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return Boolean(localStorage.getItem('access_token'));
   });
+
+  const fetchNotifications = async () => {
+    if (!localStorage.getItem('access_token')) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+    try {
+      const [data, apiCount] = await Promise.all([
+        notificationApi.getNotifications(),
+        notificationApi.getUnreadCount()
+      ]);
+      setNotifications(data);
+      const calculatedUnread = data.filter(n => !n.read).length;
+      setUnreadCount(apiCount > 0 ? apiCount : calculatedUnread);
+    } catch {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+      let deviceToken = localStorage.getItem('device_token');
+      if (!deviceToken) {
+        deviceToken = `web_device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        localStorage.setItem('device_token', deviceToken);
+      }
+      notificationApi.registerDeviceToken(deviceToken, 'web').catch(() => {});
+    } else {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [isAuthenticated]);
 
   const [profileStatus, setProfileStatus] = useState<{
     is_basic_complete: boolean;
@@ -569,6 +609,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const markNotificationRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setUnreadCount(prev => Math.max(0, prev - 1));
+    notificationApi.markAsRead(id).catch(() => {});
+  };
+
+  const markAllNotificationsRead = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setUnreadCount(0);
+    try {
+      await notificationApi.markAllAsRead();
+    } catch {}
+  };
+
+  const deleteNotification = (id: string) => {
+    const target = notifications.find(n => n.id === id);
+    if (target && !target.read) {
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    notificationApi.deleteNotification(id).catch(() => {});
   };
 
   const resetSearchFilter = () => {
@@ -594,7 +653,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         interests,
         sendInterest,
         notifications,
+        unreadCount,
         markNotificationRead,
+        markAllNotificationsRead,
+        deleteNotification,
+        fetchNotifications,
         searchFilter,
         setSearchFilter,
         resetSearchFilter,

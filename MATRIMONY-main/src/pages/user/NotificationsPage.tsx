@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { notificationApi, type NotificationPreferencesSchema } from '../../api/notificationApi';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { Modal } from '../../components/ui/Modal';
 import {
   Bell,
   Heart,
@@ -11,15 +13,66 @@ import {
   ShieldCheck,
   Crown,
   CheckCheck,
-  ChevronRight
+  ChevronRight,
+  RefreshCw,
+  Trash2,
+  Settings,
+  Save,
+  Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const NotificationsPage: React.FC = () => {
-  const { notifications, markNotificationRead, showToast } = useApp();
+  const { notifications, markNotificationRead, markAllNotificationsRead, deleteNotification, fetchNotifications, showToast } = useApp();
   const [activeCategory, setActiveCategory] = useState<'All' | 'Interests' | 'Matches' | 'Messages' | 'Profile' | 'Membership'>('All');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isPrefsModalOpen, setIsPrefsModalOpen] = useState(false);
+  const [isSavingPrefs, setIsSavingPrefs] = useState(false);
+  const [prefs, setPrefs] = useState<NotificationPreferencesSchema>({
+    email_notifications: true,
+    push_notifications: true,
+    sms_notifications: false,
+    interest_alerts: true,
+    match_alerts: true,
+    message_alerts: true,
+    marketing_emails: false
+  });
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchNotifications();
+    setIsRefreshing(false);
+    showToast('Notifications updated');
+  };
+
+  const handleOpenPrefs = async () => {
+    setIsPrefsModalOpen(true);
+    try {
+      const data = await notificationApi.getPreferences();
+      if (data && Object.keys(data).length > 0) {
+        setPrefs(prev => ({ ...prev, ...data }));
+      }
+    } catch {}
+  };
+
+  const handleSavePrefs = async () => {
+    try {
+      setIsSavingPrefs(true);
+      await notificationApi.updatePreferences(prefs);
+      showToast('Notification preferences updated successfully ✓');
+      setIsPrefsModalOpen(false);
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to save preferences');
+    } finally {
+      setIsSavingPrefs(false);
+    }
+  };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -53,8 +106,8 @@ export const NotificationsPage: React.FC = () => {
     }
   };
 
-  const handleMarkAllRead = () => {
-    notifications.forEach(n => markNotificationRead(n.id));
+  const handleMarkAllRead = async () => {
+    await markAllNotificationsRead();
     showToast('All notifications marked as read ✓');
   };
 
@@ -74,14 +127,35 @@ export const NotificationsPage: React.FC = () => {
           <p className="text-xs text-muted-foreground">Stay informed on profile views, interest updates, and match alerts.</p>
         </div>
 
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleMarkAllRead}
-          className="text-xs font-bold shrink-0"
-        >
-          <CheckCheck className="h-4 w-4 mr-1 text-[#8B1E3F]" /> Mark All as Read
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleOpenPrefs}
+            className="text-xs font-bold border-stone-200"
+          >
+            <Settings className="h-3.5 w-3.5 mr-1 text-stone-600" /> Preferences
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="text-xs font-bold"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} /> Refresh
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleMarkAllRead}
+            className="text-xs font-bold"
+          >
+            <CheckCheck className="h-4 w-4 mr-1 text-[#8B1E3F]" /> Mark All Read
+          </Button>
+        </div>
       </div>
 
       {/* Category Pills Bar */}
@@ -170,8 +244,22 @@ export const NotificationsPage: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Right Action Chevron */}
-                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 self-center" />
+                  {/* Right Actions */}
+                  <div className="flex items-center gap-1 shrink-0 self-center">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteNotification(n.id);
+                        showToast('Notification deleted');
+                      }}
+                      title="Delete Notification"
+                      className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
                 </Card>
               </motion.div>
             ))
@@ -186,6 +274,72 @@ export const NotificationsPage: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Notification Preferences Modal */}
+      <Modal
+        isOpen={isPrefsModalOpen}
+        onClose={() => setIsPrefsModalOpen(false)}
+        title="Notification Preferences"
+      >
+        <div className="space-y-5">
+          <p className="text-xs text-stone-500">
+            Control how and when you receive notifications from Vivah Matrimony matching service.
+          </p>
+
+          <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+            {[
+              { key: 'email_notifications', label: 'Email Notifications', desc: 'Receive email summaries for important activity' },
+              { key: 'push_notifications', label: 'Push Notifications', desc: 'Real-time alerts on your device' },
+              { key: 'sms_notifications', label: 'SMS Alerts', desc: 'Urgent mobile notifications' },
+              { key: 'interest_alerts', label: 'Interest Expressed Alerts', desc: 'Get notified when someone sends you an interest' },
+              { key: 'match_alerts', label: 'New Match Alerts', desc: 'Get notified on high compatibility recommendations' },
+              { key: 'message_alerts', label: 'Chat Message Notifications', desc: 'Get notified when you receive new chat messages' },
+              { key: 'marketing_emails', label: 'Promotions & Tips', desc: 'Occasional promotional offers and matchmaking tips' }
+            ].map(item => (
+              <label key={item.key} className="flex items-start justify-between gap-4 p-3 bg-stone-50 rounded-2xl border border-stone-200/80 cursor-pointer hover:bg-stone-100/60 transition-all">
+                <div>
+                  <h5 className="text-xs font-bold text-stone-900">{item.label}</h5>
+                  <p className="text-[11px] text-stone-500">{item.desc}</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={Boolean((prefs as any)[item.key])}
+                  onChange={e => setPrefs(prev => ({ ...prev, [item.key]: e.target.checked }))}
+                  className="mt-1 h-4 w-4 rounded border-stone-300 text-[#8B1E3F] focus:ring-[#8B1E3F]"
+                />
+              </label>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-100">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPrefsModalOpen(false)}
+              className="rounded-xl px-4 text-xs font-bold border-stone-200"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={isSavingPrefs}
+              onClick={handleSavePrefs}
+              className="bg-[#8B1E3F] hover:bg-[#721733] text-white rounded-xl px-5 text-xs font-bold shadow-md"
+            >
+              {isSavingPrefs ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-3.5 w-3.5 mr-1" /> Save Preferences
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );

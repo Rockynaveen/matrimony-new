@@ -28,7 +28,7 @@ import {
 import type { UserRole } from '../../types';
 
 export const Navbar: React.FC = () => {
-  const { currentUser, setCurrentUserRole, notifications, markNotificationRead, logout, isAuthenticated } = useApp();
+  const { currentUser, setCurrentUserRole, notifications, unreadCount, markNotificationRead, logout, isAuthenticated } = useApp();
   const { data: sentInterests } = useSentInterests();
   const { data: receivedInterests } = useReceivedInterests();
 
@@ -50,7 +50,7 @@ export const Navbar: React.FC = () => {
   const notifDropdownRef = useRef<HTMLDivElement>(null);
   const roleDropdownRef = useRef<HTMLDivElement>(null);
 
-  const unreadNotifs = notifications.filter(n => !n.read).length;
+  const unreadNotifs = unreadCount > 0 ? unreadCount : notifications.filter(n => !n.read).length;
 
   const roles: { role: UserRole; label: string; badge: string; color: string }[] = [
     { role: 'user', label: 'User Portal', badge: 'Member', color: 'bg-[#8B1E3F]' },

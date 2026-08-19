@@ -11,10 +11,11 @@ import {
   Loader2,
   Calendar,
   MapPin,
-  Briefcase
+  Briefcase,
+  UserX
 } from 'lucide-react';
 import type { InterestResponseSchema } from '../../types/matching.types';
-import { useUpdateInterest, useDeleteInterest } from '../../hooks/useMatching';
+import { useUpdateInterest, useDeleteInterest, useAddToIgnore } from '../../hooks/useMatching';
 import { useApp } from '../../context/AppContext';
 
 interface InterestCardProps {
@@ -28,6 +29,19 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
 
   const updateInterestMutation = useUpdateInterest();
   const deleteInterestMutation = useDeleteInterest();
+  const ignoreMutation = useAddToIgnore();
+
+  const handleIgnoreProfile = async () => {
+    const targetUserId = type === 'sent' ? interest.to_user : interest.from_user;
+    const confirmed = window.confirm('Are you sure you want to ignore this profile?');
+    if (!confirmed) return;
+    try {
+      await ignoreMutation.mutateAsync({ user: targetUserId, reason: 'Not interested' });
+      showToast('Profile added to ignore list.');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to ignore profile');
+    }
+  };
 
   const handleUpdateStatus = async (status: 'Accepted' | 'Rejected') => {
     try {
@@ -41,14 +55,14 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
     }
   };
 
-  const handleWithdraw = async () => {
-    const confirmed = window.confirm('Are you sure you want to withdraw this interest?');
+  const handleDeleteInterest = async () => {
+    const confirmed = window.confirm('Are you sure you want to delete this interest expression?');
     if (!confirmed) return;
     try {
       await deleteInterestMutation.mutateAsync(interest.id);
-      showToast('Interest expression withdrawn successfully.');
+      showToast('Interest expression deleted successfully.');
     } catch (err: any) {
-      showToast(err?.message || 'Failed to withdraw interest');
+      showToast(err?.message || 'Failed to delete interest');
     }
   };
 
@@ -124,7 +138,7 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
 
           {formattedDate && (
             <div className="flex items-center gap-1 text-[10px] text-stone-400 font-semibold pt-1">
-              <Calendar className="h-3 w-3" /> Sent: {formattedDate}
+              <Calendar className="h-3 w-3" /> Received/Sent: {formattedDate}
             </div>
           )}
         </div>
@@ -136,7 +150,7 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
             <Button
               size="sm"
               variant="outline"
-              disabled={updateInterestMutation.isPending}
+              disabled={updateInterestMutation.isPending || deleteInterestMutation.isPending}
               onClick={() => handleUpdateStatus('Rejected')}
               className="text-xs border-rose-200 text-rose-700 hover:bg-rose-50 rounded-xl font-bold"
             >
@@ -150,7 +164,7 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
             <Button
               size="sm"
               variant="primary"
-              disabled={updateInterestMutation.isPending}
+              disabled={updateInterestMutation.isPending || deleteInterestMutation.isPending}
               onClick={() => handleUpdateStatus('Accepted')}
               className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold"
             >
@@ -176,22 +190,37 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
           </Button>
         )}
 
-        {type === 'sent' && statusText.toLowerCase() === 'pending' && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={deleteInterestMutation.isPending}
-            onClick={handleWithdraw}
-            className="text-xs border-stone-200 text-stone-600 hover:bg-stone-50 rounded-xl font-bold flex items-center gap-1 w-full md:w-auto justify-center"
-          >
-            {deleteInterestMutation.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5" />
-            )}
-            Withdraw Expression
-          </Button>
-        )}
+        {/* Ignore Profile Button */}
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={ignoreMutation.isPending}
+          onClick={handleIgnoreProfile}
+          className="text-xs border-stone-200 text-stone-600 hover:bg-stone-50 rounded-xl font-bold flex items-center gap-1 w-full md:w-auto justify-center"
+        >
+          {ignoreMutation.isPending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <UserX className="h-3.5 w-3.5" />
+          )}
+          Ignore Profile
+        </Button>
+
+        {/* Delete / Withdraw Button */}
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={deleteInterestMutation.isPending}
+          onClick={handleDeleteInterest}
+          className="text-xs border-rose-200 text-rose-700 hover:bg-rose-50 rounded-xl font-bold flex items-center gap-1 w-full md:w-auto justify-center"
+        >
+          {deleteInterestMutation.isPending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Trash2 className="h-3.5 w-3.5" />
+          )}
+          {type === 'sent' ? 'Withdraw' : 'Delete Interest'}
+        </Button>
 
         <Button
           size="sm"

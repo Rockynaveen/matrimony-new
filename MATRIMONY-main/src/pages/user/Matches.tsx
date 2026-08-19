@@ -17,25 +17,30 @@ export const MatchesPage: React.FC = () => {
   const sentInterestUserIds = sentInterests?.map(i => i.to_user) || [];
 
   const getFilteredMatches = () => {
-    if (!recommendations) return [];
+    if (!recommendations || !Array.isArray(recommendations)) return [];
     
     switch (matchTab) {
       case 'compatible':
-        return [...recommendations].sort((a, b) => b.match_percentage - a.match_percentage);
+        return [...recommendations].sort((a, b) => (b.match_percentage || 0) - (a.match_percentage || 0));
       case 'new':
         return recommendations.slice(0, 6);
       case 'nearby':
         // Filter by state or city if specified
-        return recommendations.filter(p => p.city || p.state);
+        return recommendations.filter(p => Boolean(p.city || p.state));
       case 'horoscope':
         // Filter those containing matching horoscope fields
-        return recommendations.filter(p => p.matched_fields?.includes('horoscope') || p.matched_fields?.includes('rashi'));
+        return recommendations.filter(p =>
+          p.matched_fields?.some(f => ['horoscope', 'rashi', 'nakshatra', 'dosha', 'astrology'].includes(f.toLowerCase()))
+        );
       default:
         return recommendations;
     }
   };
 
-  const matchesList = getFilteredMatches();
+  // Filter out duplicates by user_id ("if already exists just ignore it")
+  const matchesList = getFilteredMatches().filter((item, index, self) =>
+    index === self.findIndex(t => t.user_id === item.user_id)
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">

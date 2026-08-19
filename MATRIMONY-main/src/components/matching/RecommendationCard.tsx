@@ -56,6 +56,10 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 
   const handleSendInterest = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!match.user_id || match.user_id <= 0) {
+      showToast('Invalid profile recipient ID.');
+      return;
+    }
     try {
       await sendInterestMutation.mutateAsync({ to_user: match.user_id, message: 'Hi, I am interested in your profile.' });
       showToast(`Interest expression sent to ${match.first_name}!`);

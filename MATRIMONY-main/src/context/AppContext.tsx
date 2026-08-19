@@ -482,8 +482,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleShortlist = async (profileId: string) => {
-    const numericId = parseInt(profileId, 10);
-    if (!isNaN(numericId) && String(numericId) === profileId) {
+    const numericId = parseInt(String(profileId).replace(/\D/g, ''), 10);
+    if (!isNaN(numericId) && numericId > 0) {
       const exists = shortlistedIds.includes(profileId);
       try {
         if (exists) {
@@ -512,9 +512,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const sendInterest = async (profileId: string) => {
     const target = profiles.find(p => p.id === profileId);
-    const numericId = parseInt(profileId, 10);
+    const numericId = parseInt(String(profileId).replace(/\D/g, ''), 10);
     
-    if (!isNaN(numericId) && String(numericId) === profileId) {
+    if (!isNaN(numericId) && numericId > 0) {
       try {
         await matchingApi.sendInterest({ to_user: numericId, message: 'Hi, I am interested in your profile.' });
         

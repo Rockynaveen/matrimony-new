@@ -137,6 +137,9 @@ export function useAddToIgnore() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: matchingKeys.ignored() });
       queryClient.invalidateQueries({ queryKey: matchingKeys.recommendations() });
+      queryClient.invalidateQueries({ queryKey: matchingKeys.receivedInterests() });
+      queryClient.invalidateQueries({ queryKey: matchingKeys.sentInterests() });
+      queryClient.invalidateQueries({ queryKey: matchingKeys.all });
     }
   });
 }
@@ -172,6 +175,9 @@ export function useBlockProfile() {
       queryClient.invalidateQueries({ queryKey: matchingKeys.blocked() });
       queryClient.invalidateQueries({ queryKey: matchingKeys.recommendations() });
       queryClient.invalidateQueries({ queryKey: matchingKeys.shortlist() });
+      queryClient.invalidateQueries({ queryKey: matchingKeys.receivedInterests() });
+      queryClient.invalidateQueries({ queryKey: matchingKeys.sentInterests() });
+      queryClient.invalidateQueries({ queryKey: matchingKeys.all });
     }
   });
 }

@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd MATRIMONY-main && npm run build",
+  "buildCommand": "cd MATRIMONY-main && npm install && npx vite build",
   "outputDirectory": "MATRIMONY-main/dist",
   "rewrites": [
     {
@@ -8,7 +8,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/MATRIMONY-main/index.html"
+      "destination": "/index.html"
     }
   ]
 }

@@ -1,0 +1,7 @@
+{
+  "name": "matrimony-root",
+  "private": true,
+  "scripts": {
+    "build": "cd MATRIMONY-main && npm install && npx vite build"
+  }
+}

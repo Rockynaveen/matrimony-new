@@ -30,6 +30,7 @@ interface AppContextType {
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => Promise<void>;
   deleteNotification: (id: string) => void;
+  addNotification: (item: { title: string; message: string; category: NotificationItem['category']; link?: string; avatar?: string }) => void;
   fetchNotifications: () => Promise<void>;
   searchFilter: SearchFilterState;
   setSearchFilter: React.Dispatch<React.SetStateAction<SearchFilterState>>;
@@ -734,6 +735,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     notificationApi.deleteNotification(id).catch(() => {});
   };
 
+  const addNotification = (item: {
+    title: string;
+    message: string;
+    category: NotificationItem['category'];
+    link?: string;
+    avatar?: string;
+  }) => {
+    const newNotif: NotificationItem = {
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      title: item.title,
+      message: item.message,
+      category: item.category,
+      timestamp: 'Just now',
+      read: false,
+      link: item.link,
+      avatar: item.avatar
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+    setUnreadCount(prev => prev + 1);
+  };
+
   const resetSearchFilter = () => {
     setSearchFilter(initialSearchFilter);
   };
@@ -761,6 +783,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         markNotificationRead,
         markAllNotificationsRead,
         deleteNotification,
+        addNotification,
         fetchNotifications,
         searchFilter,
         setSearchFilter,

@@ -52,26 +52,45 @@ class AxiosClient {
       const refreshEndpoints = [
         '/token/refresh',
         '/token/refresh/',
+        '/token/pair/refresh',
+        '/token/pair/refresh/',
         '/auth/token/refresh',
         '/auth/token/refresh/',
+        '/auth/token/pair/refresh',
+        '/auth/token/pair/refresh/',
         '/refresh',
         '/refresh/'
       ];
+
+      const payloads = [
+        { refresh: refreshToken },
+        { refresh_token: refreshToken },
+        { token: refreshToken }
+      ];
+
       for (const endpoint of refreshEndpoints) {
-        const response = await fetch(`${this.baseURL}${endpoint}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh: refreshToken, refresh_token: refreshToken })
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const newAccess = data.access || data.access_token || data.data?.access_token;
-          if (newAccess) {
-            localStorage.setItem('access_token', newAccess);
-            if (data.refresh || data.refresh_token) {
-              localStorage.setItem('refresh_token', data.refresh || data.refresh_token);
+        for (const payload of payloads) {
+          try {
+            const response = await fetch(`${this.baseURL}${endpoint}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              const newAccess = data.access || data.access_token || data.data?.access_token || data.token;
+              if (newAccess) {
+                localStorage.setItem('access_token', newAccess);
+                if (data.refresh || data.refresh_token) {
+                  localStorage.setItem('refresh_token', data.refresh || data.refresh_token);
+                }
+                console.log('[AxiosClient] Successfully refreshed JWT access token via Ninja JWT.');
+                return newAccess;
+              }
             }
-            return newAccess;
+          } catch {
+            continue;
           }
         }
       }
@@ -96,16 +115,15 @@ class AxiosClient {
         dataStr.includes('token_not_valid') ||
         dataStr.includes('invalid') ||
         dataStr.includes('expired') ||
-        dataStr.includes('Authentication credentials');
+        dataStr.includes('Authentication credentials') ||
+        dataStr.includes('Unauthorized');
 
       if (isTokenInvalid) {
         const newAccessToken = await this.tryRefreshToken();
         if (newAccessToken) {
           return this.handleResponse(fetchFn, true);
         } else {
-          console.warn('[AxiosClient] Session expired. Clearing invalid tokens.');
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
+          console.warn('[AxiosClient] Token refresh failed. Preserving session if refresh token exists.');
         }
       }
     }

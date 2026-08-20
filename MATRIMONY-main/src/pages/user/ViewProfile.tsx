@@ -35,7 +35,7 @@ import { useCreatePrivacyReport, useCreatePhotoRequest } from '../../hooks/usePr
 
 export const ViewProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { profiles, showToast, setActiveChatUserId, isAuthenticated } = useApp();
+  const { profiles, showToast, setActiveChatUserId, isAuthenticated, addNotification } = useApp();
   const navigate = useNavigate();
 
   const numericUserId = Number(id || 0);

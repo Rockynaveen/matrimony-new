@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRecommendations, useShortlist, useSentInterests, useIgnoredProfiles } from '../../hooks/useMatching';
+import { useRecommendations, useShortlist, useSentInterests, useReceivedInterests, useIgnoredProfiles } from '../../hooks/useMatching';
 import { RecommendationCard } from '../../components/matching/RecommendationCard';
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
@@ -13,11 +13,17 @@ export const MatchesPage: React.FC = () => {
   const { data: recommendations, isLoading, isError, refetch, isFetching } = useRecommendations();
   const { data: shortlist } = useShortlist();
   const { data: sentInterests } = useSentInterests();
+  const { data: receivedInterests } = useReceivedInterests();
   const { data: ignoredList } = useIgnoredProfiles();
 
   const shortlistedIds = shortlist?.map(s => s.user_id) || [];
   const sentInterestUserIds = sentInterests?.map(i => i.to_user) || [];
   const ignoredUserIds = ignoredList?.map(i => i.user_id) || [];
+
+  const acceptedUserIds = new Set([
+    ...(receivedInterests || []).filter(i => i.status?.toLowerCase() === 'accepted').map(i => i.from_user),
+    ...(sentInterests || []).filter(i => i.status?.toLowerCase() === 'accepted').map(i => i.to_user)
+  ]);
 
   const getFilteredMatches = () => {
     if (!recommendations || !Array.isArray(recommendations)) return [];
@@ -169,6 +175,7 @@ export const MatchesPage: React.FC = () => {
               match={match}
               isShortlisted={shortlistedIds.includes(match.user_id)}
               isInterestSent={sentInterestUserIds.includes(match.user_id)}
+              isInterestAccepted={acceptedUserIds.has(match.user_id)}
             />
           ))}
         </div>

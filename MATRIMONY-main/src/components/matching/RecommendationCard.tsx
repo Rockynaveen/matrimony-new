@@ -23,15 +23,17 @@ interface RecommendationCardProps {
   match: MatchResponseSchema;
   isShortlisted?: boolean;
   isInterestSent?: boolean;
+  isInterestAccepted?: boolean;
 }
 
 export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   match,
   isShortlisted = false,
   isInterestSent = false,
+  isInterestAccepted = false
 }) => {
   const navigate = useNavigate();
-  const { showToast } = useApp();
+  const { showToast, addNotification } = useApp();
 
   const addShortlistMutation = useAddToShortlist();
   const removeShortlistMutation = useRemoveFromShortlist();
@@ -62,6 +64,13 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
     }
     try {
       await sendInterestMutation.mutateAsync({ to_user: match.user_id, message: 'Hi, I am interested in your profile.' });
+      addNotification({
+        title: 'Interest Sent!',
+        message: `You expressed interest in ${match.first_name}'s profile.`,
+        category: 'Interests',
+        link: '/matching/interests',
+        avatar: match.profile_photo
+      });
       showToast(`Interest expression sent to ${match.first_name}!`);
     } catch (err: any) {
       showToast(err?.message || 'Failed to send interest');
@@ -196,12 +205,21 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         {/* Action Controls */}
         <div className="p-4 pt-0 border-t border-stone-50">
           <div className="grid grid-cols-2 gap-2 mt-3 mb-1">
-            {isInterestSent ? (
+            {isInterestAccepted ? (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => navigate(`/messages/${match.user_id}`)}
+                className="w-full text-xs font-bold bg-[#8B1E3F] hover:bg-[#721733] text-white flex items-center justify-center gap-1"
+              >
+                Open Chat
+              </Button>
+            ) : isInterestSent ? (
               <Button
                 size="sm"
                 variant="secondary"
                 disabled
-                className="w-full text-xs text-emerald-800 bg-emerald-50 border border-emerald-200"
+                className="w-full text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 font-bold"
               >
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-600" /> Sent
               </Button>
@@ -211,7 +229,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
                 variant="primary"
                 onClick={handleSendInterest}
                 disabled={sendInterestMutation.isPending}
-                className="w-full text-xs bg-[#8B1E3F] hover:bg-[#721733] text-white"
+                className="w-full text-xs bg-[#8B1E3F] hover:bg-[#721733] text-white font-bold"
               >
                 {sendInterestMutation.isPending ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />

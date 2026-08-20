@@ -25,7 +25,7 @@ interface InterestCardProps {
 
 export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) => {
   const navigate = useNavigate();
-  const { showToast, setActiveChatUserId } = useApp();
+  const { showToast, setActiveChatUserId, addNotification } = useApp();
 
   const updateInterestMutation = useUpdateInterest();
   const deleteInterestMutation = useDeleteInterest();
@@ -49,6 +49,28 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
         interestId: interest.id,
         payload: { status }
       });
+
+      const partnerName = `${interest.first_name || ''} ${interest.last_name || ''}`.trim() || 'Member';
+      const otherUserId = type === 'sent' ? interest.to_user : interest.from_user;
+
+      if (status === 'Accepted') {
+        addNotification({
+          title: 'Interest Accepted!',
+          message: `${partnerName} accepted your interest expression! Open chat to start talking.`,
+          category: 'Interests',
+          link: `/messages/${otherUserId}`,
+          avatar: interest.profile_photo
+        });
+      } else {
+        addNotification({
+          title: 'Interest Update',
+          message: `${partnerName} declined your interest expression.`,
+          category: 'Interests',
+          link: '/matching/interests',
+          avatar: interest.profile_photo
+        });
+      }
+
       showToast(`Interest expression ${status.toLowerCase()}!`);
     } catch (err: any) {
       showToast(err?.message || `Failed to update interest to ${status}`);

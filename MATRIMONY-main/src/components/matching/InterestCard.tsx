@@ -60,25 +60,10 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
       });
 
       const partnerName = `${interest.first_name || ''} ${interest.last_name || ''}`.trim() || 'Member';
-      const otherUserId = type === 'sent' ? interest.to_user : interest.from_user;
 
       if (status === 'Accepted') {
-        addNotification({
-          title: 'Interest Accepted!',
-          message: `${partnerName} accepted your interest.`,
-          category: 'Interests',
-          link: `/messages/${otherUserId}`,
-          avatar: interest.profile_photo
-        });
         showToast(`Accepted interest from ${partnerName}! Chat is now enabled.`);
       } else {
-        addNotification({
-          title: 'Interest Ignored',
-          message: `${partnerName} ignored your interest.`,
-          category: 'Interests',
-          link: '/matching/interests',
-          avatar: interest.profile_photo
-        });
         showToast(`Ignored interest expression from ${partnerName}.`);
       }
     } catch (err: any) {

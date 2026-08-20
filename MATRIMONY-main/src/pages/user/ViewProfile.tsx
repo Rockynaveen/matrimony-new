@@ -190,13 +190,6 @@ export const ViewProfile: React.FC = () => {
   const handleExpressInterest = async () => {
     try {
       await sendInterestMutation.mutateAsync({ to_user: numericUserId, message: 'Hi, I am interested in your profile.' });
-      addNotification({
-        title: 'New Interest Received!',
-        message: `${currentUser.name || 'A member'} sent you an interest.`,
-        category: 'Interests',
-        link: '/matching/interests',
-        avatar: profile.profileImage
-      });
       showToast(`Interest expression sent to ${profile.name}!`);
     } catch (err: any) {
       showToast(err?.message || 'Failed to express interest');

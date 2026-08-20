@@ -9,6 +9,7 @@ import {
   Sparkles,
   HeartHandshake,
   XCircle,
+  UserX,
   Ban,
   Loader2,
   CheckCircle2
@@ -103,6 +104,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   const displayPhoto = match.profile_photo || defaultPhoto;
 
   return (
+    <motion.div
       whileHover={{ y: -3 }}
       transition={{ duration: 0.2 }}
       className="h-full"

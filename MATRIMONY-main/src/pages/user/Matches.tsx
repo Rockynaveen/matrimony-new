@@ -9,7 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { LoadingScreen } from '../../components/ui/LoadingScreen';
 
 export const MatchesPage: React.FC = () => {
-  const { currentUser } = useApp();
+  const { currentUser, profiles } = useApp();
   const [matchTab, setMatchTab] = useState<'recommended' | 'compatible' | 'new' | 'nearby' | 'horoscope'>('recommended');
 
   const { data: recommendations, isLoading, isError, refetch, isFetching } = useRecommendations();
@@ -30,24 +30,22 @@ export const MatchesPage: React.FC = () => {
   const userGender = (currentUser.gender || localStorage.getItem('logged_in_gender') || '').toLowerCase();
   const targetGender = (userGender === 'male' || userGender === 'm') ? 'female' : ((userGender === 'female' || userGender === 'f') ? 'male' : '');
 
+  const rawList = recommendations || [];
+
   const getFilteredMatches = () => {
-    if (!recommendations || !Array.isArray(recommendations)) return [];
-    
     switch (matchTab) {
       case 'compatible':
-        return [...recommendations].sort((a, b) => (b.match_percentage || 0) - (a.match_percentage || 0));
+        return [...rawList].sort((a, b) => (b.match_percentage || 0) - (a.match_percentage || 0));
       case 'new':
-        return recommendations.slice(0, 6);
+        return rawList.slice(0, 6);
       case 'nearby':
-        // Filter by state or city if specified
-        return recommendations.filter(p => Boolean(p.city || p.state));
+        return rawList.filter(p => Boolean(p.city || p.state));
       case 'horoscope':
-        // Filter those containing matching horoscope fields
-        return recommendations.filter(p =>
-          p.matched_fields?.some(f => ['horoscope', 'rashi', 'nakshatra', 'dosha', 'astrology'].includes(f.toLowerCase()))
+        return rawList.filter(p =>
+          p.matched_fields?.some((f: string) => ['horoscope', 'rashi', 'nakshatra', 'dosha', 'astrology'].includes(f.toLowerCase()))
         );
       default:
-        return recommendations;
+        return rawList;
     }
   };
 
@@ -143,7 +141,7 @@ export const MatchesPage: React.FC = () => {
           </div>
           <div>
             <h3 className="font-serif font-bold text-lg text-stone-900">No Recommendations Available</h3>
-            <p className="text-xs text-stone-500 mt-1">There are no matches matching your active partner preference criteria currently. Try updating your filters.</p>
+            <p className="text-xs text-stone-500 mt-1">There are no live match recommendations matching your criteria currently.</p>
           </div>
         </Card>
       ) : (

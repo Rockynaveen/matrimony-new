@@ -22,6 +22,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DotsLoader } from '../../components/ui/LoadingScreen';
 
 export const EditProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -225,11 +226,11 @@ export const EditProfile: React.FC = () => {
           <ArrowLeft className="h-4 w-4 mr-1" /> Back to My Profile
         </button>
 
-        {/* Loading Indicator */}
+        {/* Loading Indicator (3rd Loading State) */}
         {isLoading && (
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between text-xs text-amber-900 font-medium">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-[#8B1E3F]" />
+            <div className="flex items-center gap-3">
+              <DotsLoader size="sm" />
               <span>Fetching latest profile information...</span>
             </div>
           </div>

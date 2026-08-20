@@ -5,6 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Heart, RefreshCw, AlertCircle } from 'lucide-react';
+import { LoadingScreen } from '../../components/ui/LoadingScreen';
 
 export const InterestsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
@@ -65,23 +66,9 @@ export const InterestsPage: React.FC = () => {
         ))}
       </div>
 
-      {/* List */}
+      {/* List (3rd Loading State) */}
       {isLoading ? (
-        <div className="space-y-4">
-          {[...Array(3)].map((_, idx) => (
-            <div key={idx} className="p-6 bg-white border border-stone-200/80 rounded-3xl animate-pulse flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4 w-2/3">
-                <div className="h-16 w-16 bg-stone-200 rounded-full shrink-0" />
-                <div className="space-y-2 w-full">
-                  <div className="h-4 bg-stone-200 rounded w-1/3" />
-                  <div className="h-3 bg-stone-200 rounded w-1/2" />
-                  <div className="h-3 bg-stone-200 rounded w-2/3" />
-                </div>
-              </div>
-              <div className="h-10 bg-stone-200 rounded w-24 shrink-0" />
-            </div>
-          ))}
-        </div>
+        <LoadingScreen title="Interest Expressions" message="Fetching sent and received interest expressions..." />
       ) : isError ? (
         <Card className="p-12 text-center border-stone-200/80 rounded-3xl space-y-4 max-w-xl mx-auto bg-white shadow-2xs">
           <div className="h-12 w-12 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mx-auto text-rose-600">

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { useRecommendations, useShortlist, useSentInterests } from '../../hooks/useMatching';
+import { useRecommendations, useShortlist, useSentInterests, useIgnoredProfiles } from '../../hooks/useMatching';
 import { RecommendationCard } from '../../components/matching/RecommendationCard';
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
 import { Sparkles, Heart, Compass, Clock, Star, AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { LoadingScreen } from '../../components/ui/LoadingScreen';
 
 export const MatchesPage: React.FC = () => {
   const [matchTab, setMatchTab] = useState<'recommended' | 'compatible' | 'new' | 'nearby' | 'horoscope'>('recommended');
@@ -12,9 +13,11 @@ export const MatchesPage: React.FC = () => {
   const { data: recommendations, isLoading, isError, refetch, isFetching } = useRecommendations();
   const { data: shortlist } = useShortlist();
   const { data: sentInterests } = useSentInterests();
+  const { data: ignoredList } = useIgnoredProfiles();
 
   const shortlistedIds = shortlist?.map(s => s.user_id) || [];
   const sentInterestUserIds = sentInterests?.map(i => i.to_user) || [];
+  const ignoredUserIds = ignoredList?.map(i => i.user_id) || [];
 
   const getFilteredMatches = () => {
     if (!recommendations || !Array.isArray(recommendations)) return [];
@@ -37,10 +40,12 @@ export const MatchesPage: React.FC = () => {
     }
   };
 
-  // Filter out duplicates by user_id ("if already exists just ignore it")
-  const matchesList = getFilteredMatches().filter((item, index, self) =>
-    index === self.findIndex(t => t.user_id === item.user_id)
-  );
+  // Filter out ignored profiles and duplicates by user_id
+  const matchesList = getFilteredMatches()
+    .filter(item => !ignoredUserIds.includes(item.user_id))
+    .filter((item, index, self) =>
+      index === self.findIndex(t => t.user_id === item.user_id)
+    );
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -125,21 +130,9 @@ export const MatchesPage: React.FC = () => {
         </div>
       </Card>
 
-      {/* Grid of Profile Cards */}
+      {/* Grid of Profile Cards (3rd Loading State) */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, idx) => (
-            <div key={idx} className="bg-white rounded-3xl border border-stone-200/80 overflow-hidden space-y-4 p-4 shadow-2xs animate-pulse">
-              <div className="bg-stone-200 aspect-[4/4.2] w-full rounded-2xl" />
-              <div className="h-4 bg-stone-200 rounded w-2/3" />
-              <div className="h-3 bg-stone-200 rounded w-1/2" />
-              <div className="space-y-2 pt-2 border-t border-stone-100">
-                <div className="h-3 bg-stone-200 rounded w-full" />
-                <div className="h-3 bg-stone-200 rounded w-full" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <LoadingScreen title="AI Match Engine" message="Finding compatibility match recommendations based on your preferences..." />
       ) : isError ? (
         <Card className="p-12 text-center border-stone-200/80 rounded-3xl space-y-4 max-w-xl mx-auto bg-white shadow-2xs">
           <div className="h-12 w-12 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mx-auto text-rose-600">

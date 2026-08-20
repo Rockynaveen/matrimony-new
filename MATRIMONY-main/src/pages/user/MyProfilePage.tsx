@@ -20,6 +20,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { useProfile } from '../../hooks/useProfile';
 import { useApp, extractNameFromEmail, isGenericName } from '../../context/AppContext';
+import { DotsLoader } from '../../components/ui/LoadingScreen';
 
 export const MyProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -74,11 +75,11 @@ export const MyProfilePage: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Loading Bar Indicator */}
+      {/* Loading Bar Indicator (3rd Loading State) */}
       {isLoading && (
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between text-xs text-amber-900 font-medium">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin text-[#8B1E3F]" />
+          <div className="flex items-center gap-3">
+            <DotsLoader size="sm" />
             <span>Syncing latest profile data from backend server...</span>
           </div>
           <button onClick={() => refetch()} className="font-bold underline hover:text-[#8B1E3F]">

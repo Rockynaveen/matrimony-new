@@ -58,6 +58,8 @@ import { PhotoModeration } from '../pages/admin/PhotoModeration';
 // Super Admin
 import { SuperAdminDashboard } from '../pages/super-admin/SuperAdminDashboard';
 
+import { LoadingScreen } from '../components/ui/LoadingScreen';
+
 const MainLayout: React.FC = () => {
   const { pathname } = useLocation();
 
@@ -72,7 +74,9 @@ const MainLayout: React.FC = () => {
         <Breadcrumbs />
       </div>
       <main className="flex-1">
-        <Outlet />
+        <React.Suspense fallback={<LoadingScreen message="Navigating to page..." />}>
+          <Outlet />
+        </React.Suspense>
       </main>
       <Footer />
       <Toast />

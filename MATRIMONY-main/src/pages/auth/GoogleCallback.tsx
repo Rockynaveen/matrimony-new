@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp, isUserProfileCompleted } from '../../context/AppContext';
 import { googleAuthApi } from '../../api/googleAuthApi';
-import { Loader2 } from 'lucide-react';
+import { LoadingScreen } from '../../components/ui/LoadingScreen';
 
 export const GoogleCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -62,12 +62,8 @@ export const GoogleCallback: React.FC = () => {
   }, [location, navigate, checkProfileStatus, showToast]);
 
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4 text-center px-4">
-      <div className="h-14 w-14 bg-[#8B1E3F]/10 text-[#8B1E3F] rounded-2xl flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#8B1E3F]" />
-      </div>
-      <h2 className="font-serif text-2xl font-bold text-stone-900">Google Authentication</h2>
-      <p className="text-xs text-stone-500 font-medium max-w-sm">{statusMsg}</p>
+    <div className="min-h-[80vh] flex items-center justify-center">
+      <LoadingScreen title="Google Authentication" message={statusMsg} />
     </div>
   );
 };

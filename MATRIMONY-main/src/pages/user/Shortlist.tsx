@@ -5,6 +5,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Star, RefreshCw, AlertCircle } from 'lucide-react';
+import { LoadingScreen } from '../../components/ui/LoadingScreen';
 
 export const ShortlistPage: React.FC = () => {
   const { data: shortlist, isLoading, isError, refetch, isFetching } = useShortlist();
@@ -32,21 +33,9 @@ export const ShortlistPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* Grid of Shortlisted Cards */}
+      {/* Grid of Shortlisted Cards (3rd Loading State) */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, idx) => (
-            <div key={idx} className="bg-white rounded-3xl border border-stone-200/80 overflow-hidden space-y-4 p-4 shadow-2xs animate-pulse">
-              <div className="bg-stone-200 aspect-square w-full rounded-2xl" />
-              <div className="h-4 bg-stone-200 rounded w-2/3" />
-              <div className="h-3 bg-stone-200 rounded w-1/2" />
-              <div className="space-y-2 pt-2 border-t border-stone-100">
-                <div className="h-3 bg-stone-200 rounded w-full" />
-                <div className="h-3 bg-stone-200 rounded w-full" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <LoadingScreen title="Saved Profiles" message="Loading your shortlisted matrimonial profiles..." />
       ) : isError ? (
         <Card className="p-12 text-center border-stone-200/80 rounded-3xl space-y-4 max-w-xl mx-auto bg-white shadow-2xs">
           <div className="h-12 w-12 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mx-auto text-rose-600">

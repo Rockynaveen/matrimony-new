@@ -13,14 +13,21 @@ import {
   Bookmark
 } from 'lucide-react';
 
+import { useIgnoredProfiles } from '../../hooks/useMatching';
+
 export const SearchPage: React.FC = () => {
   const { profiles, searchFilter, setSearchFilter, resetSearchFilter, showToast } = useApp();
+  const { data: ignoredList } = useIgnoredProfiles();
+  const ignoredUserIds = ignoredList?.map(i => i.user_id) || [];
+
   const [activeTab, setActiveTab] = useState<'all' | 'saved' | 'recent'>('all');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [searchProfileId, setSearchProfileId] = useState('');
 
   // Filter implementation logic
   const filteredProfiles = profiles.filter(p => {
+    const numericId = Number(p.id);
+    if (ignoredUserIds.includes(numericId)) return false;
     if (searchFilter.gender && searchFilter.gender !== 'All' && p.gender !== searchFilter.gender) return false;
     if (p.age < searchFilter.ageMin || p.age > searchFilter.ageMax) return false;
     if (searchFilter.religion !== 'All' && p.religion !== searchFilter.religion) return false;

@@ -35,6 +35,7 @@ import {
 } from '../../hooks/usePrivacyReports';
 import { privacyApi } from '../../api/privacyApi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DotsLoader, LoadingScreen } from '../../components/ui/LoadingScreen';
 
 export const PrivacySettingsPage: React.FC = () => {
   const { currentUser, profiles, showToast } = useApp();
@@ -427,10 +428,10 @@ export const PrivacySettingsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Loading Indicator */}
+          {/* Loading Indicator (3rd Loading State) */}
           {isLoadingReports && (
-            <div className="bg-white p-12 rounded-3xl border border-stone-200 text-center space-y-3">
-              <Loader2 className="h-8 w-8 animate-spin text-[#8B1E3F] mx-auto" />
+            <div className="bg-white p-12 rounded-3xl border border-stone-200 text-center space-y-4 shadow-sm">
+              <DotsLoader size="lg" />
               <p className="text-xs font-bold text-stone-600">Fetching privacy & safety reports from backend server...</p>
             </div>
           )}
@@ -645,9 +646,9 @@ export const PrivacySettingsPage: React.FC = () => {
           </div>
 
           {isLoadingPhotoRequests ? (
-            <div className="bg-white p-12 rounded-3xl border border-stone-200 text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-[#8B1E3F] mx-auto" />
-              <p className="text-xs font-bold text-stone-600 mt-3">Loading photo permissions...</p>
+            <div className="bg-white p-12 rounded-3xl border border-stone-200 text-center space-y-4 shadow-sm">
+              <DotsLoader size="lg" />
+              <p className="text-xs font-bold text-stone-600">Loading photo permissions...</p>
             </div>
           ) : photoRequestsList.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -802,8 +803,8 @@ export const PrivacySettingsPage: React.FC = () => {
           </div>
 
           {isLoadingDetail && (
-            <div className="py-8 text-center space-y-2">
-              <Loader2 className="h-6 w-6 animate-spin text-[#8B1E3F] mx-auto" />
+            <div className="py-8 text-center space-y-3">
+              <DotsLoader size="md" />
               <p className="text-xs font-bold text-stone-600">Fetching report #{selectedViewReportId} details...</p>
             </div>
           )}

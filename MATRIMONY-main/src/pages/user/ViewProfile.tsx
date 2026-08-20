@@ -51,7 +51,25 @@ export const ViewProfile: React.FC = () => {
   const isShortlisted = shortlist?.some(s => s.user_id === numericUserId) || false;
   const isInterestSent = sentInterests?.some(i => i.to_user === numericUserId) || false;
 
-  const profile = profiles.find(p => p.id === id) || profiles[0];
+  const profile = profiles.find(p => p.id === id || String(p.id) === String(id));
+
+  if (!profile) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 space-y-6 text-center">
+        <div className="h-16 w-16 bg-stone-100 border border-stone-200 rounded-full flex items-center justify-center mx-auto text-stone-400">
+          <UserX className="h-8 w-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="font-serif text-2xl font-bold text-stone-900">Profile Not Found</h2>
+          <p className="text-xs text-stone-500 max-w-md mx-auto">The requested profile could not be located or may have been updated. Please browse active verified profiles.</p>
+        </div>
+        <Button variant="primary" onClick={() => navigate('/matches')} className="font-bold text-xs px-6">
+          Browse Verified Matches
+        </Button>
+      </div>
+    );
+  }
+
   const [activePhoto, setActivePhoto] = useState(profile.profileImage);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
@@ -81,8 +99,8 @@ export const ViewProfile: React.FC = () => {
   const handleIgnore = async () => {
     try {
       await ignoreMutation.mutateAsync({ user: numericUserId, reason: 'Skipped from profile page' });
-      showToast('Profile ignored.');
-      navigate('/matches');
+      showToast(`Profile ${profile.name} added to ignored profiles.`);
+      navigate('/matching/ignored');
     } catch (err: any) {
       showToast(err?.message || 'Failed to ignore profile');
     }
@@ -405,19 +423,19 @@ export const ViewProfile: React.FC = () => {
               <div className="flex justify-between py-1.5 border-b border-border/40">
                 <span className="text-muted-foreground">Rashi (Moon Sign)</span>
                 <span className={`font-bold text-foreground ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? profile.horoscope.rashi : 'Mesh'}
+                  {isAuthenticated ? (profile.horoscope?.rashi || 'Not Specified') : '🔒 Restricted'}
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-border/40">
                 <span className="text-muted-foreground">Nakshatra</span>
                 <span className={`font-bold text-foreground ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? profile.horoscope.nakshatra : 'Rohini'}
+                  {isAuthenticated ? (profile.horoscope?.nakshatra || 'Not Specified') : '🔒 Restricted'}
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-border/40">
                 <span className="text-muted-foreground">Manglik / Dosha Status</span>
                 <span className={`font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? profile.horoscope.dosha : 'No Dosha'}
+                  {isAuthenticated ? (profile.horoscope?.dosha || 'Not Specified') : '🔒 Restricted'}
                 </span>
               </div>
             </div>
@@ -430,25 +448,25 @@ export const ViewProfile: React.FC = () => {
               <div className="flex justify-between py-1.5 border-b border-border/40">
                 <span className="text-muted-foreground">Family Type & Values</span>
                 <span className={`font-bold text-foreground ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? `${profile.family.type} • ${profile.family.values}` : 'Nuclear Family • Moderate'}
+                  {isAuthenticated ? `${profile.family?.type || 'Not Specified'} • ${profile.family?.values || 'Traditional'}` : '🔒 Restricted'}
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-border/40">
                 <span className="text-muted-foreground">Family Status</span>
                 <span className={`font-bold text-foreground ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? profile.family.status : 'Middle Class'}
+                  {isAuthenticated ? (profile.family?.status || 'Not Specified') : '🔒 Restricted'}
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-border/40">
                 <span className="text-muted-foreground">Father's Occupation</span>
                 <span className={`font-bold text-foreground ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? profile.family.fatherOccupation : 'Retired'}
+                  {isAuthenticated ? (profile.family?.fatherOccupation || 'Not Specified') : '🔒 Restricted'}
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-border/40">
                 <span className="text-muted-foreground">Mother's Occupation</span>
                 <span className={`font-bold text-foreground ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? profile.family.motherOccupation : 'Homemaker'}
+                  {isAuthenticated ? (profile.family?.motherOccupation || 'Not Specified') : '🔒 Restricted'}
                 </span>
               </div>
             </div>

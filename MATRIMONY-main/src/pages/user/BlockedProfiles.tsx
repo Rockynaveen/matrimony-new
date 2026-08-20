@@ -4,7 +4,8 @@ import { BlockedProfileCard } from '../../components/matching/BlockedProfileCard
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Ban, RefreshCw, AlertCircle } from 'lucide-react';
+import { ShieldOff, RefreshCw, AlertCircle } from 'lucide-react';
+import { LoadingScreen } from '../../components/ui/LoadingScreen';
 
 export const BlockedProfilesPage: React.FC = () => {
   const { data: blockedProfiles, isLoading, isError, refetch, isFetching } = useBlockedProfiles();
@@ -32,22 +33,9 @@ export const BlockedProfilesPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* Grid of Blocked Cards */}
+      {/* Grid of Blocked Cards (3rd Loading State) */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[...Array(2)].map((_, idx) => (
-            <div key={idx} className="p-4 bg-white border border-stone-200/80 rounded-3xl animate-pulse flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4 w-2/3">
-                <div className="h-12 w-12 bg-stone-200 rounded-full shrink-0" />
-                <div className="space-y-2 w-full">
-                  <div className="h-4 bg-stone-200 rounded w-1/3" />
-                  <div className="h-3 bg-stone-200 rounded w-1/2" />
-                </div>
-              </div>
-              <div className="h-8 bg-stone-200 rounded w-20 shrink-0" />
-            </div>
-          ))}
-        </div>
+        <LoadingScreen title="Blocked Profiles" message="Fetching your blocked members..." />
       ) : isError ? (
         <Card className="p-12 text-center border-stone-200/80 rounded-3xl space-y-4 max-w-xl mx-auto bg-white shadow-2xs">
           <div className="h-12 w-12 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mx-auto text-rose-600">

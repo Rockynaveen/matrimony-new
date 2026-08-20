@@ -43,12 +43,46 @@ class AxiosClient {
     }
   }
 
+  private workingRefreshEndpoint: string | null = null;
+  private workingRefreshKey: string | null = null;
+  private lastRefreshAttemptTime = 0;
+
   private async tryRefreshToken(): Promise<string | null> {
     const refreshToken = localStorage.getItem('refresh_token');
     if (!refreshToken || this.isRefreshing) return null;
 
+    // Cooldown: prevent spamming refresh requests if attempted within last 30 seconds
+    const now = Date.now();
+    if (now - this.lastRefreshAttemptTime < 30000) {
+      return null;
+    }
+
     try {
       this.isRefreshing = true;
+      this.lastRefreshAttemptTime = now;
+
+      // If we already discovered the working endpoint, try it first
+      if (this.workingRefreshEndpoint && this.workingRefreshKey) {
+        try {
+          const response = await fetch(`${this.baseURL}${this.workingRefreshEndpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [this.workingRefreshKey]: refreshToken })
+          });
+          if (response.ok) {
+            const data = await response.json();
+            const newAccess = data.access || data.access_token || data.data?.access_token || data.token;
+            if (newAccess) {
+              localStorage.setItem('access_token', newAccess);
+              if (data.refresh || data.refresh_token) {
+                localStorage.setItem('refresh_token', data.refresh || data.refresh_token);
+              }
+              return newAccess;
+            }
+          }
+        } catch {}
+      }
+
       const refreshEndpoints = [
         '/token/refresh',
         '/token/refresh/',
@@ -62,30 +96,28 @@ class AxiosClient {
         '/refresh/'
       ];
 
-      const payloads = [
-        { refresh: refreshToken },
-        { refresh_token: refreshToken },
-        { token: refreshToken }
-      ];
+      const payloadKeys = ['refresh', 'refresh_token', 'token'];
 
       for (const endpoint of refreshEndpoints) {
-        for (const payload of payloads) {
+        for (const key of payloadKeys) {
           try {
             const response = await fetch(`${this.baseURL}${endpoint}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
+              body: JSON.stringify({ [key]: refreshToken })
             });
 
             if (response.ok) {
               const data = await response.json();
               const newAccess = data.access || data.access_token || data.data?.access_token || data.token;
               if (newAccess) {
+                this.workingRefreshEndpoint = endpoint;
+                this.workingRefreshKey = key;
                 localStorage.setItem('access_token', newAccess);
                 if (data.refresh || data.refresh_token) {
                   localStorage.setItem('refresh_token', data.refresh || data.refresh_token);
                 }
-                console.log('[AxiosClient] Successfully refreshed JWT access token via Ninja JWT.');
+                console.log(`[AxiosClient] Discovered & cached JWT refresh endpoint: ${endpoint}`);
                 return newAccess;
               }
             }

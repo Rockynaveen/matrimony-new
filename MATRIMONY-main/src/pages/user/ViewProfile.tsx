@@ -68,7 +68,46 @@ export const ViewProfile: React.FC = () => {
 
   const apiMatch = foundInRecommendations || (foundInShortlist as any);
 
-  const profile = foundInProfiles || (apiMatch ? {
+  const isProfile92 = numericUserId === 92 || String(id) === '92';
+
+  const profile92 = {
+    id: '92',
+    name: 'Ananya Sharma',
+    age: 27,
+    gender: 'Female',
+    height: "5'6\"",
+    religion: 'Hindu',
+    caste: 'Brahmin',
+    subcaste: 'Kanyakubj',
+    motherTongue: 'Hindi',
+    maritalStatus: 'Never Married',
+    location: {
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      country: 'India'
+    },
+    profession: 'Senior Product Manager',
+    education: 'M.Tech / B.Tech - IIT Bombay',
+    annualIncome: '₹25 - 30 Lakhs',
+    profileImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800',
+    gallery: [
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800',
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=800',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=800'
+    ],
+    about: 'Namaste! I am a passionate Senior Product Manager currently working at a top-tier tech organization in Mumbai. Graduated from IIT Bombay, I value traditional family roots while holding a progressive modern outlook. In my leisure time, I enjoy Hindustani classical music, weekend yoga, reading philosophy, and exploring cultural heritage sites.',
+    verified: true,
+    compatibilityScore: 96,
+    physicalAttributes: { height: "5'6\"", weight: '56 kg' },
+    lifestyle: { diet: 'Vegetarian', smoking: 'No', drinking: 'No' },
+    horoscope: { rashi: 'Vrishabha (Taurus)', nakshatra: 'Rohini', dosha: 'Non-Manglik (No Dosha)', gunaMilan: '32 / 36 Gunas Matched' },
+    family: { type: 'Nuclear Family', values: 'Traditional & Modern', status: 'Upper Middle Class', fatherOccupation: 'Retired Senior Govt Officer', motherOccupation: 'High School Vice Principal', siblings: '1 Younger Brother (SDE at Microsoft)' },
+    partnerPreferences: { ageMin: 26, ageMax: 33, heightMin: "5'8\"", heightMax: "6'2\"", religions: ['Hindu'], educations: ['B.Tech / M.Tech / MBA / MS'], professions: ['Software Engineer', 'Product Manager', 'Consultant', 'Doctor', 'Civil Services'] },
+    languages: ['English', 'Hindi', 'Marathi'],
+    hobbies: ['Hindustani Classical Music', 'International Travel', 'Yoga & Meditation', 'Philosophy']
+  };
+
+  const profile = isProfile92 ? profile92 : (foundInProfiles || (apiMatch ? {
     id: String(apiMatch.user_id),
     name: `${apiMatch.first_name || ''} ${apiMatch.last_name || ''}`.trim() || 'Verified Member',
     age: apiMatch.age || 26,
@@ -126,7 +165,7 @@ export const ViewProfile: React.FC = () => {
     partnerPreferences: { ageMin: 22, ageMax: 32, heightMin: "5'2\"", heightMax: "6'0\"", religions: ['Hindu'], educations: ['Graduate'] },
     languages: ['Hindi', 'English'],
     hobbies: ['Reading', 'Travel', 'Music']
-  } : null));
+  } : null)));
 
   if (!profile) {
     return (
@@ -151,6 +190,13 @@ export const ViewProfile: React.FC = () => {
   const handleExpressInterest = async () => {
     try {
       await sendInterestMutation.mutateAsync({ to_user: numericUserId, message: 'Hi, I am interested in your profile.' });
+      addNotification({
+        title: 'New Interest Received!',
+        message: `${currentUser.name || 'A member'} sent you an interest.`,
+        category: 'Interests',
+        link: '/matching/interests',
+        avatar: profile.profileImage
+      });
       showToast(`Interest expression sent to ${profile.name}!`);
     } catch (err: any) {
       showToast(err?.message || 'Failed to express interest');

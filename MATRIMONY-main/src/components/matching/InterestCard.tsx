@@ -65,29 +65,25 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
       if (status === 'Accepted') {
         addNotification({
           title: 'Interest Accepted!',
-          message: type === 'received'
-            ? `You accepted ${partnerName}'s interest expression! Open chat to start talking.`
-            : `${partnerName} accepted your interest expression! Open chat to start talking.`,
+          message: `${partnerName} accepted your interest.`,
           category: 'Interests',
           link: `/messages/${otherUserId}`,
           avatar: interest.profile_photo
         });
+        showToast(`Accepted interest from ${partnerName}! Chat is now enabled.`);
       } else {
         addNotification({
-          title: 'Interest Declined',
-          message: type === 'received'
-            ? `You declined ${partnerName}'s interest expression.`
-            : `${partnerName} declined your interest expression.`,
+          title: 'Interest Ignored',
+          message: `${partnerName} ignored your interest.`,
           category: 'Interests',
           link: '/matching/interests',
           avatar: interest.profile_photo
         });
+        showToast(`Ignored interest expression from ${partnerName}.`);
       }
-
-      showToast(`Interest expression ${status.toLowerCase()}!`);
     } catch (err: any) {
       setLocalStatus(interest.status || 'Pending');
-      showToast(err?.message || `Failed to update interest to ${status}`);
+      showToast(err?.message || `Failed to update interest status.`);
     }
   };
 
@@ -187,14 +183,14 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
               variant="outline"
               disabled={updateInterestMutation.isPending || deleteInterestMutation.isPending}
               onClick={() => handleUpdateStatus('Rejected')}
-              className="text-xs border-rose-200 text-rose-700 hover:bg-rose-50 rounded-xl font-bold"
+              className="text-xs border-amber-300 text-amber-900 hover:bg-amber-50 rounded-xl font-bold"
             >
               {updateInterestMutation.isPending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <XCircle className="h-3.5 w-3.5 mr-1" />
+                <UserX className="h-3.5 w-3.5 mr-1 text-amber-700" />
               )}
-              Decline
+              Ignore
             </Button>
             <Button
               size="sm"

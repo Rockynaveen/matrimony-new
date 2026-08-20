@@ -430,7 +430,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [isAuthenticated]);
 
+  const clearUserStateAndCache = () => {
+    try {
+      queryClient.clear();
+    } catch {}
+    localStorage.removeItem('local_user_notifications');
+    setNotifications([]);
+    setUnreadCount(0);
+  };
+
   const loginUser = async (payload: LoginRequest): Promise<ProfileApiResponse> => {
+    clearUserStateAndCache();
     const res = await authApi.login(payload);
     const userEmail = res.user?.email || payload.email || '';
     const prevEmail = localStorage.getItem('logged_in_email');
@@ -485,6 +495,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const registerUser = async (payload: RegisterRequest) => {
+    clearUserStateAndCache();
     const res = await authApi.register(payload);
     if (res.access_token) {
       const name = `${payload.first_name} ${payload.last_name || ''}`.trim();
@@ -509,6 +520,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const googleRegisterUser = async (payload: GoogleRegisterRequest): Promise<ProfileApiResponse> => {
+    clearUserStateAndCache();
     await googleAuthApi.googleRegister(payload);
     const fullNamePayload = `${payload.first_name || ''} ${payload.last_name || ''}`.trim();
     const emailName = extractNameFromEmail(payload.email);
@@ -543,6 +555,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const googleLoginUser = async (payload: GoogleLoginRequest): Promise<ProfileApiResponse> => {
+    clearUserStateAndCache();
     let googleName = '';
     let googleEmail = '';
     let googleAvatar = '';
@@ -630,6 +643,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (err) {
       console.warn('[AppContext] Backend logout notice:', err);
     }
+    clearUserStateAndCache();
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('login_method');

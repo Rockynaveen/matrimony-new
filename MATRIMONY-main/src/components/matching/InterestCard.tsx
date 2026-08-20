@@ -27,13 +27,37 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
   const navigate = useNavigate();
   const { showToast, setActiveChatUserId, addNotification } = useApp();
 
-  const [localStatus, setLocalStatus] = React.useState<string>(interest.status || 'Pending');
+  const [localStatus, setLocalStatus] = React.useState<string>(() => {
+    try {
+      const acceptedSet = new Set(JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]'));
+      const rejectedSet = new Set(JSON.parse(localStorage.getItem('local_rejected_interest_ids') || '[]'));
+      if (acceptedSet.has(interest.id) || acceptedSet.has(interest.from_user) || acceptedSet.has(interest.to_user)) {
+        return 'Accepted';
+      }
+      if (rejectedSet.has(interest.id) || rejectedSet.has(interest.from_user) || rejectedSet.has(interest.to_user)) {
+        return 'Rejected';
+      }
+    } catch {}
+    return interest.status || 'Pending';
+  });
 
   React.useEffect(() => {
+    try {
+      const acceptedSet = new Set(JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]'));
+      const rejectedSet = new Set(JSON.parse(localStorage.getItem('local_rejected_interest_ids') || '[]'));
+      if (acceptedSet.has(interest.id) || acceptedSet.has(interest.from_user) || acceptedSet.has(interest.to_user)) {
+        setLocalStatus('Accepted');
+        return;
+      }
+      if (rejectedSet.has(interest.id) || rejectedSet.has(interest.from_user) || rejectedSet.has(interest.to_user)) {
+        setLocalStatus('Rejected');
+        return;
+      }
+    } catch {}
     if (interest.status) {
       setLocalStatus(interest.status);
     }
-  }, [interest.status]);
+  }, [interest.status, interest.id]);
 
   const updateInterestMutation = useUpdateInterest();
   const deleteInterestMutation = useDeleteInterest();

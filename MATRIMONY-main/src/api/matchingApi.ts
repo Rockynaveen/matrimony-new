@@ -56,18 +56,64 @@ export const matchingApi = {
 
   getSentInterests: async (): Promise<InterestResponseSchema[]> => {
     const res = await axiosClient.get<InterestResponseSchema[]>('/matching/interest/sent');
-    return Array.isArray(res.data) ? res.data : [];
+    const rawList = Array.isArray(res.data) ? res.data : [];
+    
+    try {
+      const acceptedSet = new Set(JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]'));
+      const rejectedSet = new Set(JSON.parse(localStorage.getItem('local_rejected_interest_ids') || '[]'));
+
+      return rawList.map(item => {
+        if (acceptedSet.has(item.id) || acceptedSet.has(item.to_user)) {
+          return { ...item, status: 'Accepted' };
+        }
+        if (rejectedSet.has(item.id) || rejectedSet.has(item.to_user)) {
+          return { ...item, status: 'Rejected' };
+        }
+        return item;
+      });
+    } catch {
+      return rawList;
+    }
   },
 
   getReceivedInterests: async (): Promise<InterestResponseSchema[]> => {
     const res = await axiosClient.get<InterestResponseSchema[]>('/matching/interest/received');
-    return Array.isArray(res.data) ? res.data : [];
+    const rawList = Array.isArray(res.data) ? res.data : [];
+
+    try {
+      const acceptedSet = new Set(JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]'));
+      const rejectedSet = new Set(JSON.parse(localStorage.getItem('local_rejected_interest_ids') || '[]'));
+
+      return rawList.map(item => {
+        if (acceptedSet.has(item.id) || acceptedSet.has(item.from_user)) {
+          return { ...item, status: 'Accepted' };
+        }
+        if (rejectedSet.has(item.id) || rejectedSet.has(item.from_user)) {
+          return { ...item, status: 'Rejected' };
+        }
+        return item;
+      });
+    } catch {
+      return rawList;
+    }
   },
 
   updateInterest: async (interestId: number, payload: InterestUpdateSchema): Promise<InterestResponseSchema> => {
     const statusLower = String(payload.status).toLowerCase();
     const isAccepting = statusLower === 'accepted';
     const isRejecting = statusLower === 'rejected' || statusLower === 'declined';
+
+    try {
+      if (isAccepting) {
+        const acceptedSet = new Set(JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]'));
+        acceptedSet.add(interestId);
+        localStorage.setItem('local_accepted_interest_ids', JSON.stringify(Array.from(acceptedSet)));
+      } else if (isRejecting) {
+        const rejectedSet = new Set(JSON.parse(localStorage.getItem('local_rejected_interest_ids') || '[]'));
+        rejectedSet.add(interestId);
+        localStorage.setItem('local_rejected_interest_ids', JSON.stringify(Array.from(rejectedSet)));
+      }
+    } catch {}
 
     let candidateUrls: Array<{ method: 'post' | 'put' | 'patch'; url: string }> = [];
 

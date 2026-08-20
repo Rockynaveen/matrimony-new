@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, type RegisterFormData } from '../utils/validationSchemas';
-import { useApp } from '../context/AppContext';
+import { useApp, decodeGoogleIdToken, extractNameFromEmail, isGenericName } from '../context/AppContext';
 import { authApi } from '../api/authApi';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -15,7 +15,7 @@ export const Register: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
-  const { registerUser, googleRegisterUser, showToast } = useApp();
+  const { registerUser, googleRegisterUser, updateCurrentUserAvatar, showToast } = useApp();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -135,6 +135,14 @@ export const Register: React.FC = () => {
         confirm_password: data.confirm_password,
         accept_terms: data.accept_terms
       });
+
+      const manualName = `${data.first_name || ''} ${data.last_name || ''}`.trim();
+      if (manualName) {
+        localStorage.setItem('logged_in_name', manualName);
+      }
+      if (data.email) {
+        localStorage.setItem('logged_in_email', data.email);
+      }
 
       // After registration, proceed to Login as per sequence: Home -> Register -> Login -> Requested Page
       showToast('Registration successful! Please login to continue.');

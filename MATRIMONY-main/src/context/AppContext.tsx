@@ -408,8 +408,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const apiName = `${res.user?.first_name || ''} ${res.user?.last_name || ''}`.trim();
+    const storedName = localStorage.getItem('logged_in_name');
     const emailName = extractNameFromEmail(userEmail);
-    const finalName = (apiName && !isGenericName(apiName)) ? apiName : emailName;
+
+    let finalName = '';
+    if (apiName && !isGenericName(apiName)) {
+      finalName = apiName;
+    } else if (storedName && !isGenericName(storedName)) {
+      finalName = storedName;
+    } else {
+      finalName = emailName;
+    }
 
     localStorage.setItem('logged_in_name', finalName);
     if (userEmail) {

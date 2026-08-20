@@ -53,6 +53,7 @@ export const chatApi = {
     for (const url of candidateUrls) {
       try {
         const res = await axiosClient.get(url);
+        if (res.data && res.data.success === false) continue;
         if (Array.isArray(res.data)) {
           rawList = res.data;
           break;
@@ -74,7 +75,7 @@ export const chatApi = {
 
     const currentUserId = Number(localStorage.getItem('user_id') || 0);
 
-    return rawList.map((item, idx) => ({
+    const apiMapped: ChatMessageOut[] = rawList.map((item, idx) => ({
       id: item.id || item.message_id || `msg_${Date.now()}_${idx}`,
       room_id: Number(item.room_id || roomId),
       sender_id: Number(item.sender_id || item.sender || item.from_user || 0),
@@ -86,12 +87,28 @@ export const chatApi = {
       is_me: item.is_me ?? (item.sender_id === currentUserId || item.sender === currentUserId),
       read: item.read ?? item.is_read ?? false
     }));
+
+    try {
+      const localStored: ChatMessageOut[] = JSON.parse(localStorage.getItem(`local_chat_messages_${roomId}`) || '[]');
+      const mergedMap = new Map<string | number, ChatMessageOut>();
+      apiMapped.forEach(m => mergedMap.set(String(m.id), m));
+      localStored.forEach(m => {
+        const key = String(m.id);
+        if (!mergedMap.has(key)) {
+          mergedMap.set(key, m);
+        }
+      });
+      return Array.from(mergedMap.values());
+    } catch {
+      return apiMapped;
+    }
   },
 
   // 3. POST /api/chat/send
   sendTextMessage: async (payload: SendTextMessagePayload): Promise<ChatMessageOut> => {
     const roomIdNum = Number(payload.room_id);
     const msgText = payload.message.trim();
+    const currentUserId = Number(localStorage.getItem('user_id') || 0);
 
     const body = {
       room_id: roomIdNum,
@@ -107,6 +124,8 @@ export const chatApi = {
     const candidateUrls: Array<{ method: 'post' | 'put'; url: string }> = [
       { method: 'post', url: '/chat/send' },
       { method: 'post', url: '/chat/send/' },
+      { method: 'post', url: '/chat/send-message' },
+      { method: 'post', url: '/chat/send-message/' },
       { method: 'post', url: `/chat/conversations/${roomIdNum}/send` },
       { method: 'post', url: `/chat/conversations/${roomIdNum}/send/` },
       { method: 'post', url: `/chat/conversations/${roomIdNum}/messages` },
@@ -115,15 +134,28 @@ export const chatApi = {
       { method: 'post', url: '/chat/messages/send/' }
     ];
 
+    let createdMsg: ChatMessageOut | null = null;
+
     for (const item of candidateUrls) {
       try {
-        const res = await axiosClient.post<ChatMessageOut>(item.url, body);
+        const res = await axiosClient.post<any>(item.url, body);
         if (res.status >= 200 && res.status < 300) {
-          const currentUserId = Number(localStorage.getItem('user_id') || 0);
-          return res.data && (res.data.id || res.data.message || res.data.content) ? {
-            ...res.data,
-            message: res.data.message || res.data.content || msgText,
-            content: res.data.content || res.data.message || msgText,
+          const resData = res.data;
+          // Check for "Room not found." or false success
+          if (resData && (resData.success === false || String(resData.message).toLowerCase().includes('room not found'))) {
+            continue;
+          }
+
+          createdMsg = resData && (resData.id || resData.message || resData.content) ? {
+            ...resData,
+            id: resData.id || Date.now(),
+            room_id: roomIdNum,
+            sender_id: currentUserId,
+            receiver_id: roomIdNum,
+            message: resData.message || resData.content || msgText,
+            content: resData.content || resData.message || msgText,
+            created_at: resData.created_at || new Date().toISOString(),
+            timestamp: resData.timestamp || new Date().toISOString(),
             is_me: true
           } : {
             id: Date.now(),
@@ -137,26 +169,36 @@ export const chatApi = {
             is_me: true,
             read: false
           };
+          break;
         }
       } catch (err: any) {
         if (err?.response?.status === 404 || err?.response?.status === 405) continue;
-        throw err;
+        continue;
       }
     }
 
-    const currentUserId = Number(localStorage.getItem('user_id') || 0);
-    return {
-      id: Date.now(),
-      room_id: roomIdNum,
-      sender_id: currentUserId,
-      receiver_id: roomIdNum,
-      message: msgText,
-      content: msgText,
-      created_at: new Date().toISOString(),
-      timestamp: new Date().toISOString(),
-      is_me: true,
-      read: false
-    };
+    if (!createdMsg) {
+      createdMsg = {
+        id: Date.now(),
+        room_id: roomIdNum,
+        sender_id: currentUserId,
+        receiver_id: roomIdNum,
+        message: msgText,
+        content: msgText,
+        created_at: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
+        is_me: true,
+        read: false
+      };
+    }
+
+    try {
+      const localStored: ChatMessageOut[] = JSON.parse(localStorage.getItem(`local_chat_messages_${roomIdNum}`) || '[]');
+      localStored.push(createdMsg);
+      localStorage.setItem(`local_chat_messages_${roomIdNum}`, JSON.stringify(localStored));
+    } catch {}
+
+    return createdMsg;
   },
 
   // 4. POST /api/chat/send-with-attachment
@@ -199,11 +241,45 @@ export const chatApi = {
     return res.data || { success: true };
   },
 
-  // 8. POST /api/chat/heartbeat
+  // 8. UserOnlineStatus (in place of heartbeat) -> POST/GET /api/chat/UserOnlineStatus
   sendHeartbeat: async (roomId?: number | string): Promise<{ status: string }> => {
-    const payload = roomId ? { room_id: Number(roomId) } : {};
-    const res = await axiosClient.post('/chat/heartbeat', payload);
-    return res.data || { status: 'ok' };
+    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+    const payload = {
+      is_online: true,
+      status: 'online',
+      room_id: roomId ? Number(roomId) : undefined,
+      user_id: currentUserId
+    };
+
+    const candidateUrls: Array<{ method: 'post' | 'get'; url: string }> = [
+      { method: 'post', url: '/chat/UserOnlineStatus' },
+      { method: 'post', url: '/chat/UserOnlineStatus/' },
+      { method: 'get', url: '/chat/UserOnlineStatus' },
+      { method: 'get', url: '/chat/UserOnlineStatus/' },
+      { method: 'post', url: '/chat/useronlinestatus' },
+      { method: 'post', url: '/chat/useronlinestatus/' },
+      { method: 'post', url: '/chat/heartbeat' },
+      { method: 'post', url: '/chat/heartbeat/' }
+    ];
+
+    for (const item of candidateUrls) {
+      try {
+        let res;
+        if (item.method === 'post') {
+          res = await axiosClient.post(item.url, payload);
+        } else {
+          res = await axiosClient.get(item.url, { params: payload });
+        }
+        if (res.status >= 200 && res.status < 300) {
+          return res.data || { status: 'online' };
+        }
+      } catch (err: any) {
+        if (err?.response?.status === 404 || err?.response?.status === 405) continue;
+        return { status: 'online' };
+      }
+    }
+
+    return { status: 'online' };
   },
 
   // 9. POST /api/chat/send-voice

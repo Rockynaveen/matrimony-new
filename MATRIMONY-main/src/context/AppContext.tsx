@@ -248,7 +248,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
     try {
       const saved = localStorage.getItem('local_user_notifications');
-      return saved ? JSON.parse(saved) : [];
+      if (saved) {
+        const parsed: NotificationItem[] = JSON.parse(saved);
+        const cleaned = parsed.filter(n =>
+          !n.message?.includes('A verified member sent you') &&
+          !n.title?.includes('Interest Sent!') &&
+          !n.message?.includes('You expressed interest in')
+        );
+        localStorage.setItem('local_user_notifications', JSON.stringify(cleaned));
+        return cleaned;
+      }
+      return [];
     } catch {
       return [];
     }
@@ -258,7 +268,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const saved = localStorage.getItem('local_user_notifications');
       const list: NotificationItem[] = saved ? JSON.parse(saved) : [];
-      return list.filter(n => !n.read).length;
+      return list.filter(n =>
+        !n.message?.includes('A verified member sent you') &&
+        !n.title?.includes('Interest Sent!') &&
+        !n.message?.includes('You expressed interest in') &&
+        !n.read
+      ).length;
     } catch {
       return 0;
     }
@@ -803,6 +818,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     link?: string;
     avatar?: string;
   }) => {
+    // Senders do NOT get incoming notifications for sending interest
+    if (
+      item.title === 'Interest Sent!' ||
+      item.message.includes('A verified member sent you') ||
+      item.message.includes('You expressed interest in')
+    ) {
+      return;
+    }
+
     const newNotif: NotificationItem = {
       id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       title: item.title,

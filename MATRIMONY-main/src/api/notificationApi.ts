@@ -78,11 +78,20 @@ export const notificationApi = {
               })
             : 'Just now';
 
+          let messageText = item.message || item.text || item.content || '';
+          const senderName = item.sender_name || item.from_user_name || item.sender_first_name || item.first_name;
+
+          if (senderName && (messageText.toLowerCase().includes('a verified member sent you') || messageText.toLowerCase().includes('sent you an interest'))) {
+            messageText = `${senderName} sent you an interest request.`;
+          } else if (messageText.toLowerCase().includes('a verified member sent you an interest')) {
+            messageText = `A verified member sent you an interest request.`;
+          }
+
           return {
             id: String(item.id || `notif-${index}`),
             category,
             title: item.title || 'Notification',
-            message: item.message || item.text || item.content || '',
+            message: messageText,
             timestamp: formattedTimestamp,
             read: Boolean(item.is_read ?? item.read ?? false),
             link: item.link || item.url || undefined,

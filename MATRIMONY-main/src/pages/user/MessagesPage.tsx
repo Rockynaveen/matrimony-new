@@ -43,7 +43,7 @@ import {
   useChatHeartbeat,
   useActiveCall
 } from '../../hooks/useChat';
-import { useRecommendations, useShortlist } from '../../hooks/useMatching';
+import { useRecommendations, useShortlist, useReceivedInterests, useSentInterests } from '../../hooks/useMatching';
 import type { ChatMessageOut, ConversationOut } from '../../types/chat.types';
 
 export const MessagesPage: React.FC = () => {
@@ -51,13 +51,15 @@ export const MessagesPage: React.FC = () => {
   const { currentUser, showToast } = useApp();
   const navigate = useNavigate();
 
-  // 1. Remote API Conversations List Query
+  // 1. Remote API Conversations List Query & Interests Query
   const { data: remoteConversations, isLoading: isLoadingConversations, refetch: refetchConversations } = useConversations();
   const { data: recommendations } = useRecommendations();
   const { data: shortlist } = useShortlist();
+  const { data: receivedInterests } = useReceivedInterests();
+  const { data: sentInterests } = useSentInterests();
 
   // Map API Conversations
-  const conversationsList = (remoteConversations || []).map(conv => {
+  const remoteConvsMapped = (remoteConversations || []).map(conv => {
     const other = conv.other_user || {};
     return {
       id: String(conv.room_id || conv.id),
@@ -77,6 +79,51 @@ export const MessagesPage: React.FC = () => {
       last_message_time: conv.last_message_time || ''
     };
   });
+
+  // Map Accepted Interests as Active Chat Contacts for Both Users
+  const acceptedInterestsList = [
+    ...(receivedInterests || []).filter(i => (i.status || '').toLowerCase() === 'accepted').map(i => ({
+      id: String(i.from_user || i.id),
+      user_id: i.from_user,
+      name: `${i.first_name || ''} ${i.last_name || ''}`.trim() || `Member #${i.from_user}`,
+      profileImage: i.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+      verified: true,
+      age: i.age || 26,
+      height: "5'6\"",
+      profession: i.occupation || 'Professional',
+      city: i.city || 'India',
+      religion: i.religion || 'Hindu',
+      caste: i.caste || 'Caste',
+      online: true,
+      matchPercentage: 92,
+      last_message: 'Interest Accepted - Connected',
+      last_message_time: 'Just now'
+    })),
+    ...(sentInterests || []).filter(i => (i.status || '').toLowerCase() === 'accepted').map(i => ({
+      id: String(i.to_user || i.id),
+      user_id: i.to_user,
+      name: `${i.first_name || ''} ${i.last_name || ''}`.trim() || `Member #${i.to_user}`,
+      profileImage: i.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+      verified: true,
+      age: i.age || 26,
+      height: "5'6\"",
+      profession: i.occupation || 'Professional',
+      city: i.city || 'India',
+      religion: i.religion || 'Hindu',
+      caste: i.caste || 'Caste',
+      online: true,
+      matchPercentage: 92,
+      last_message: 'Interest Accepted - Connected',
+      last_message_time: 'Just now'
+    }))
+  ];
+
+  // Merge avoiding duplicates
+  const existingIds = new Set(remoteConvsMapped.map(c => String(c.id)));
+  const existingUserIds = new Set(remoteConvsMapped.map(c => String(c.user_id)));
+  const additionalAccepted = acceptedInterestsList.filter(a => !existingIds.has(String(a.id)) && !existingUserIds.has(String(a.user_id)));
+
+  const conversationsList = [...remoteConvsMapped, ...additionalAccepted];
 
   const selectedProfileId = id || conversationsList[0]?.id || '';
   const numericRoomId = Number(selectedProfileId) || 0;

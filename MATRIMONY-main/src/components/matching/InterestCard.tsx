@@ -27,6 +27,14 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
   const navigate = useNavigate();
   const { showToast, setActiveChatUserId, addNotification } = useApp();
 
+  const [localStatus, setLocalStatus] = React.useState<string>(interest.status || 'Pending');
+
+  React.useEffect(() => {
+    if (interest.status) {
+      setLocalStatus(interest.status);
+    }
+  }, [interest.status]);
+
   const updateInterestMutation = useUpdateInterest();
   const deleteInterestMutation = useDeleteInterest();
   const ignoreMutation = useAddToIgnore();
@@ -44,6 +52,7 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
   };
 
   const handleUpdateStatus = async (status: 'Accepted' | 'Rejected') => {
+    setLocalStatus(status);
     try {
       await updateInterestMutation.mutateAsync({
         interestId: interest.id,
@@ -56,15 +65,19 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
       if (status === 'Accepted') {
         addNotification({
           title: 'Interest Accepted!',
-          message: `${partnerName} accepted your interest expression! Open chat to start talking.`,
+          message: type === 'received'
+            ? `You accepted ${partnerName}'s interest expression! Open chat to start talking.`
+            : `${partnerName} accepted your interest expression! Open chat to start talking.`,
           category: 'Interests',
           link: `/messages/${otherUserId}`,
           avatar: interest.profile_photo
         });
       } else {
         addNotification({
-          title: 'Interest Update',
-          message: `${partnerName} declined your interest expression.`,
+          title: 'Interest Declined',
+          message: type === 'received'
+            ? `You declined ${partnerName}'s interest expression.`
+            : `${partnerName} declined your interest expression.`,
           category: 'Interests',
           link: '/matching/interests',
           avatar: interest.profile_photo
@@ -73,6 +86,7 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
 
       showToast(`Interest expression ${status.toLowerCase()}!`);
     } catch (err: any) {
+      setLocalStatus(interest.status || 'Pending');
       showToast(err?.message || `Failed to update interest to ${status}`);
     }
   };
@@ -89,7 +103,6 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
   };
 
   const handleStartChat = () => {
-    // If sent, the other user is to_user. If received, the other user is from_user.
     const otherUserId = type === 'sent' ? interest.to_user : interest.from_user;
     setActiveChatUserId(String(otherUserId));
     navigate(`/messages/${otherUserId}`);
@@ -102,7 +115,7 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
     Withdrawn: 'bg-stone-50 text-stone-600 border-stone-200'
   };
 
-  const statusText = interest.status || 'Pending';
+  const statusText = localStatus || interest.status || 'Pending';
   const displayStatusColor = statusColors[statusText] || 'bg-stone-50 text-stone-700';
 
   const defaultPhoto = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600';

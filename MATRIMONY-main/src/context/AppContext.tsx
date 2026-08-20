@@ -245,8 +245,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       sentAt: '1 day ago'
     }
   ]);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('local_user_notifications');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [unreadCount, setUnreadCount] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('local_user_notifications');
+      const list: NotificationItem[] = saved ? JSON.parse(saved) : [];
+      return list.filter(n => !n.read).length;
+    } catch {
+      return 0;
+    }
+  });
+
+  const saveNotificationsToStorage = (list: NotificationItem[]) => {
+    try {
+      localStorage.setItem('local_user_notifications', JSON.stringify(list));
+    } catch {}
+  };
+
   const [searchFilter, setSearchFilter] = useState<SearchFilterState>(initialSearchFilter);
   const [activeChatUserId, setActiveChatUserId] = useState<string | null>('MAT-1001');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -263,16 +286,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
     try {
-      const [data, apiCount] = await Promise.all([
+      const [remoteData, apiCount] = await Promise.all([
         notificationApi.getNotifications(),
         notificationApi.getUnreadCount()
       ]);
-      setNotifications(data);
-      const calculatedUnread = data.filter(n => !n.read).length;
-      setUnreadCount(apiCount > 0 ? apiCount : calculatedUnread);
+
+      setNotifications(prev => {
+        if (!remoteData || remoteData.length === 0) {
+          return prev;
+        }
+        const existingIds = new Set(prev.map(n => n.id));
+        const newRemoteItems = remoteData.filter(n => !existingIds.has(n.id));
+        const merged = [...newRemoteItems, ...prev];
+        saveNotificationsToStorage(merged);
+        return merged;
+      });
+
+      setUnreadCount(prev => {
+        const calculated = notifications.filter(n => !n.read).length;
+        return apiCount > 0 ? apiCount : calculated;
+      });
     } catch {
-      setNotifications([]);
-      setUnreadCount(0);
+      // Keep existing local notifications intact
     }
   };
 
@@ -713,13 +748,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const markNotificationRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications(prev => {
+      const updated = prev.map(n => n.id === id ? { ...n, read: true } : n);
+      saveNotificationsToStorage(updated);
+      return updated;
+    });
     setUnreadCount(prev => Math.max(0, prev - 1));
     notificationApi.markAsRead(id).catch(() => {});
   };
 
   const markAllNotificationsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications(prev => {
+      const updated = prev.map(n => ({ ...n, read: true }));
+      saveNotificationsToStorage(updated);
+      return updated;
+    });
     setUnreadCount(0);
     try {
       await notificationApi.markAllAsRead();
@@ -727,11 +770,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteNotification = (id: string) => {
+    setNotifications(prev => {
+      const updated = prev.filter(n => n.id !== id);
+      saveNotificationsToStorage(updated);
+      return updated;
+    });
     const target = notifications.find(n => n.id === id);
     if (target && !target.read) {
       setUnreadCount(prev => Math.max(0, prev - 1));
     }
-    setNotifications(prev => prev.filter(n => n.id !== id));
     notificationApi.deleteNotification(id).catch(() => {});
   };
 
@@ -752,7 +799,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       link: item.link,
       avatar: item.avatar
     };
-    setNotifications(prev => [newNotif, ...prev]);
+    setNotifications(prev => {
+      const updated = [newNotif, ...prev];
+      saveNotificationsToStorage(updated);
+      return updated;
+    });
     setUnreadCount(prev => prev + 1);
   };
 

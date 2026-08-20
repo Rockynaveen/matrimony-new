@@ -55,8 +55,32 @@ export const matchingApi = {
   },
 
   getSentInterests: async (): Promise<InterestResponseSchema[]> => {
-    const res = await axiosClient.get<InterestResponseSchema[]>('/matching/interest/sent');
-    const rawList = Array.isArray(res.data) ? res.data : [];
+    const candidateUrls = [
+      '/matching/interest/sent',
+      '/matching/interest/sent/',
+      '/matching/interests/sent',
+      '/matching/interests/sent/',
+      '/matching/sent-interests',
+      '/matching/sent-interests/'
+    ];
+    let rawList: InterestResponseSchema[] = [];
+
+    for (const url of candidateUrls) {
+      try {
+        const res = await axiosClient.get(url);
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          rawList = res.data;
+          break;
+        } else if (res.data && Array.isArray(res.data.results) && res.data.results.length > 0) {
+          rawList = res.data.results;
+          break;
+        } else if (Array.isArray(res.data)) {
+          rawList = res.data;
+        }
+      } catch {
+        continue;
+      }
+    }
     
     try {
       const deletedSet = new Set(JSON.parse(localStorage.getItem('local_deleted_interest_ids') || '[]'));
@@ -66,10 +90,11 @@ export const matchingApi = {
       return rawList
         .filter(item => !deletedSet.has(item.id))
         .map(item => {
-          if (acceptedSet.has(item.id) || acceptedSet.has(item.to_user)) {
+          const itemStatus = String(item.status || '').toLowerCase();
+          if (itemStatus === 'accepted' || acceptedSet.has(item.id) || acceptedSet.has(item.to_user)) {
             return { ...item, status: 'Accepted' };
           }
-          if (rejectedSet.has(item.id) || rejectedSet.has(item.to_user)) {
+          if (itemStatus === 'rejected' || itemStatus === 'declined' || rejectedSet.has(item.id) || rejectedSet.has(item.to_user)) {
             return { ...item, status: 'Rejected' };
           }
           return item;
@@ -80,8 +105,32 @@ export const matchingApi = {
   },
 
   getReceivedInterests: async (): Promise<InterestResponseSchema[]> => {
-    const res = await axiosClient.get<InterestResponseSchema[]>('/matching/interest/received');
-    const rawList = Array.isArray(res.data) ? res.data : [];
+    const candidateUrls = [
+      '/matching/interest/received',
+      '/matching/interest/received/',
+      '/matching/interests/received',
+      '/matching/interests/received/',
+      '/matching/received-interests',
+      '/matching/received-interests/'
+    ];
+    let rawList: InterestResponseSchema[] = [];
+
+    for (const url of candidateUrls) {
+      try {
+        const res = await axiosClient.get(url);
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          rawList = res.data;
+          break;
+        } else if (res.data && Array.isArray(res.data.results) && res.data.results.length > 0) {
+          rawList = res.data.results;
+          break;
+        } else if (Array.isArray(res.data)) {
+          rawList = res.data;
+        }
+      } catch {
+        continue;
+      }
+    }
 
     try {
       const deletedSet = new Set(JSON.parse(localStorage.getItem('local_deleted_interest_ids') || '[]'));
@@ -91,10 +140,11 @@ export const matchingApi = {
       return rawList
         .filter(item => !deletedSet.has(item.id))
         .map(item => {
-          if (acceptedSet.has(item.id) || acceptedSet.has(item.from_user)) {
+          const itemStatus = String(item.status || '').toLowerCase();
+          if (itemStatus === 'accepted' || acceptedSet.has(item.id) || acceptedSet.has(item.from_user)) {
             return { ...item, status: 'Accepted' };
           }
-          if (rejectedSet.has(item.id) || rejectedSet.has(item.from_user)) {
+          if (itemStatus === 'rejected' || itemStatus === 'declined' || rejectedSet.has(item.id) || rejectedSet.has(item.from_user)) {
             return { ...item, status: 'Rejected' };
           }
           return item;
@@ -127,12 +177,16 @@ export const matchingApi = {
       candidateUrls = [
         { method: 'post', url: `/matching/interest/${interestId}/accept/` },
         { method: 'post', url: `/matching/interest/${interestId}/accept` },
+        { method: 'post', url: `/matching/interests/${interestId}/accept/` },
+        { method: 'post', url: `/matching/interests/${interestId}/accept` },
         { method: 'post', url: `/matching/interest/${interestId}/respond` },
         { method: 'post', url: `/matching/interest/${interestId}/respond/` },
         { method: 'put', url: `/matching/interest/${interestId}/` },
         { method: 'patch', url: `/matching/interest/${interestId}/` },
         { method: 'put', url: `/matching/interest/${interestId}` },
         { method: 'patch', url: `/matching/interest/${interestId}` },
+        { method: 'put', url: `/matching/interests/${interestId}/` },
+        { method: 'patch', url: `/matching/interests/${interestId}/` },
         { method: 'put', url: `/matching/interest/${interestId}/update` },
         { method: 'post', url: `/matching/interest/accept/${interestId}` }
       ];
@@ -140,6 +194,8 @@ export const matchingApi = {
       candidateUrls = [
         { method: 'post', url: `/matching/interest/${interestId}/decline/` },
         { method: 'post', url: `/matching/interest/${interestId}/decline` },
+        { method: 'post', url: `/matching/interests/${interestId}/decline/` },
+        { method: 'post', url: `/matching/interests/${interestId}/decline` },
         { method: 'post', url: `/matching/interest/${interestId}/reject/` },
         { method: 'post', url: `/matching/interest/${interestId}/reject` },
         { method: 'post', url: `/matching/interest/${interestId}/respond` },

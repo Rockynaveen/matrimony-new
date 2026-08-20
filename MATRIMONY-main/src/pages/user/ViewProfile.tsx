@@ -29,6 +29,7 @@ import {
   useAddToIgnore,
   useBlockProfile
 } from '../../hooks/useMatching';
+import { useCreatePrivacyReport, useCreatePhotoRequest } from '../../hooks/usePrivacyReports';
 
 export const ViewProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -96,6 +97,46 @@ export const ViewProfile: React.FC = () => {
       navigate('/matches');
     } catch (err: any) {
       showToast(err?.message || 'Failed to block profile');
+    }
+  };
+
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('Fake Profile / Impersonation');
+  const [reportDescription, setReportDescription] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const createReportMutation = useCreatePrivacyReport();
+
+  const handleReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setIsSubmittingReport(true);
+      await createReportMutation.mutateAsync({
+        reporter_id: 0,
+        reported_user_id: numericUserId,
+        reason: reportReason,
+        description: reportDescription
+      });
+      showToast(`✓ Report submitted for ${profile.name}. Our safety team is reviewing it.`);
+      setIsReportModalOpen(false);
+      setReportDescription('');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to submit report.');
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
+  const createPhotoRequestMutation = useCreatePhotoRequest();
+
+  const handleRequestPhotoAccess = async () => {
+    try {
+      await createPhotoRequestMutation.mutateAsync({
+        requester_id: 0,
+        profile_owner_id: numericUserId
+      });
+      showToast(`✓ Photo view request sent to ${profile.name}!`);
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to send photo access request.');
     }
   };
 
@@ -276,8 +317,22 @@ export const ViewProfile: React.FC = () => {
                   <MessageSquare className="h-4 w-4 mr-2" /> Start Chat
                 </Button>
 
-                <Button size="lg" variant="outline" onClick={() => showToast('Photo View Request sent to member!')}>
-                  <Lock className="h-4 w-4 mr-2 text-primary" /> Request Photo Access
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={handleRequestPhotoAccess}
+                  disabled={createPhotoRequestMutation.isPending}
+                >
+                  {createPhotoRequestMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Lock className="h-4 w-4 mr-2 text-primary" />
+                  )}
+                  Request Photo Access
+                </Button>
+
+                <Button size="lg" variant="outline" onClick={() => setIsReportModalOpen(true)} className="border-amber-300 text-amber-900 hover:bg-amber-50">
+                  <Flag className="h-4 w-4 mr-2 text-amber-600" /> Report Profile
                 </Button>
               </div>
             ) : (
@@ -451,6 +506,80 @@ export const ViewProfile: React.FC = () => {
             Close Video
           </Button>
         </div>
+      </Modal>
+
+      {/* Privacy & Safety Report Modal (POST /api/privacy/reports/) */}
+      <Modal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} title={`Report Profile: ${profile.name}`}>
+        <form onSubmit={handleReportSubmit} className="space-y-4 text-xs font-sans">
+          
+          <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-amber-900 text-[11px]">
+            <span className="font-bold block">100% Confidential Report</span>
+            <span>Your report will be submitted directly to safety moderation via <code className="font-mono text-amber-950">POST /api/privacy/reports/</code>. Your identity is protected.</span>
+          </div>
+
+          <div>
+            <label className="font-bold text-stone-800 uppercase tracking-wider block mb-1">
+              Reason for Reporting
+            </label>
+            <select
+              value={reportReason}
+              onChange={e => setReportReason(e.target.value)}
+              className="w-full bg-white border border-stone-200 rounded-xl p-3 text-stone-900 font-bold focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/40"
+            >
+              <option value="Fake Profile / Impersonation">Fake Profile / Impersonation</option>
+              <option value="Inappropriate Messages / Offensive Content">Inappropriate Messages / Offensive Content</option>
+              <option value="Harassment / Stalking">Harassment / Stalking</option>
+              <option value="Commercial Spam / Financial Scam">Commercial Spam / Financial Scam</option>
+              <option value="Privacy / Photo Violation">Privacy / Photo Violation</option>
+              <option value="Other Safety Concern">Other Safety Concern</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="font-bold text-stone-800 uppercase tracking-wider block mb-1">
+              Detailed Description (Optional)
+            </label>
+            <textarea
+              rows={4}
+              value={reportDescription}
+              onChange={e => setReportDescription(e.target.value)}
+              placeholder={`Provide details regarding your report for ${profile.name}...`}
+              className="w-full bg-white border border-stone-200 rounded-xl p-3 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/40 resize-none font-medium"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsReportModalOpen(false)}
+              className="font-bold border-stone-300"
+            >
+              Cancel
+            </Button>
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isSubmittingReport}
+              className="font-bold shadow-md bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isSubmittingReport ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  Submitting Report...
+                </>
+              ) : (
+                <>
+                  <Flag className="h-3.5 w-3.5 mr-1.5" />
+                  Submit Safety Report
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
       </Modal>
 
     </div>

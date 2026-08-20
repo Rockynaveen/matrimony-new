@@ -152,17 +152,32 @@ export const Register: React.FC = () => {
     try {
       setIsSubmitting(true);
       // Decode the ID token payload (JWT) to extract required fields for registration
-      const tokenPayload = JSON.parse(atob(idToken.split('.')[1]));
-      // Fallback handling for name fields if given_name/family_name are missing
-      const fullName: string = tokenPayload.name || '';
-      const nameParts = fullName.split(' ');
-      const firstName = tokenPayload.given_name || nameParts[0] || '';
-      const lastName = tokenPayload.family_name || nameParts.slice(1).join(' ') || '';
+      const tokenPayload = decodeGoogleIdToken(idToken);
+      const email = tokenPayload?.email || '';
+      const fullName: string = tokenPayload?.name || `${tokenPayload?.given_name || ''} ${tokenPayload?.family_name || ''}`.trim();
+      const emailName = extractNameFromEmail(email);
+      const resolvedName = (fullName && !isGenericName(fullName)) ? fullName : emailName;
+
+      const nameParts = resolvedName.split(' ');
+      const firstName = tokenPayload?.given_name || nameParts[0] || '';
+      const lastName = tokenPayload?.family_name || nameParts.slice(1).join(' ') || '';
+
+      if (resolvedName && !isGenericName(resolvedName)) {
+        localStorage.setItem('logged_in_name', resolvedName);
+      }
+      if (email) {
+        localStorage.setItem('logged_in_email', email);
+      }
+      if (tokenPayload?.picture) {
+        localStorage.setItem('logged_in_avatar', tokenPayload.picture);
+        updateCurrentUserAvatar(tokenPayload.picture);
+      }
+
       await googleRegisterUser({
         first_name: firstName,
         last_name: lastName,
-        email: tokenPayload.email,
-        google_id: tokenPayload.sub
+        email: email,
+        google_id: tokenPayload?.sub || 'google_user'
       });
 
       // Always navigate to basic profile completion page after Google Registration

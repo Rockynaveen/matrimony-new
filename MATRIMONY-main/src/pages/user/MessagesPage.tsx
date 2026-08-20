@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
+import { useApp, extractNameFromEmail, isGenericName } from '../../context/AppContext';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
@@ -269,7 +269,11 @@ export const MessagesPage: React.FC = () => {
           <div className="p-3 bg-stone-100/90 border-t border-stone-200/80 flex items-center justify-between text-xs text-stone-600 font-semibold">
             <div className="flex items-center gap-2">
               <img src={currentUser.avatar} alt="" className="h-7 w-7 rounded-full object-cover ring-1 ring-stone-300" />
-              <span className="truncate text-stone-800 font-bold">{currentUser.name}</span>
+              <span className="truncate text-stone-800 font-bold">
+                {currentUser.name && !isGenericName(currentUser.name)
+                  ? currentUser.name
+                  : extractNameFromEmail(currentUser.email || localStorage.getItem('logged_in_email'))}
+              </span>
             </div>
             <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
               Active Member

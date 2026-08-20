@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useApp, extractNameFromEmail } from '../../context/AppContext';
+import { useApp, extractNameFromEmail, isGenericName } from '../../context/AppContext';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { useSentInterests, useReceivedInterests } from '../../hooks/useMatching';
@@ -32,9 +32,9 @@ export const Navbar: React.FC = () => {
   const { data: sentInterests } = useSentInterests();
   const { data: receivedInterests } = useReceivedInterests();
 
-  const displayName = (currentUser.name && currentUser.name !== 'User')
+  const displayName = (currentUser.name && !isGenericName(currentUser.name))
     ? currentUser.name
-    : extractNameFromEmail(currentUser.email);
+    : extractNameFromEmail(currentUser.email || localStorage.getItem('logged_in_email'));
 
   const totalInterestsCount = (sentInterests?.length || 0) + (receivedInterests?.length || 0);
 

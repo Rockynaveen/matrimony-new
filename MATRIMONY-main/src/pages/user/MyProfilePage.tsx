@@ -19,7 +19,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { useProfile } from '../../hooks/useProfile';
-import { useApp } from '../../context/AppContext';
+import { useApp, extractNameFromEmail, isGenericName } from '../../context/AppContext';
 
 export const MyProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -30,9 +30,21 @@ export const MyProfilePage: React.FC = () => {
   const localDraftRaw = localStorage.getItem('user_profile_draft');
   const localDraft = localDraftRaw ? JSON.parse(localDraftRaw) : null;
 
+  const apiFullName = (apiProfile as any)?.first_name ? `${(apiProfile as any).first_name} ${(apiProfile as any).last_name || ''}`.trim() : '';
+  const emailName = extractNameFromEmail(currentUser.email || (apiProfile as any)?.email || localStorage.getItem('logged_in_email'));
+
+  let resolvedProfileName = '';
+  if (currentUser.name && !isGenericName(currentUser.name)) {
+    resolvedProfileName = currentUser.name;
+  } else if (apiFullName && !isGenericName(apiFullName)) {
+    resolvedProfileName = apiFullName;
+  } else {
+    resolvedProfileName = emailName;
+  }
+
   // Synthesize displayed profile values from API -> localDraft -> currentUser context
   const profile = {
-    name: currentUser.name || ((apiProfile as any)?.first_name ? `${(apiProfile as any).first_name} ${(apiProfile as any).last_name || ''}`.trim() : 'User Profile'),
+    name: resolvedProfileName,
     email: currentUser.email || (apiProfile as any)?.email || '',
     avatar: apiProfile?.profile_photo || localDraft?.profile_photo || currentUser.avatar || '',
     about_me: apiProfile?.about_me || localDraft?.about_me || 'No description provided yet. Click edit to add your bio.',
@@ -96,7 +108,7 @@ export const MyProfilePage: React.FC = () => {
                 />
               ) : (
                 <div className="h-28 w-28 sm:h-32 sm:w-32 rounded-3xl bg-amber-100/20 text-[#D4AF37] border-2 border-[#D4AF37] flex items-center justify-center font-bold text-3xl shadow-xl">
-                  {profile.name && profile.name !== 'User Profile' ? profile.name.charAt(0).toUpperCase() : <User className="h-12 w-12" />}
+                  {profile.name && !isGenericName(profile.name) ? profile.name.charAt(0).toUpperCase() : <User className="h-12 w-12" />}
                 </div>
               )}
               <button

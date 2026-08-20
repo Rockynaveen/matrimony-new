@@ -113,3 +113,42 @@ export interface ProfileApiResponse {
   profile_completion_percentage: number;
   detailed_profile?: DetailedProfileRequest;
 }
+
+export interface UserBasicOut {
+  id: number | string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  profile_photo?: string;
+}
+
+export interface UserReportOut {
+  id: number;
+  reporter?: UserBasicOut;
+  reported_user?: UserBasicOut;
+  reason: string;
+  description?: string | null;
+  is_resolved: boolean;
+  created_at: string;
+}
+
+export interface UserReportCreateIn {
+  reporter_id?: number;
+  reported_user_id: number;
+  reason: string;
+  description?: string;
+}
+
+export interface PhotoRequestOut {
+  id: number;
+  requester?: UserBasicOut;
+  profile_owner?: UserBasicOut;
+  status: 'pending' | 'approved' | 'rejected' | string;
+  created_at: string;
+  responded_at?: string | null;
+}
+
+export interface PhotoAccessRequestCreateIn {
+  requester_id?: number;
+  profile_owner_id: number;
+}

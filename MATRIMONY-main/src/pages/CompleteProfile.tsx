@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useApp, extractNameFromEmail, isGenericName } from '../context/AppContext';
 import { useCreateProfile } from '../hooks/useProfile';
 import type { DetailedProfileRequest } from '../types/apiTypes';
 import type { ProfileCreateRequest } from '../types/profile.types';
@@ -524,7 +524,11 @@ export const CompleteProfile: React.FC = () => {
                     <div className="flex items-center gap-3 pb-3 border-b border-stone-200">
                       <img src={formData.profile_photo} className="h-12 w-12 rounded-full object-cover ring-2 ring-[#8B1E3F]/30" alt="" />
                       <div>
-                        <h4 className="font-serif font-bold text-base text-stone-900">{currentUser.name || 'Matrimonial Member'}</h4>
+                        <h4 className="font-serif font-bold text-base text-stone-900">
+                          {currentUser.name && !isGenericName(currentUser.name)
+                            ? currentUser.name
+                            : extractNameFromEmail(currentUser.email)}
+                        </h4>
                         <p className="text-stone-500">{formData.occupation} • {formData.city}, {formData.state}</p>
                       </div>
                     </div>

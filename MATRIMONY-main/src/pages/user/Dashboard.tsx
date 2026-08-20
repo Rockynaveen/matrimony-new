@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
+import { useApp, extractNameFromEmail, isGenericName } from '../../context/AppContext';
 import { useProfile } from '../../hooks/useProfile';
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
@@ -29,6 +29,10 @@ export const Dashboard: React.FC = () => {
   const recommendedMatches = profiles.slice(0, 3);
   const pendingInterests = interests.filter(i => i.status === 'pending');
 
+  const displayName = (currentUser.name && !isGenericName(currentUser.name))
+    ? currentUser.name
+    : extractNameFromEmail(currentUser.email || localStorage.getItem('logged_in_email'));
+
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8 select-none">
       
@@ -41,12 +45,12 @@ export const Dashboard: React.FC = () => {
               {currentUser.avatar || apiProfile?.profile_photo ? (
                 <img
                   src={apiProfile?.profile_photo || currentUser.avatar}
-                  alt={currentUser.name}
+                  alt={displayName}
                   className="h-16 w-16 sm:h-20 sm:w-20 rounded-3xl object-cover ring-4 ring-[#8B1E3F]/20"
                 />
               ) : (
                 <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-3xl bg-[#8B1E3F] text-white flex items-center justify-center font-bold text-xl ring-4 ring-[#8B1E3F]/20">
-                  {currentUser.name && currentUser.name !== 'User' ? currentUser.name.charAt(0).toUpperCase() : <UserCheck className="h-8 w-8" />}
+                  {displayName && !isGenericName(displayName) ? displayName.charAt(0).toUpperCase() : <UserCheck className="h-8 w-8" />}
                 </div>
               )}
               <span className="absolute -bottom-1 -right-1 bg-emerald-600 text-white p-1 rounded-full ring-2 ring-white">
@@ -65,7 +69,7 @@ export const Dashboard: React.FC = () => {
               </div>
 
               <h1 className="font-serif text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
-                Welcome back, {currentUser.name ? currentUser.name.split(' ')[0] : 'User'}! 👋
+                Welcome back, {displayName.split(' ')[0]}! 👋
               </h1>
 
               <p className="text-xs sm:text-sm text-stone-600 font-medium">

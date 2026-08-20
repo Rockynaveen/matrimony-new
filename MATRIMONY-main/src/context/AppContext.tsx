@@ -12,6 +12,7 @@ import { MOCK_PROFILES } from '../data/mockProfiles';
 import { MOCK_NOTIFICATIONS } from '../data/mockNotifications';
 import { authApi } from '../api/authApi';
 import { googleAuthApi } from '../api/googleAuthApi';
+import { profileApi } from '../api/profileApi';
 import { matchingApi } from '../api/matchingApi';
 import { notificationApi } from '../api/notificationApi';
 import { queryClient } from '../lib/queryClient';
@@ -108,24 +109,68 @@ export const markUserProfileCompleted = (email?: string): void => {
   }
 };
 
+export const isGenericName = (name?: string | null): boolean => {
+  if (!name) return true;
+  const lower = name.trim().toLowerCase();
+  return (
+    lower === '' ||
+    lower === 'user' ||
+    lower === 'member' ||
+    lower === 'user profile' ||
+    lower === 'matrimonial member' ||
+    lower === 'verified member' ||
+    lower === 'null' ||
+    lower === 'undefined'
+  );
+};
+
+export const decodeGoogleIdToken = (idToken?: string | null): { name?: string; given_name?: string; family_name?: string; email?: string; picture?: string; sub?: string } | null => {
+  if (!idToken) return null;
+  try {
+    const parts = idToken.split('.');
+    if (parts.length < 2) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (err) {
+    console.warn('[AppContext] Failed to decode Google ID Token:', err);
+    return null;
+  }
+};
+
 export const extractNameFromEmail = (email: string | undefined | null): string => {
-  if (!email || !email.includes('@')) return 'Member';
+  if (!email || !email.includes('@')) return 'User';
   const username = email.split('@')[0];
-  const words = username
-    .replace(/[._-]/g, ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/[0-9]/g, '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  
-  if (words.length === 0) return 'Member';
+  if (!username) return 'User';
+
+  // Replace separators with spaces
+  let cleaned = username.replace(/[._\-+]/g, ' ');
+
+  // If numbers exist, strip trailing digits if alphabetic chars remain
+  const alphabeticOnly = cleaned.replace(/[0-9]/g, '').trim();
+  const targetStr = alphabeticOnly.length >= 2 ? alphabeticOnly : cleaned;
+
+  // Handle camelCase / PascalCase
+  const expanded = targetStr.replace(/([a-z])([A-Z])/g, '$1 $2').trim();
+  const words = expanded.split(/\s+/).filter(Boolean);
+
+  if (words.length === 0) return 'User';
 
   const formatted = words
     .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ');
 
-  return formatted || 'Member';
+  if (isGenericName(formatted)) {
+    return 'User';
+  }
+
+  return formatted || 'User';
 };
 
 const defaultEmptyUser: User = {
@@ -155,7 +200,7 @@ const getInitialUser = (): User => {
   })();
   const avatarUrl = loggedInAvatar || draftPhoto || '';
   const emailName = extractNameFromEmail(loggedInEmail);
-  const resolvedName = (loggedInName && loggedInName !== 'User') ? loggedInName : emailName;
+  const resolvedName = (loggedInName && !isGenericName(loggedInName)) ? loggedInName : emailName;
 
   if (localStorage.getItem('access_token')) {
     return {
@@ -286,14 +331,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         completion_percentage: isDoneLocally ? 100 : res.profile_completion_percentage
       });
       const storedName = localStorage.getItem('logged_in_name');
-      const storedEmail = localStorage.getItem('logged_in_email') || res.email || '';
+      const storedEmail = localStorage.getItem('logged_in_email') || res.email || currentUser.email || '';
       const emailName = extractNameFromEmail(storedEmail);
       const apiName = `${res.first_name || ''} ${res.last_name || ''}`.trim();
-      const finalName = (apiName && apiName !== 'User')
-        ? apiName
-        : ((storedName && storedName !== 'User') ? storedName : emailName);
       
-      if (finalName) {
+      let finalName = '';
+      if (apiName && !isGenericName(apiName)) {
+        finalName = apiName;
+      } else if (storedName && !isGenericName(storedName)) {
+        finalName = storedName;
+      } else if (currentUser.name && !isGenericName(currentUser.name)) {
+        finalName = currentUser.name;
+      } else {
+        finalName = emailName;
+      }
+      
+      if (finalName && !isGenericName(finalName)) {
         localStorage.setItem('logged_in_name', finalName);
       }
       if (storedEmail) {
@@ -319,9 +372,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (err?.status === 401 || err?.response?.status === 401) {
         logout();
       }
+      const emailName = extractNameFromEmail(currentUser.email || localStorage.getItem('logged_in_email'));
+      const fallbackName = (currentUser.name && !isGenericName(currentUser.name)) ? currentUser.name : emailName;
       return {
         id: '',
-        first_name: currentUser.name || 'User',
+        first_name: fallbackName,
         last_name: '',
         email: currentUser.email || '',
         phone: currentUser.phone || '',
@@ -354,7 +409,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const apiName = `${res.user?.first_name || ''} ${res.user?.last_name || ''}`.trim();
     const emailName = extractNameFromEmail(userEmail);
-    const finalName = (apiName && apiName !== 'User') ? apiName : emailName;
+    const finalName = (apiName && !isGenericName(apiName)) ? apiName : emailName;
 
     localStorage.setItem('logged_in_name', finalName);
     if (userEmail) {
@@ -411,14 +466,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const googleRegisterUser = async (payload: GoogleRegisterRequest): Promise<ProfileApiResponse> => {
     await googleAuthApi.googleRegister(payload);
-    const name = `${payload.first_name} ${payload.last_name || ''}`.trim();
-    localStorage.setItem('logged_in_name', name);
+    const fullNamePayload = `${payload.first_name || ''} ${payload.last_name || ''}`.trim();
+    const emailName = extractNameFromEmail(payload.email);
+    const finalName = (fullNamePayload && !isGenericName(fullNamePayload)) ? fullNamePayload : emailName;
+
+    localStorage.setItem('logged_in_name', finalName);
     localStorage.setItem('logged_in_email', payload.email);
     localStorage.setItem('login_method', 'google_register');
     setIsAuthenticated(true);
     setCurrentUser(prev => ({
       ...prev,
-      name,
+      name: finalName,
       email: payload.email
     }));
     setProfileStatus({
@@ -428,8 +486,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     return {
       id: 'PRO-NEW',
-      first_name: payload.first_name,
-      last_name: payload.last_name || '',
+      first_name: payload.first_name || finalName.split(' ')[0],
+      last_name: payload.last_name || finalName.split(' ').slice(1).join(' ') || '',
       email: payload.email,
       phone: '',
       gender: '',
@@ -441,20 +499,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const googleLoginUser = async (payload: GoogleLoginRequest): Promise<ProfileApiResponse> => {
-    const res = await googleAuthApi.googleLogin(payload);
-    let userEmail = res.user?.email || '';
-    if (res.user) {
-      const name = `${res.user.first_name || ''} ${res.user.last_name || ''}`.trim();
-      if (name) {
-        localStorage.setItem('logged_in_name', name);
-      }
-      if (res.user.email) {
-        localStorage.setItem('logged_in_email', res.user.email);
-        userEmail = res.user.email;
+    let googleName = '';
+    let googleEmail = '';
+    let googleAvatar = '';
+
+    if (payload.id_token) {
+      const decoded = decodeGoogleIdToken(payload.id_token);
+      if (decoded) {
+        if (decoded.name) {
+          googleName = decoded.name;
+        } else if (decoded.given_name) {
+          googleName = `${decoded.given_name} ${decoded.family_name || ''}`.trim();
+        }
+        if (decoded.email) googleEmail = decoded.email;
+        if (decoded.picture) googleAvatar = decoded.picture;
       }
     }
+
+    const res = await googleAuthApi.googleLogin(payload);
+    let userEmail = res.user?.email || googleEmail || localStorage.getItem('logged_in_email') || '';
+    const apiName = `${res.user?.first_name || ''} ${res.user?.last_name || ''}`.trim();
+    const storedName = localStorage.getItem('logged_in_name');
+    const emailName = extractNameFromEmail(userEmail);
+
+    let finalName = '';
+    if (apiName && !isGenericName(apiName)) {
+      finalName = apiName;
+    } else if (googleName && !isGenericName(googleName)) {
+      finalName = googleName;
+    } else if (storedName && !isGenericName(storedName)) {
+      finalName = storedName;
+    } else {
+      finalName = emailName;
+    }
+
+    if (finalName && !isGenericName(finalName)) {
+      localStorage.setItem('logged_in_name', finalName);
+    }
+    if (userEmail) {
+      localStorage.setItem('logged_in_email', userEmail);
+    }
+    if (googleAvatar) {
+      localStorage.setItem('logged_in_avatar', googleAvatar);
+    }
+
     localStorage.setItem('login_method', 'google');
     setIsAuthenticated(true);
+    setCurrentUser(prev => ({
+      ...prev,
+      name: finalName,
+      email: userEmail,
+      avatar: googleAvatar || prev.avatar
+    }));
     showToast('Google Login successful!');
 
     const profileRes = await checkProfileStatus();

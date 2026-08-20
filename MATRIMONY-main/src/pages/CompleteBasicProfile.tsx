@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { basicProfileSchema, type BasicProfileFormData } from '../utils/validationSchemas';
-import { useApp } from '../context/AppContext';
+import { useApp, extractNameFromEmail, isGenericName } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -24,14 +24,27 @@ export const CompleteBasicProfile: React.FC = () => {
     }
   }, [navigate]);
 
-  const nameParts = (currentUser.name || '').split(' ');
+  const storedName = localStorage.getItem('logged_in_name');
+  const storedEmail = currentUser.email || localStorage.getItem('logged_in_email') || '';
+  const emailName = extractNameFromEmail(storedEmail);
+
+  let displayName = '';
+  if (currentUser.name && !isGenericName(currentUser.name)) {
+    displayName = currentUser.name;
+  } else if (storedName && !isGenericName(storedName)) {
+    displayName = storedName;
+  } else {
+    displayName = emailName;
+  }
+
+  const nameParts = displayName.split(' ');
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
 
   const googleUser = {
     first_name: firstName,
     last_name: lastName,
-    email: currentUser.email || ''
+    email: storedEmail
   };
 
   const [showPassword, setShowPassword] = useState(false);

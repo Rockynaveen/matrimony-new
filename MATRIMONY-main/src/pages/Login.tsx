@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormData } from '../utils/validationSchemas';
-import { useApp, isUserProfileCompleted } from '../context/AppContext';
+import { useApp, isUserProfileCompleted, decodeGoogleIdToken, extractNameFromEmail, isGenericName } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Sparkles, Eye, EyeOff, Loader2, Mail, Lock, Heart, CheckCircle2 } from 'lucide-react';
@@ -76,6 +76,22 @@ export const Login: React.FC = () => {
     setIsGoogleModalOpen(false);
     try {
       setIsSubmitting(true);
+      const tokenPayload = decodeGoogleIdToken(idToken);
+      if (tokenPayload) {
+        const rawName = tokenPayload.name || `${tokenPayload.given_name || ''} ${tokenPayload.family_name || ''}`.trim();
+        const emailName = extractNameFromEmail(tokenPayload.email);
+        const resolvedName = (rawName && !isGenericName(rawName)) ? rawName : emailName;
+
+        if (resolvedName && !isGenericName(resolvedName)) {
+          localStorage.setItem('logged_in_name', resolvedName);
+        }
+        if (tokenPayload.email) {
+          localStorage.setItem('logged_in_email', tokenPayload.email);
+        }
+        if (tokenPayload.picture) {
+          localStorage.setItem('logged_in_avatar', tokenPayload.picture);
+        }
+      }
       const profileRes = await googleLoginUser({
         id_token: idToken,
         action: 'login'

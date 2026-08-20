@@ -9,6 +9,7 @@ import type {
   PatchBasicProfileRequest,
   DetailedProfileRequest
 } from '../types/apiTypes';
+import { extractNameFromEmail, isGenericName } from '../context/AppContext';
 
 export const profileApi = {
   // GET /api/profile/get/
@@ -22,12 +23,17 @@ export const profileApi = {
       err.status = 401;
       throw err;
     }
+    const storedName = localStorage.getItem('logged_in_name');
+    const storedEmail = localStorage.getItem('logged_in_email');
+    const emailName = extractNameFromEmail(storedEmail);
+    const fallbackName = (storedName && !isGenericName(storedName)) ? storedName : emailName;
+
     // Default clean profile object when GET /api/profile/get/ returns 404 (detailed profile not created yet)
     return {
       id: '',
-      first_name: localStorage.getItem('logged_in_name') || 'User',
+      first_name: fallbackName,
       last_name: '',
-      email: localStorage.getItem('logged_in_email') || '',
+      email: storedEmail || '',
       phone: '',
       gender: '',
       date_of_birth: '',

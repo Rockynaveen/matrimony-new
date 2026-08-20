@@ -65,25 +65,48 @@ export const matchingApi = {
   },
 
   updateInterest: async (interestId: number, payload: InterestUpdateSchema): Promise<InterestResponseSchema> => {
-    const isAccepting = String(payload.status).toLowerCase() === 'accepted';
-    const candidateUrls = [
-      { method: 'post', url: `/matching/interest/${interestId}/accept/` },
-      { method: 'post', url: `/matching/interest/${interestId}/accept` },
-      { method: 'post', url: `/matching/interest/${interestId}/respond` },
-      { method: 'post', url: `/matching/interest/${interestId}/respond/` },
-      { method: 'put', url: `/matching/interest/${interestId}/` },
-      { method: 'patch', url: `/matching/interest/${interestId}/` },
-      { method: 'put', url: `/matching/interest/${interestId}` },
-      { method: 'patch', url: `/matching/interest/${interestId}` },
-      { method: 'put', url: `/matching/interest/${interestId}/update` },
-      { method: 'post', url: `/matching/interest/accept/${interestId}` }
-    ];
+    const statusLower = String(payload.status).toLowerCase();
+    const isAccepting = statusLower === 'accepted';
+    const isRejecting = statusLower === 'rejected' || statusLower === 'declined';
 
-    const endpointsToTry = isAccepting
-      ? candidateUrls
-      : candidateUrls.slice(4).concat(candidateUrls.slice(0, 4));
+    let candidateUrls: Array<{ method: 'post' | 'put' | 'patch'; url: string }> = [];
 
-    for (const item of endpointsToTry) {
+    if (isAccepting) {
+      candidateUrls = [
+        { method: 'post', url: `/matching/interest/${interestId}/accept/` },
+        { method: 'post', url: `/matching/interest/${interestId}/accept` },
+        { method: 'post', url: `/matching/interest/${interestId}/respond` },
+        { method: 'post', url: `/matching/interest/${interestId}/respond/` },
+        { method: 'put', url: `/matching/interest/${interestId}/` },
+        { method: 'patch', url: `/matching/interest/${interestId}/` },
+        { method: 'put', url: `/matching/interest/${interestId}` },
+        { method: 'patch', url: `/matching/interest/${interestId}` },
+        { method: 'put', url: `/matching/interest/${interestId}/update` },
+        { method: 'post', url: `/matching/interest/accept/${interestId}` }
+      ];
+    } else if (isRejecting) {
+      candidateUrls = [
+        { method: 'post', url: `/matching/interest/${interestId}/decline/` },
+        { method: 'post', url: `/matching/interest/${interestId}/decline` },
+        { method: 'post', url: `/matching/interest/${interestId}/reject/` },
+        { method: 'post', url: `/matching/interest/${interestId}/reject` },
+        { method: 'post', url: `/matching/interest/${interestId}/respond` },
+        { method: 'post', url: `/matching/interest/${interestId}/respond/` },
+        { method: 'put', url: `/matching/interest/${interestId}/` },
+        { method: 'patch', url: `/matching/interest/${interestId}/` },
+        { method: 'put', url: `/matching/interest/${interestId}` },
+        { method: 'patch', url: `/matching/interest/${interestId}` }
+      ];
+    } else {
+      candidateUrls = [
+        { method: 'put', url: `/matching/interest/${interestId}/` },
+        { method: 'patch', url: `/matching/interest/${interestId}/` },
+        { method: 'post', url: `/matching/interest/${interestId}/respond` },
+        { method: 'put', url: `/matching/interest/${interestId}` }
+      ];
+    }
+
+    for (const item of candidateUrls) {
       try {
         const res = item.method === 'post'
           ? await axiosClient.post<InterestResponseSchema>(item.url, payload)

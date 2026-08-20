@@ -9,7 +9,6 @@ import type {
   ProfileApiResponse
 } from '../types/apiTypes';
 import { MOCK_PROFILES } from '../data/mockProfiles';
-import { MOCK_NOTIFICATIONS } from '../data/mockNotifications';
 import { authApi } from '../api/authApi';
 import { googleAuthApi } from '../api/googleAuthApi';
 import { profileApi } from '../api/profileApi';

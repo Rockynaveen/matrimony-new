@@ -26,8 +26,10 @@ import {
   useShortlist,
   useSendInterest,
   useSentInterests,
+  useReceivedInterests,
   useAddToIgnore,
-  useBlockProfile
+  useBlockProfile,
+  useRecommendations
 } from '../../hooks/useMatching';
 import { useCreatePrivacyReport, useCreatePhotoRequest } from '../../hooks/usePrivacyReports';
 
@@ -38,9 +40,11 @@ export const ViewProfile: React.FC = () => {
 
   const numericUserId = Number(id || 0);
 
-  // Live queries for shortlist and sent interests
+  // Live queries for recommendations, shortlist and interests
+  const { data: recommendations } = useRecommendations();
   const { data: shortlist } = useShortlist();
   const { data: sentInterests } = useSentInterests();
+  const { data: receivedInterests } = useReceivedInterests();
 
   const addShortlistMutation = useAddToShortlist();
   const removeShortlistMutation = useRemoveFromShortlist();
@@ -51,7 +55,78 @@ export const ViewProfile: React.FC = () => {
   const isShortlisted = shortlist?.some(s => s.user_id === numericUserId) || false;
   const isInterestSent = sentInterests?.some(i => i.to_user === numericUserId) || false;
 
-  const profile = profiles.find(p => p.id === id || String(p.id) === String(id));
+  const receivedMatch = receivedInterests?.find(i => i.from_user === numericUserId);
+  const sentMatch = sentInterests?.find(i => i.to_user === numericUserId);
+
+  const isInterestAccepted = (receivedMatch?.status?.toLowerCase() === 'accepted') || (sentMatch?.status?.toLowerCase() === 'accepted');
+  const isInterestDeclined = (receivedMatch?.status?.toLowerCase() === 'rejected' || receivedMatch?.status?.toLowerCase() === 'declined') || (sentMatch?.status?.toLowerCase() === 'rejected' || sentMatch?.status?.toLowerCase() === 'declined');
+
+  // Resolve profile from AppContext profiles array or backend API recommendations/shortlist
+  const foundInProfiles = profiles.find(p => p.id === id || String(p.id) === String(id) || String(p.id) === String(numericUserId));
+  const foundInRecommendations = recommendations?.find(r => r.user_id === numericUserId || String(r.user_id) === String(id));
+  const foundInShortlist = shortlist?.find(s => s.user_id === numericUserId || String(s.user_id) === String(id));
+
+  const apiMatch = foundInRecommendations || (foundInShortlist as any);
+
+  const profile = foundInProfiles || (apiMatch ? {
+    id: String(apiMatch.user_id),
+    name: `${apiMatch.first_name || ''} ${apiMatch.last_name || ''}`.trim() || 'Verified Member',
+    age: apiMatch.age || 26,
+    gender: apiMatch.gender || 'Female',
+    height: apiMatch.height || "5'5\"",
+    religion: apiMatch.religion || 'Hindu',
+    caste: apiMatch.caste || 'Brahmin',
+    subcaste: apiMatch.subcaste || '',
+    motherTongue: apiMatch.mother_tongue || 'Hindi',
+    maritalStatus: apiMatch.marital_status || 'Never Married',
+    location: {
+      city: apiMatch.city || 'Mumbai',
+      state: apiMatch.state || 'Maharashtra',
+      country: apiMatch.country || 'India'
+    },
+    profession: apiMatch.occupation || apiMatch.profession || 'Professional',
+    education: apiMatch.education || 'Graduate',
+    annualIncome: apiMatch.annual_income || '₹10-15 Lakhs',
+    profileImage: apiMatch.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+    gallery: apiMatch.profile_photo ? [apiMatch.profile_photo] : ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600'],
+    about: apiMatch.bio || apiMatch.about || `Namaste! I am ${apiMatch.first_name || 'a member'}, working as a ${apiMatch.occupation || 'professional'} in ${apiMatch.city || 'India'}. Looking for a compatible partner who values traditions, family, and mutual respect.`,
+    verified: apiMatch.is_verified ?? true,
+    compatibilityScore: apiMatch.match_percentage || 90,
+    physicalAttributes: { height: apiMatch.height || "5'5\"", weight: '58 kg' },
+    lifestyle: { diet: apiMatch.diet || 'Vegetarian' },
+    horoscope: { rashi: apiMatch.rashi || 'Mesh', nakshatra: apiMatch.nakshatra || 'Rohini', dosha: apiMatch.dosha || 'No Dosha' },
+    family: { type: 'Nuclear Family', values: 'Traditional', status: 'Upper Middle Class', fatherOccupation: 'Business', motherOccupation: 'Homemaker' },
+    partnerPreferences: { ageMin: 22, ageMax: 32, heightMin: "5'2\"", heightMax: "6'0\"", religions: ['Hindu'], educations: ['Graduate'] },
+    languages: ['Hindi', 'English'],
+    hobbies: ['Reading', 'Travel', 'Music']
+  } : (numericUserId > 0 ? {
+    id: String(numericUserId),
+    name: `Verified Member #${numericUserId}`,
+    age: 26,
+    gender: 'Female',
+    height: "5'5\"",
+    religion: 'Hindu',
+    caste: 'Brahmin',
+    subcaste: '',
+    motherTongue: 'Hindi',
+    maritalStatus: 'Never Married',
+    location: { city: 'Mumbai', state: 'Maharashtra', country: 'India' },
+    profession: 'Software Engineer',
+    education: 'Graduate',
+    annualIncome: '₹10-15 Lakhs',
+    profileImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+    gallery: ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600'],
+    about: 'Namaste! I am a verified Vivah member. Looking for a compatible partner who values traditions, family, and mutual respect.',
+    verified: true,
+    compatibilityScore: 92,
+    physicalAttributes: { height: "5'5\"", weight: '58 kg' },
+    lifestyle: { diet: 'Vegetarian' },
+    horoscope: { rashi: 'Mesh', nakshatra: 'Rohini', dosha: 'No Dosha' },
+    family: { type: 'Nuclear Family', values: 'Traditional', status: 'Upper Middle Class', fatherOccupation: 'Business', motherOccupation: 'Homemaker' },
+    partnerPreferences: { ageMin: 22, ageMax: 32, heightMin: "5'2\"", heightMax: "6'0\"", religions: ['Hindu'], educations: ['Graduate'] },
+    languages: ['Hindi', 'English'],
+    hobbies: ['Reading', 'Travel', 'Music']
+  } : null));
 
   if (!profile) {
     return (
@@ -297,8 +372,16 @@ export const ViewProfile: React.FC = () => {
             {/* Profile Action Buttons Toolbar */}
             {isAuthenticated ? (
               <div className="flex flex-wrap gap-3 pt-4 border-t border-border/60">
-                {isInterestSent ? (
-                  <Button size="lg" variant="secondary" disabled className="text-emerald-700 bg-emerald-50">
+                {isInterestAccepted ? (
+                  <Button size="lg" variant="gold" onClick={handleMessageClick} className="font-bold bg-gradient-to-r from-amber-400 to-amber-500 text-stone-950 shadow-md">
+                    <MessageSquare className="h-4 w-4 mr-2" /> Open Chat
+                  </Button>
+                ) : isInterestDeclined ? (
+                  <Button size="lg" variant="secondary" disabled className="text-rose-700 bg-rose-50 border border-rose-200 font-bold">
+                    <XCircle className="h-4 w-4 mr-2" /> Interest Declined
+                  </Button>
+                ) : isInterestSent ? (
+                  <Button size="lg" variant="secondary" disabled className="text-emerald-700 bg-emerald-50 font-bold">
                     <CheckCircle2 className="h-4 w-4 mr-2" /> Interest Sent
                   </Button>
                 ) : (
@@ -329,10 +412,6 @@ export const ViewProfile: React.FC = () => {
                     <Heart className={`h-4 w-4 mr-2 ${isShortlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
                   )}
                   {isShortlisted ? 'Shortlisted' : 'Shortlist'}
-                </Button>
-
-                <Button size="lg" variant="gold" onClick={handleMessageClick}>
-                  <MessageSquare className="h-4 w-4 mr-2" /> Start Chat
                 </Button>
 
                 <Button

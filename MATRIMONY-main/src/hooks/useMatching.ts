@@ -37,6 +37,8 @@ export function useSendInterest() {
     mutationFn: (payload: InterestSendSchema) => matchingApi.sendInterest(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: matchingKeys.sentInterests() });
+      queryClient.invalidateQueries({ queryKey: matchingKeys.receivedInterests() });
+      queryClient.invalidateQueries({ queryKey: matchingKeys.recommendations() });
     }
   });
 }
@@ -79,6 +81,8 @@ export function useUpdateInterest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: matchingKeys.receivedInterests() });
       queryClient.invalidateQueries({ queryKey: matchingKeys.sentInterests() });
+      queryClient.invalidateQueries({ queryKey: matchingKeys.recommendations() });
+      queryClient.invalidateQueries({ queryKey: ['chat'] });
     }
   });
 }

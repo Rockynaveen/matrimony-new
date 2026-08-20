@@ -29,48 +29,72 @@ export interface NotificationPreferencesSchema {
 
 export const notificationApi = {
   getNotifications: async (): Promise<NotificationItem[]> => {
-    const res = await axiosClient.get('/notifications/');
-    let rawList: NotificationResponseSchema[] = [];
+    try {
+      const candidateUrls = [
+        '/notifications/',
+        '/notifications',
+        '/privacy/notifications',
+        '/privacy/notifications/'
+      ];
 
-    if (Array.isArray(res.data)) {
-      rawList = res.data;
-    } else if (res.data && Array.isArray(res.data.results)) {
-      rawList = res.data.results;
-    } else if (res.data && Array.isArray(res.data.data)) {
-      rawList = res.data.data;
+      let rawList: NotificationResponseSchema[] = [];
+
+      for (const url of candidateUrls) {
+        try {
+          const res = await axiosClient.get(url);
+          if (Array.isArray(res.data) && res.data.length > 0) {
+            rawList = res.data;
+            break;
+          } else if (res.data && Array.isArray(res.data.results) && res.data.results.length > 0) {
+            rawList = res.data.results;
+            break;
+          } else if (res.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+            rawList = res.data.data;
+            break;
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      if (rawList.length > 0) {
+        return rawList.map((item, index): NotificationItem => {
+          const catRaw = item.category || item.notification_type || item.type || 'All';
+          let category: NotificationItem['category'] = 'All';
+
+          const catLower = String(catRaw).toLowerCase();
+          if (catLower.includes('interest')) category = 'Interests';
+          else if (catLower.includes('match')) category = 'Matches';
+          else if (catLower.includes('message') || catLower.includes('chat')) category = 'Messages';
+          else if (catLower.includes('profile')) category = 'Profile';
+          else if (catLower.includes('member') || catLower.includes('plan')) category = 'Membership';
+
+          const formattedTimestamp = item.timestamp || item.created_at
+            ? new Date(item.timestamp || item.created_at || '').toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })
+            : 'Just now';
+
+          return {
+            id: String(item.id || `notif-${index}`),
+            category,
+            title: item.title || 'Notification',
+            message: item.message || item.text || item.content || '',
+            timestamp: formattedTimestamp,
+            read: Boolean(item.is_read ?? item.read ?? false),
+            link: item.link || item.url || undefined,
+            avatar: item.avatar || undefined
+          };
+        });
+      }
+
+      return [];
+    } catch {
+      return [];
     }
-
-    return rawList.map((item, index): NotificationItem => {
-      const catRaw = item.category || item.notification_type || item.type || 'All';
-      let category: NotificationItem['category'] = 'All';
-
-      const catLower = String(catRaw).toLowerCase();
-      if (catLower.includes('interest')) category = 'Interests';
-      else if (catLower.includes('match')) category = 'Matches';
-      else if (catLower.includes('message') || catLower.includes('chat')) category = 'Messages';
-      else if (catLower.includes('profile')) category = 'Profile';
-      else if (catLower.includes('member') || catLower.includes('plan')) category = 'Membership';
-
-      const formattedTimestamp = item.timestamp || item.created_at
-        ? new Date(item.timestamp || item.created_at || '').toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          })
-        : 'Just now';
-
-      return {
-        id: String(item.id || `notif-${index}`),
-        category,
-        title: item.title || 'Notification',
-        message: item.message || item.text || item.content || '',
-        timestamp: formattedTimestamp,
-        read: Boolean(item.is_read ?? item.read ?? false),
-        link: item.link || item.url || undefined,
-        avatar: item.avatar || undefined
-      };
-    });
   },
 
   markAsRead: async (notificationId?: string | number): Promise<void> => {

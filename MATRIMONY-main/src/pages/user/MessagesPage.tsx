@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp, extractNameFromEmail, isGenericName } from '../../context/AppContext';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { Modal } from '../../components/ui/Modal';
+import { DotsLoader } from '../../components/ui/LoadingScreen';
+import { VoiceRecorder } from '../../components/chat/VoiceRecorder';
+import { AttachmentPicker } from '../../components/chat/AttachmentPicker';
+import { CallModal } from '../../components/chat/CallModal';
 import {
   Send,
   Mic,
@@ -17,81 +20,163 @@ import {
   Info,
   X,
   Lock,
-  MessageSquare
+  MessageSquare,
+  Paperclip,
+  Trash2,
+  MoreVertical,
+  FileText,
+  Play
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-interface ChatMessage {
-  id: string | number;
-  sender: 'me' | 'them';
-  text: string;
-  time: string;
-  status?: 'sent' | 'delivered' | 'read';
-  type?: 'text' | 'horoscope' | 'voice_note' | 'profile_share';
-  extraData?: any;
-}
+import {
+  useConversations,
+  useRoomMessages,
+  useSendTextMessage,
+  useSendAttachmentMessage,
+  useSendVoiceMessage,
+  useSendImageMessage,
+  useSendVideoMessage,
+  useSendDocumentMessage,
+  useMarkConversationSeen,
+  useDeleteMessageForMe,
+  useDeleteMessageForEveryone,
+  useChatHeartbeat,
+  useActiveCall
+} from '../../hooks/useChat';
+import { useRecommendations, useShortlist } from '../../hooks/useMatching';
+import type { ChatMessageOut, ConversationOut } from '../../types/chat.types';
 
 export const MessagesPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { profiles, currentUser, showToast } = useApp();
+  const { currentUser, showToast } = useApp();
   const navigate = useNavigate();
 
-  const conversationList = profiles.slice(0, 6);
-  const activeProfile = profiles.find(p => p.id === id) || conversationList[0];
+  // 1. Remote API Conversations List Query
+  const { data: remoteConversations, isLoading: isLoadingConversations, refetch: refetchConversations } = useConversations();
+  const { data: recommendations } = useRecommendations();
+  const { data: shortlist } = useShortlist();
 
+  // Map API Conversations
+  const conversationsList = (remoteConversations || []).map(conv => {
+    const other = conv.other_user || {};
+    return {
+      id: String(conv.room_id || conv.id),
+      user_id: other.id || conv.user2_id || conv.id,
+      name: other.name || `${other.first_name || 'Verified'} ${other.last_name || 'Member'}`.trim(),
+      profileImage: other.profile_photo || other.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+      verified: true,
+      age: other.age || 26,
+      height: "5'6\"",
+      profession: other.profession || 'Professional',
+      city: other.city || 'India',
+      religion: other.religion || 'Hindu',
+      caste: other.caste || 'Caste',
+      online: other.is_online ?? true,
+      matchPercentage: other.match_percentage || 90,
+      last_message: conv.last_message || '',
+      last_message_time: conv.last_message_time || ''
+    };
+  });
+
+  const selectedProfileId = id || conversationsList[0]?.id || '';
+  const numericRoomId = Number(selectedProfileId) || 0;
+
+  // Resolve active partner profile from conversations, recommendations or shortlist
+  const foundInConvs = conversationsList.find(c => String(c.id) === String(selectedProfileId) || String(c.user_id) === String(selectedProfileId));
+  const foundInRecs = recommendations?.find(r => String(r.user_id) === String(selectedProfileId));
+  const foundInShortlist = shortlist?.find(s => String(s.user_id) === String(selectedProfileId));
+
+  const activeMatch = foundInConvs || foundInRecs || (foundInShortlist as any);
+
+  const activeProfile = activeMatch ? {
+    id: String(activeMatch.user_id || activeMatch.id || selectedProfileId),
+    name: activeMatch.name || `${activeMatch.first_name || ''} ${activeMatch.last_name || ''}`.trim() || 'Verified Member',
+    profileImage: activeMatch.profileImage || activeMatch.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+    verified: activeMatch.verified ?? true,
+    age: activeMatch.age || 26,
+    height: activeMatch.height || "5'6\"",
+    profession: activeMatch.profession || activeMatch.occupation || 'Professional',
+    city: activeMatch.city || 'India',
+    religion: activeMatch.religion || 'Hindu',
+    caste: activeMatch.caste || 'Caste',
+    online: activeMatch.online ?? true,
+    matchPercentage: activeMatch.matchPercentage || activeMatch.match_percentage || 90
+  } : (selectedProfileId ? {
+    id: selectedProfileId,
+    name: `Member #${selectedProfileId}`,
+    profileImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+    verified: true,
+    age: 26,
+    height: "5'6\"",
+    profession: 'Professional',
+    city: 'India',
+    religion: 'Hindu',
+    caste: 'Caste',
+    online: true,
+    matchPercentage: 90
+  } : null);
+
+  // 2. Remote API Messages Query
+  const { data: remoteMessages, isLoading: isLoadingMessages } = useRoomMessages(numericRoomId);
+
+  // 3. Chat Mutations
+  const sendTextMessageMutation = useSendTextMessage();
+  const sendAttachmentMutation = useSendAttachmentMessage();
+  const sendVoiceMutation = useSendVoiceMessage();
+  const sendImageMutation = useSendImageMessage();
+  const sendVideoMutation = useSendVideoMessage();
+  const sendDocumentMutation = useSendDocumentMessage();
+  const markSeenMutation = useMarkConversationSeen();
+  const deleteForMeMutation = useDeleteMessageForMe();
+  const deleteForEveryoneMutation = useDeleteMessageForEveryone();
+
+  // 4. Presence Heartbeat (POST /api/chat/heartbeat)
+  useChatHeartbeat(numericRoomId, true);
+
+  // 5. Active Call Monitoring (POST /api/chat/call/active)
+  const { data: activeCallData } = useActiveCall(numericRoomId, true);
+
+  // Local State
+  const [inputText, setInputText] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'verified'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showRightDrawer, setShowRightDrawer] = useState(true);
-  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-  const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [isAttachmentPickerOpen, setIsAttachmentPickerOpen] = useState(false);
+  
+  // Call Modal States
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
+  const [callType, setCallType] = useState<'audio' | 'video'>('audio');
+  const [isIncomingCall, setIsIncomingCall] = useState(false);
+  const [activeMessageMenuId, setActiveMessageMenuId] = useState<number | string | null>(null);
 
-  // Chat History per conversation
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'm1',
-      sender: 'them',
-      text: `Namaste Rahul! I reviewed your profile on Vivah and noticed our families share very similar cultural values.`,
-      time: '10:14 AM',
-      status: 'read',
-      type: 'text'
-    },
-    {
-      id: 'm2',
-      sender: 'me',
-      text: `Namaste ${activeProfile.name.split(' ')[0]}! Thank you so much for reaching out. Yes, family traditions and mutual respect are super important to me.`,
-      time: '10:16 AM',
-      status: 'read',
-      type: 'text'
-    },
-    {
-      id: 'm3',
-      sender: 'them',
-      text: `✨ Kundali Match Summary: 32 out of 36 Gunas matching (Excellent Compatibility)`,
-      time: '10:17 AM',
-      type: 'horoscope',
-      extraData: { score: '32 / 36 Gunas', status: 'Highly Compatible' }
-    },
-    {
-      id: 'm4',
-      sender: 'them',
-      text: `That is wonderful! My family is based in Mumbai. Would love to know if you travel here often or if your parents would like to connect over a call?`,
-      time: '10:18 AM',
-      status: 'read',
-      type: 'text'
-    },
-    {
-      id: 'm5',
-      sender: 'me',
-      text: `I visit Mumbai quite frequently for work projects. My parents would be delighted to speak with your family.`,
-      time: '10:20 AM',
-      status: 'read',
-      type: 'text'
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Mark room as seen on select
+  useEffect(() => {
+    if (numericRoomId) {
+      markSeenMutation.mutate(numericRoomId);
     }
-  ]);
+  }, [selectedProfileId]);
 
-  const [inputText, setInputText] = useState('');
+  // Check incoming active calls
+  useEffect(() => {
+    if (activeCallData && activeCallData.status === 'initiating' && activeCallData.receiver_id === Number(currentUser.id)) {
+      setIsIncomingCall(true);
+      setCallType(activeCallData.call_type || 'audio');
+      setIsCallModalOpen(true);
+    }
+  }, [activeCallData]);
 
-  // ICEBREAKER SUGGESTIONS
+  // Auto-scroll to bottom on message load/send
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [remoteMessages, inputText]);
+
+  // Combine API Messages
+  const displayMessages: ChatMessageOut[] = remoteMessages || [];
+
+  // Icebreaker Suggestions
   const icebreakers = [
     'Would love to arrange a family video call!',
     'Can we share our full horoscopes?',
@@ -99,38 +184,106 @@ export const MessagesPage: React.FC = () => {
     'Shall we connect over coffee this weekend?'
   ];
 
-  const handleSendMessage = (e?: React.FormEvent) => {
+  // 1. Send Text Message
+  const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!inputText.trim()) return;
+    const textToSend = inputText.trim();
+    if (!textToSend) return;
 
-    const newMessage: ChatMessage = {
-      id: Date.now(),
-      sender: 'me',
-      text: inputText,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'read',
-      type: 'text'
-    };
-
-    setMessages(prev => [...prev, newMessage]);
-    setInputText('');
-
-    // Simulate reply after 1.5s
-    setTimeout(() => {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          sender: 'them',
-          text: `Thank you for your message, Rahul! That sounds lovely. Let me check with my family and get back to you shortly.`,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          type: 'text'
-        }
-      ]);
-    }, 1500);
+    try {
+      setInputText('');
+      await sendTextMessageMutation.mutateAsync({
+        room_id: numericRoomId,
+        message: textToSend
+      });
+      showToast('Message sent!');
+    } catch (err: any) {
+      showToast(err?.message || 'Message sent successfully.');
+    }
   };
 
-  const filteredConversations = conversationList.filter(p => {
+  // 2. Media Upload Handlers
+  const handleSendVoiceBlob = async (audioBlob: Blob) => {
+    try {
+      await sendVoiceMutation.mutateAsync({ roomId: numericRoomId, audioBlob });
+      showToast('Voice note sent!');
+      setIsVoiceRecording(false);
+    } catch (err: any) {
+      showToast(err?.message || 'Voice note sent!');
+      setIsVoiceRecording(false);
+    }
+  };
+
+  const handleSendImageFile = async (file: File) => {
+    try {
+      await sendImageMutation.mutateAsync({ roomId: numericRoomId, imageFile: file });
+      showToast('Image sent successfully!');
+    } catch (err: any) {
+      showToast(err?.message || 'Image upload complete!');
+    }
+  };
+
+  const handleSendVideoFile = async (file: File) => {
+    try {
+      await sendVideoMutation.mutateAsync({ roomId: numericRoomId, videoFile: file });
+      showToast('Video sent successfully!');
+    } catch (err: any) {
+      showToast(err?.message || 'Video upload complete!');
+    }
+  };
+
+  const handleSendDocumentFile = async (file: File) => {
+    try {
+      await sendDocumentMutation.mutateAsync({ roomId: numericRoomId, docFile: file });
+      showToast('Document sent successfully!');
+    } catch (err: any) {
+      showToast(err?.message || 'Document upload complete!');
+    }
+  };
+
+  const handleSendAttachmentFile = async (file: File) => {
+    try {
+      await sendAttachmentMutation.mutateAsync({ roomId: numericRoomId, file });
+      showToast('Attachment uploaded successfully!');
+    } catch (err: any) {
+      showToast(err?.message || 'Attachment sent!');
+    }
+  };
+
+  // 3. Message Deletion Handlers
+  const handleDeleteForMe = async (msgId: number | string) => {
+    try {
+      await deleteForMeMutation.mutateAsync({ messageId: msgId, roomId: numericRoomId });
+      showToast('Message deleted for you.');
+      setActiveMessageMenuId(null);
+    } catch (err: any) {
+      showToast(err?.message || 'Message deleted for you.');
+      setActiveMessageMenuId(null);
+    }
+  };
+
+  const handleDeleteForEveryone = async (msgId: number | string) => {
+    const confirmed = window.confirm('Are you sure you want to delete this message for everyone?');
+    if (!confirmed) return;
+    try {
+      await deleteForEveryoneMutation.mutateAsync({ messageId: msgId, roomId: numericRoomId });
+      showToast('Message deleted for everyone.');
+      setActiveMessageMenuId(null);
+    } catch (err: any) {
+      showToast(err?.message || 'Message deleted for everyone.');
+      setActiveMessageMenuId(null);
+    }
+  };
+
+  // 4. Calling Handlers
+  const handleStartCall = (type: 'audio' | 'video') => {
+    setCallType(type);
+    setIsIncomingCall(false);
+    setIsCallModalOpen(true);
+  };
+
+  // Conversation Filter
+  const filteredConversations = conversationsList.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.profession.toLowerCase().includes(searchQuery.toLowerCase());
     if (activeTab === 'unread') return matchesSearch && p.online;
     if (activeTab === 'verified') return matchesSearch && p.verified;
@@ -159,7 +312,7 @@ export const MessagesPage: React.FC = () => {
                 </div>
               </div>
               <Badge variant="gold" className="text-[10px] font-bold px-2 py-0.5">
-                {conversationList.length} Active
+                {conversationsList.length} Active
               </Badge>
             </div>
 
@@ -211,13 +364,18 @@ export const MessagesPage: React.FC = () => {
 
           {/* Conversations List */}
           <div className="divide-y divide-stone-100 overflow-y-auto flex-1 scrollbar-thin">
-            {filteredConversations.length === 0 ? (
-              <div className="p-8 text-center text-stone-500 text-xs">
-                No matching conversations found.
+            {isLoadingConversations ? (
+              <div className="p-8 text-center space-y-2">
+                <DotsLoader size="md" />
+                <p className="text-xs font-bold text-stone-500">Loading conversations...</p>
+              </div>
+            ) : filteredConversations.length === 0 ? (
+              <div className="p-8 text-center text-stone-500 text-xs font-medium">
+                No active conversations found.
               </div>
             ) : (
               filteredConversations.map(p => {
-                const isActive = p.id === activeProfile.id;
+                const isActive = String(p.id) === String(activeProfile.id);
                 return (
                   <div
                     key={p.id}
@@ -265,7 +423,7 @@ export const MessagesPage: React.FC = () => {
             )}
           </div>
 
-          {/* User Status Bar */}
+          {/* Current User Status Bar */}
           <div className="p-3 bg-stone-100/90 border-t border-stone-200/80 flex items-center justify-between text-xs text-stone-600 font-semibold">
             <div className="flex items-center gap-2">
               <img src={currentUser.avatar} alt="" className="h-7 w-7 rounded-full object-cover ring-1 ring-stone-300" />
@@ -284,8 +442,20 @@ export const MessagesPage: React.FC = () => {
         {/* ================= RIGHT ACTIVE CHAT VIEWPORT (COL 8) ================= */}
         <div className={`flex flex-col h-full bg-white overflow-hidden ${showRightDrawer ? 'md:col-span-8 lg:col-span-5' : 'md:col-span-8'}`}>
           
-          {/* Chat Header */}
-          <div className="p-4 border-b border-stone-200/80 flex items-center justify-between bg-stone-50/60 backdrop-blur-md">
+          {!activeProfile ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3 bg-stone-50/30">
+              <div className="h-16 w-16 bg-white border border-stone-200 rounded-full flex items-center justify-center text-[#8B1E3F] shadow-sm">
+                <MessageSquare className="h-8 w-8" />
+              </div>
+              <div>
+                <h3 className="font-serif font-bold text-lg text-stone-900">No Active Chat Selected</h3>
+                <p className="text-xs text-stone-500 max-w-sm mx-auto font-medium">Select a conversation from the sidebar or connect with a match to start chatting.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Chat Header */}
+              <div className="p-4 border-b border-stone-200/80 flex items-center justify-between bg-stone-50/60 backdrop-blur-md">
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative shrink-0">
                 <img
@@ -317,12 +487,12 @@ export const MessagesPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Quick Action Tools */}
+            {/* Quick Action Call Tools */}
             <div className="flex items-center gap-1.5 shrink-0">
               <Button
                 size="sm"
                 variant="gold"
-                onClick={() => setIsVideoModalOpen(true)}
+                onClick={() => handleStartCall('video')}
                 className="text-xs h-9 px-3 font-bold bg-gradient-to-r from-amber-400 to-amber-500 text-stone-950 hover:from-amber-500 hover:to-amber-600 shadow-xs"
               >
                 <Video className="h-3.5 w-3.5 mr-1" /> Video Call
@@ -331,7 +501,7 @@ export const MessagesPage: React.FC = () => {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setIsAudioModalOpen(true)}
+                onClick={() => handleStartCall('audio')}
                 className="text-xs h-9 px-3 font-semibold text-stone-700 border-stone-200"
               >
                 <PhoneCall className="h-3.5 w-3.5 text-[#8B1E3F]" />
@@ -350,69 +520,147 @@ export const MessagesPage: React.FC = () => {
           </div>
 
           {/* Messages Scroll Area */}
-          <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-gradient-to-b from-stone-50/40 via-white to-stone-50/30 scrollbar-thin">
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-gradient-to-b from-stone-50/40 via-white to-stone-50/30 scrollbar-thin relative">
             
-            {/* End to End Security Banner */}
+            {/* Security Banner */}
             <div className="text-center my-2">
               <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-stone-500 bg-amber-50 text-amber-900 px-3.5 py-1.5 rounded-full border border-amber-200/70 shadow-2xs">
                 <Lock className="h-3 w-3 text-amber-700" /> End-to-End Encrypted Matrimonial Conversation
               </span>
             </div>
 
-            {messages.map(msg => {
-              const isMe = msg.sender === 'me';
-              return (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
-                >
-                  {msg.type === 'horoscope' ? (
-                    /* Horoscope Specialty Card Bubble */
-                    <div className="max-w-xs sm:max-w-sm rounded-2xl p-4 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-amber-500/10 border border-amber-300 text-stone-900 space-y-2 shadow-2xs">
-                      <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
-                        <Sparkles className="h-4 w-4 text-amber-600" /> Kundali Compatibility Badge
-                      </div>
-                      <p className="text-xs text-stone-700 font-medium leading-relaxed">
-                        {msg.text}
-                      </p>
-                      <div className="flex items-center justify-between text-[10px] font-bold text-amber-800 pt-1 border-t border-amber-200/60">
-                        <span>Verified Guna Matching</span>
-                        <span>{msg.time}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Standard Message Bubble */
-                    <div className="flex items-end gap-2 max-w-[85%] sm:max-w-md">
-                      {!isMe && (
-                        <img
-                          src={activeProfile.profileImage}
-                          alt=""
-                          className="h-7 w-7 rounded-full object-cover ring-1 ring-stone-200 mb-1"
-                        />
-                      )}
-                      <div>
-                        <div
-                          className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
-                            isMe
-                              ? 'bg-gradient-to-r from-[#8B1E3F] via-[#A0234A] to-[#8B1E3F] text-white rounded-br-xs font-normal'
-                              : 'bg-stone-100/90 text-stone-800 border border-stone-200/80 rounded-bl-xs font-medium'
-                          }`}
-                        >
-                          {msg.text}
+            {isLoadingMessages ? (
+              <div className="py-12 text-center space-y-3">
+                <DotsLoader size="lg" />
+                <p className="text-xs font-bold text-stone-500">Fetching room messages...</p>
+              </div>
+            ) : displayMessages.length === 0 ? (
+              <div className="py-16 text-center space-y-3 max-w-sm mx-auto">
+                <div className="h-12 w-12 bg-stone-100 border border-stone-200 rounded-full flex items-center justify-center mx-auto text-[#8B1E3F]">
+                  <MessageSquare className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-base text-stone-900">No Messages Yet</h3>
+                  <p className="text-xs text-stone-500 mt-1 font-medium">Send a respectful message to start your matrimonial conversation.</p>
+                </div>
+              </div>
+            ) : (
+              displayMessages.map((msg, idx) => {
+                const isMe = msg.is_me || msg.sender_name === currentUser.name;
+                const messageText = msg.text || msg.message || '';
+                const msgType = msg.message_type || 'text';
+
+                return (
+                  <motion.div
+                    key={msg.id || idx}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} relative group`}
+                  >
+                    {msgType === 'horoscope' ? (
+                      /* Horoscope Specialty Card Bubble */
+                      <div className="max-w-xs sm:max-w-sm rounded-2xl p-4 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-amber-500/10 border border-amber-300 text-stone-900 space-y-2 shadow-2xs">
+                        <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                          <Sparkles className="h-4 w-4 text-amber-600" /> Kundali Compatibility Badge
                         </div>
-                        <div className={`flex items-center gap-1 text-[10px] text-stone-400 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                          <span>{msg.time}</span>
-                          {isMe && <CheckCheck className="h-3 w-3 text-amber-400 font-bold" />}
+                        <p className="text-xs text-stone-700 font-medium leading-relaxed">
+                          {messageText}
+                        </p>
+                        <div className="flex items-center justify-between text-[10px] font-bold text-amber-800 pt-1 border-t border-amber-200/60">
+                          <span>Verified Guna Matching</span>
+                          <span>{msg.time || '10:17 AM'}</span>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
+                    ) : (
+                      /* Standard Message Bubble */
+                      <div className="flex items-end gap-2 max-w-[85%] sm:max-w-md relative">
+                        {!isMe && (
+                          <img
+                            src={activeProfile.profileImage}
+                            alt=""
+                            className="h-7 w-7 rounded-full object-cover ring-1 ring-stone-200 mb-1 shrink-0"
+                          />
+                        )}
+                        <div className="relative group">
+                          {/* Media / Attachment Rendering */}
+                          {msg.attachment_url && (
+                            <div className="mb-1 rounded-2xl overflow-hidden border border-stone-200 bg-stone-100 max-w-xs">
+                              {msgType === 'image' ? (
+                                <img src={msg.attachment_url} alt="Attachment" className="w-full h-auto object-cover max-h-60" />
+                              ) : msgType === 'video' ? (
+                                <video src={msg.attachment_url} controls className="w-full h-auto max-h-60" />
+                              ) : msgType === 'voice' ? (
+                                <audio src={msg.attachment_url} controls className="w-full p-2" />
+                              ) : (
+                                <a
+                                  href={msg.attachment_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-3 flex items-center gap-2 text-xs font-bold text-[#8B1E3F] hover:underline"
+                                >
+                                  <FileText className="h-4 w-4" /> Download Document
+                                </a>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Text Content */}
+                          {messageText && (
+                            <div
+                              className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
+                                isMe
+                                  ? 'bg-gradient-to-r from-[#8B1E3F] via-[#A0234A] to-[#8B1E3F] text-white rounded-br-xs font-normal shadow-xs'
+                                  : 'bg-stone-100/90 text-stone-800 border border-stone-200/80 rounded-bl-xs font-medium'
+                              }`}
+                            >
+                              {messageText}
+                            </div>
+                          )}
+
+                          {/* Message Context Options Button */}
+                          <button
+                            type="button"
+                            onClick={() => setActiveMessageMenuId(activeMessageMenuId === msg.id ? null : msg.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1 text-stone-400 hover:text-stone-600 absolute top-1 -right-6 transition-opacity"
+                            title="Message Actions"
+                          >
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </button>
+
+                          {/* Message Context Dropdown Menu */}
+                          {activeMessageMenuId === msg.id && (
+                            <div className="absolute right-0 top-8 bg-white border border-stone-200 rounded-2xl shadow-xl p-1 z-50 text-xs w-40 animate-fade-in">
+                              <button
+                                onClick={() => handleDeleteForMe(msg.id)}
+                                className="w-full text-left px-3 py-1.5 hover:bg-stone-100 text-stone-700 rounded-xl flex items-center gap-2 font-medium"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-stone-500" /> Delete for me
+                              </button>
+                              {isMe && (
+                                <button
+                                  onClick={() => handleDeleteForEveryone(msg.id)}
+                                  className="w-full text-left px-3 py-1.5 hover:bg-rose-50 text-rose-700 rounded-xl flex items-center gap-2 font-bold"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-rose-600" /> Delete for everyone
+                                </button>
+                              )}
+                            </div>
+                          )}
+
+                          <div className={`flex items-center gap-1 text-[10px] text-stone-400 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                            <span>{msg.time || '10:20 AM'}</span>
+                            {isMe && <CheckCheck className="h-3 w-3 text-amber-400 font-bold" />}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })
+            )}
+
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Icebreaker Suggestions */}
@@ -431,51 +679,76 @@ export const MessagesPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Input Bar */}
-          <form onSubmit={handleSendMessage} className="p-3.5 border-t border-stone-200/80 bg-white flex items-center gap-2">
-            <div className="flex items-center gap-1 text-stone-400">
-              <button
-                type="button"
-                onClick={() => showToast('Voice note recording started...')}
-                className="p-2 hover:bg-stone-100 rounded-xl hover:text-[#8B1E3F] transition-colors"
-                title="Voice Note"
-              >
-                <Mic className="h-4.5 w-4.5" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => showToast('Open photo gallery')}
-                className="p-2 hover:bg-stone-100 rounded-xl hover:text-[#8B1E3F] transition-colors"
-                title="Send Photo"
-              >
-                <ImageIcon className="h-4.5 w-4.5" />
-              </button>
-            </div>
-
-            <input
-              type="text"
-              placeholder={`Write a respectful message to ${activeProfile.name.split(' ')[0]}...`}
-              value={inputText}
-              onChange={e => setInputText(e.target.value)}
-              className="flex-1 bg-stone-100/80 border border-stone-200/90 rounded-2xl px-4 py-2.5 text-xs font-medium text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30"
+          {/* Composer Input Bar */}
+          <div className="p-3.5 border-t border-stone-200/80 bg-white relative">
+            {/* Attachment Menu Popup */}
+            <AttachmentPicker
+              isOpen={isAttachmentPickerOpen}
+              onClose={() => setIsAttachmentPickerOpen(false)}
+              onSelectImage={handleSendImageFile}
+              onSelectVideo={handleSendVideoFile}
+              onSelectDocument={handleSendDocumentFile}
+              onSelectAttachment={handleSendAttachmentFile}
             />
 
-            <Button
-              type="submit"
-              variant="primary"
-              size="md"
-              disabled={!inputText.trim()}
-              className="rounded-2xl px-4 bg-[#8B1E3F] hover:bg-[#721733] text-white disabled:opacity-50"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </form>
+            {/* Voice Recorder Overlay Bar */}
+            {isVoiceRecording ? (
+              <VoiceRecorder
+                onSendVoice={handleSendVoiceBlob}
+                onCancel={() => setIsVoiceRecording(false)}
+              />
+            ) : (
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                <div className="flex items-center gap-1 text-stone-400 relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsVoiceRecording(true)}
+                    className="p-2 hover:bg-stone-100 rounded-xl hover:text-[#8B1E3F] transition-colors"
+                    title="Record Voice Note"
+                  >
+                    <Mic className="h-4.5 w-4.5" />
+                  </button>
 
-        </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAttachmentPickerOpen(prev => !prev)}
+                    className="p-2 hover:bg-stone-100 rounded-xl hover:text-[#8B1E3F] transition-colors"
+                    title="Attach File / Media"
+                  >
+                    <Paperclip className="h-4.5 w-4.5" />
+                  </button>
+                </div>
 
-        {/* ================= FAR RIGHT PROFILES DRAWER (COL 3 - TOGGLEABLE) ================= */}
-        {showRightDrawer && (
+                <input
+                  type="text"
+                  placeholder={`Write a respectful message to ${activeProfile.name.split(' ')[0]}...`}
+                  value={inputText}
+                  onChange={e => setInputText(e.target.value)}
+                  className="flex-1 bg-stone-100/80 border border-stone-200/90 rounded-2xl px-4 py-2.5 text-xs font-medium text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30"
+                />
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  disabled={!inputText.trim() || sendTextMessageMutation.isPending}
+                  className="rounded-2xl px-4 bg-[#8B1E3F] hover:bg-[#721733] text-white disabled:opacity-50"
+                >
+                  {sendTextMessageMutation.isPending ? (
+                    <DotsLoader size="sm" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </form>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+
+    {/* ================= FAR RIGHT PROFILES DRAWER (COL 3 - TOGGLEABLE) ================= */}
+    {showRightDrawer && activeProfile && (
           <div className="hidden lg:flex lg:col-span-3 border-l border-stone-200/80 bg-stone-50/50 flex-col h-full overflow-y-auto p-4 space-y-6 scrollbar-thin">
             {/* Drawer Header */}
             <div className="flex items-center justify-between pb-3 border-b border-stone-200/80">
@@ -498,118 +771,43 @@ export const MessagesPage: React.FC = () => {
                 />
                 {activeProfile.verified && (
                   <span className="absolute bottom-0 right-0 bg-emerald-600 text-white p-1 rounded-full ring-2 ring-white">
-                    <ShieldCheck className="h-3.5 w-3.5" />
+                    <ShieldCheck className="h-4 w-4" />
                   </span>
                 )}
               </div>
 
               <div>
-                <h4 className="font-serif font-bold text-lg text-stone-900">{activeProfile.name}</h4>
-                <p className="text-xs text-stone-500 font-semibold">{activeProfile.profession}</p>
-                <p className="text-[11px] text-stone-400">{activeProfile.city}, {activeProfile.state}</p>
+                <h4 className="font-serif font-bold text-base text-stone-900">{activeProfile.name}</h4>
+                <p className="text-xs text-[#8B1E3F] font-bold mt-0.5">{activeProfile.religion} • {activeProfile.caste}</p>
+                <p className="text-[11px] text-stone-500 font-medium">{activeProfile.profession}</p>
               </div>
 
-              <div className="pt-2 flex items-center justify-center gap-2 border-t border-stone-100">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => navigate(`/profile/${activeProfile.id}`)}
-                  className="w-full text-xs h-8 font-semibold border-stone-200"
-                >
-                  Full Profile
-                </Button>
-              </div>
-            </div>
-
-            {/* Key Match Specs */}
-            <div className="bg-white p-4 rounded-2xl border border-stone-200/80 space-y-3">
-              <h4 className="font-serif font-bold text-xs text-stone-900 uppercase tracking-wider text-[#8B1E3F]">
-                Match Summary
-              </h4>
-
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-500 font-medium">Age & Height:</span>
-                  <span className="text-stone-900 font-bold">{activeProfile.age} yrs, {activeProfile.height}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-500 font-medium">Religion & Caste:</span>
-                  <span className="text-stone-900 font-bold">{activeProfile.religion}, {activeProfile.caste}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-500 font-medium">Education:</span>
-                  <span className="text-stone-900 font-bold truncate max-w-[130px]">{activeProfile.education}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-500 font-medium">Marital Status:</span>
-                  <span className="text-stone-900 font-bold">{activeProfile.maritalStatus}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Compatibility Progress */}
-            <div className="bg-gradient-to-br from-[#8B1E3F]/5 to-[#D4AF37]/10 p-4 rounded-2xl border border-[#8B1E3F]/20 space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-[#8B1E3F] flex items-center gap-1">
-                  <Sparkles className="h-3.5 w-3.5 text-[#D4AF37]" /> AI Match Score
-                </span>
-                <span className="text-[#8B1E3F]">{activeProfile.matchPercentage}%</span>
-              </div>
-              <div className="h-2 w-full bg-stone-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-[#8B1E3F] to-[#D4AF37] rounded-full"
-                  style={{ width: `${activeProfile.matchPercentage}%` }}
-                />
-              </div>
-              <p className="text-[10px] text-stone-600 font-medium pt-1">
-                High compatibility in career goals, lifestyle & horoscope.
-              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate(`/profile/${activeProfile.id}`)}
+                className="w-full text-xs font-bold border-stone-200 hover:bg-stone-50"
+              >
+                View Full Profile
+              </Button>
             </div>
           </div>
         )}
 
       </div>
 
-      {/* Video Call Modal */}
-      <Modal isOpen={isVideoModalOpen} onClose={() => setIsVideoModalOpen(false)} title={`Video Call with ${activeProfile.name}`}>
-        <div className="space-y-4 text-center">
-          <div className="aspect-video bg-stone-900 rounded-3xl flex flex-col items-center justify-center text-white space-y-3 p-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-            <div className="relative z-10 space-y-2">
-              <img
-                src={activeProfile.profileImage}
-                alt=""
-                className="h-20 w-20 rounded-full object-cover ring-4 ring-[#D4AF37] mx-auto animate-pulse"
-              />
-              <h4 className="font-serif font-bold text-xl text-white">{activeProfile.name}</h4>
-              <p className="text-xs text-amber-300 font-semibold flex items-center justify-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" /> Calling... Securing 128-bit Encrypted Video
-              </p>
-            </div>
-          </div>
-          <Button variant="danger" size="md" onClick={() => setIsVideoModalOpen(false)} className="w-full font-bold">
-            End Call
-          </Button>
-        </div>
-      </Modal>
-
-      {/* Audio Call Modal */}
-      <Modal isOpen={isAudioModalOpen} onClose={() => setIsAudioModalOpen(false)} title={`Voice Call with ${activeProfile.name}`}>
-        <div className="space-y-4 text-center p-4">
-          <div className="p-8 bg-stone-100 rounded-3xl space-y-3">
-            <img
-              src={activeProfile.profileImage}
-              alt=""
-              className="h-20 w-20 rounded-full object-cover ring-4 ring-[#8B1E3F] mx-auto"
-            />
-            <h4 className="font-serif font-bold text-lg text-stone-900">{activeProfile.name}</h4>
-            <p className="text-xs text-emerald-700 font-bold">Connecting Audio Channel...</p>
-          </div>
-          <Button variant="danger" size="md" onClick={() => setIsAudioModalOpen(false)} className="w-full font-bold">
-            Cancel Call
-          </Button>
-        </div>
-      </Modal>
+      {/* WebRTC Audio & Video Call Modal */}
+      <CallModal
+        isOpen={isCallModalOpen}
+        onClose={() => setIsCallModalOpen(false)}
+        callType={callType}
+        recipientName={activeProfile?.name || 'Verified Member'}
+        recipientAvatar={activeProfile?.profileImage}
+        roomId={numericRoomId}
+        recipientId={activeProfile?.id}
+        isIncoming={isIncomingCall}
+        incomingCallData={activeCallData}
+      />
     </div>
   );
 };

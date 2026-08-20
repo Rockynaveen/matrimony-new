@@ -22,7 +22,7 @@ export function useConversations() {
     queryKey: chatKeys.conversations(),
     queryFn: () => chatApi.getConversations(),
     enabled: hasToken,
-    refetchInterval: 15000 // Background polling for new conversations every 15s
+    refetchInterval: 20000 // Background polling for new conversations every 20s
   });
 }
 
@@ -34,7 +34,7 @@ export function useRoomMessages(roomId: number | string) {
     queryKey: chatKeys.messages(roomId),
     queryFn: () => chatApi.getConversationMessages(roomId),
     enabled: hasToken && validId,
-    refetchInterval: 6000 // Poll messages every 6s when inside active chat room
+    refetchInterval: 8000 // Poll messages every 8s when inside active chat room
   });
 }
 
@@ -43,7 +43,36 @@ export function useSendTextMessage() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: SendTextMessagePayload) => chatApi.sendTextMessage(payload),
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
+      const roomIdStr = String(variables.room_id);
+
+      queryClient.setQueryData<import('../types/chat.types').ChatMessageOut[]>(chatKeys.messages(roomIdStr), (old = []) => {
+        const currentUserId = Number(localStorage.getItem('user_id') || 0);
+        const createdMsg: import('../types/chat.types').ChatMessageOut = (data && (data.id || data.message || data.content)) ? {
+          ...data,
+          message: data.message || data.content || variables.message,
+          content: data.content || data.message || variables.message,
+          is_me: true
+        } : {
+          id: Date.now(),
+          room_id: Number(variables.room_id),
+          sender_id: currentUserId,
+          receiver_id: Number(variables.room_id),
+          message: variables.message,
+          content: variables.message,
+          created_at: new Date().toISOString(),
+          timestamp: new Date().toISOString(),
+          is_me: true,
+          read: false
+        };
+
+        const existing = old || [];
+        if (existing.some(m => m.id === createdMsg.id)) {
+          return existing;
+        }
+        return [...existing, createdMsg];
+      });
+
       queryClient.invalidateQueries({ queryKey: chatKeys.messages(variables.room_id) });
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
     }

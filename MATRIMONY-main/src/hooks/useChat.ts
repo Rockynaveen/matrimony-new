@@ -67,9 +67,18 @@ export function useSendTextMessage() {
         };
 
         const existing = old || [];
-        if (existing.some(m => m.id === createdMsg.id)) {
-          return existing;
-        }
+        const msgText = String(createdMsg.message || createdMsg.content || '').trim();
+        const msgTime = new Date(createdMsg.timestamp || createdMsg.created_at || 0).getTime() || Date.now();
+
+        const isDup = existing.some(m => {
+          if (String(m.id) === String(createdMsg.id)) return true;
+          const text = String(m.message || m.content || '').trim();
+          const t = new Date(m.timestamp || m.created_at || 0).getTime() || Number(m.id) || 0;
+          if (text === msgText && Math.abs(t - msgTime) < 10000) return true;
+          return false;
+        });
+
+        if (isDup) return existing;
         return [...existing, createdMsg];
       });
 

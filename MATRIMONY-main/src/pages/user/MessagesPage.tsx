@@ -25,7 +25,9 @@ import {
   Trash2,
   MoreVertical,
   FileText,
-  Play
+  Play,
+  Home,
+  ChevronRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -206,10 +208,11 @@ export const MessagesPage: React.FC = () => {
   const [isIncomingCall, setIsIncomingCall] = useState(false);
   const [activeMessageMenuId, setActiveMessageMenuId] = useState<number | string | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatScrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Mark room as seen on select
+  // Mark room as seen on select & keep window at top
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as any });
     if (numericRoomId) {
       markSeenMutation.mutate(numericRoomId);
     }
@@ -224,13 +227,52 @@ export const MessagesPage: React.FC = () => {
     }
   }, [activeCallData]);
 
-  // Auto-scroll to bottom on message load/send
+  // Auto-scroll inner chat container only to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatScrollContainerRef.current) {
+      chatScrollContainerRef.current.scrollTop = chatScrollContainerRef.current.scrollHeight;
+    }
   }, [remoteMessages, inputText]);
 
-  // Combine API Messages
-  const displayMessages: ChatMessageOut[] = remoteMessages || [];
+  // Combine API Messages and sort chronologically ascending with strict deduplication
+  const displayMessages: ChatMessageOut[] = React.useMemo(() => {
+    const rawList = (remoteMessages || []).filter(m => {
+      const text = String(m.message || m.content || m.text || '').trim().toLowerCase();
+      return text &&
+        text !== 'message sent successfully.' &&
+        text !== 'message sent successfully' &&
+        text !== 'success' &&
+        text !== 'ok';
+    });
+
+    const deduped: ChatMessageOut[] = [];
+    for (const m of rawList) {
+      const idKey = String(m.id);
+      const mText = String(m.message || m.content || '').trim();
+      const mTime = new Date(m.timestamp || m.created_at || 0).getTime() || Number(m.id) || 0;
+
+      const isDup = deduped.some(existing => {
+        if (String(existing.id) === idKey) return true;
+        const exText = String(existing.message || existing.content || '').trim();
+        const exTime = new Date(existing.timestamp || existing.created_at || 0).getTime() || Number(existing.id) || 0;
+        if (exText === mText && Math.abs(exTime - mTime) < 10000) return true;
+        return false;
+      });
+
+      if (!isDup) deduped.push(m);
+    }
+
+    const getTime = (msg: ChatMessageOut) => {
+      const ts = msg.timestamp || msg.created_at;
+      if (!ts) return 0;
+      const num = Number(ts);
+      if (!isNaN(num) && num > 1000000000) return num;
+      const t = new Date(ts).getTime();
+      return isNaN(t) ? (typeof msg.id === 'number' ? msg.id : 0) : t;
+    };
+
+    return deduped.sort((a, b) => getTime(a) - getTime(b));
+  }, [remoteMessages]);
 
   // Icebreaker Suggestions
   const icebreakers = [
@@ -347,8 +389,23 @@ export const MessagesPage: React.FC = () => {
   });
 
   return (
-    <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-6 py-2 sm:py-3 h-[calc(100vh-4rem)]">
-      <div className="h-full rounded-3xl border border-stone-200/90 bg-white/95 backdrop-blur-xl overflow-hidden grid grid-cols-1 md:grid-cols-12 select-none">
+    <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-6 py-2 sm:py-3 h-[90vh] flex flex-col overflow-hidden">
+      {/* Breadcrumbs Navigation */}
+      <div className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold text-stone-500 shrink-0">
+        <span onClick={() => navigate('/home')} className="hover:text-[#8B1E3F] cursor-pointer flex items-center gap-1">
+          <Home className="h-3.5 w-3.5" /> Home
+        </span>
+        <ChevronRight className="h-3 w-3 text-stone-400" />
+        <span onClick={() => navigate('/matches')} className="hover:text-[#8B1E3F] cursor-pointer">
+          Matches
+        </span>
+        <ChevronRight className="h-3 w-3 text-stone-400" />
+        <span className="text-[#8B1E3F] font-bold">
+          Messages {activeProfile ? `• ${activeProfile.name}` : ''}
+        </span>
+      </div>
+
+      <div className="flex-1 rounded-3xl border border-stone-200/90 bg-white/95 backdrop-blur-xl overflow-hidden grid grid-cols-1 md:grid-cols-12 select-none">
         
         {/* ================= LEFT CONVERSATION SIDEBAR (COL 4) ================= */}
         <div className="md:col-span-4 border-r border-stone-200/80 bg-stone-50/50 flex flex-col h-full overflow-hidden">
@@ -575,13 +632,13 @@ export const MessagesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Messages Scroll Area */}
-          <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-gradient-to-b from-stone-50/40 via-white to-stone-50/30 scrollbar-thin relative">
+          {/* Messages Scroll Area (Shadcn Modern Light Theme) */}
+          <div ref={chatScrollContainerRef} className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-gradient-to-b from-[#FAF8F5] via-white to-[#F7F5F0] scrollbar-thin relative">
             
             {/* Security Banner */}
             <div className="text-center my-2">
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-stone-500 bg-amber-50 text-amber-900 px-3.5 py-1.5 rounded-full border border-amber-200/70 shadow-2xs">
-                <Lock className="h-3 w-3 text-amber-700" /> End-to-End Encrypted Matrimonial Conversation
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-800 bg-emerald-50/90 px-3.5 py-1.5 rounded-full border border-emerald-200/80 shadow-2xs">
+                <Lock className="h-3 w-3 text-emerald-700" /> End-to-End Encrypted Matrimonial Conversation
               </span>
             </div>
 
@@ -592,7 +649,7 @@ export const MessagesPage: React.FC = () => {
               </div>
             ) : displayMessages.length === 0 ? (
               <div className="py-16 text-center space-y-3 max-w-sm mx-auto">
-                <div className="h-12 w-12 bg-stone-100 border border-stone-200 rounded-full flex items-center justify-center mx-auto text-[#8B1E3F]">
+                <div className="h-12 w-12 bg-white border border-stone-200 rounded-full flex items-center justify-center mx-auto text-[#8B1E3F] shadow-xs">
                   <MessageSquare className="h-6 w-6" />
                 </div>
                 <div>
@@ -666,8 +723,8 @@ export const MessagesPage: React.FC = () => {
                             <div
                               className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
                                 isMe
-                                  ? 'bg-gradient-to-r from-[#8B1E3F] via-[#A0234A] to-[#8B1E3F] text-white rounded-br-xs font-normal shadow-xs'
-                                  : 'bg-stone-100/90 text-stone-800 border border-stone-200/80 rounded-bl-xs font-medium'
+                                  ? 'bg-[#8B1E3F] text-white rounded-br-xs font-normal shadow-xs'
+                                  : 'bg-white text-stone-800 border border-stone-200/90 rounded-bl-xs font-medium shadow-2xs'
                               }`}
                             >
                               {messageText}
@@ -715,8 +772,6 @@ export const MessagesPage: React.FC = () => {
                 );
               })
             )}
-
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Icebreaker Suggestions */}
@@ -735,8 +790,8 @@ export const MessagesPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Composer Input Bar */}
-          <div className="p-3.5 border-t border-stone-200/80 bg-white relative">
+          {/* Composer Input Bar (Fixed at bottom within 100vh) */}
+          <div className="p-3.5 border-t border-stone-200/80 bg-white relative shrink-0">
             {/* Attachment Menu Popup */}
             <AttachmentPicker
               isOpen={isAttachmentPickerOpen}

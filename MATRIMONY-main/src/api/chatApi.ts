@@ -75,30 +75,71 @@ export const chatApi = {
 
     const currentUserId = Number(localStorage.getItem('user_id') || 0);
 
-    const apiMapped: ChatMessageOut[] = rawList.map((item, idx) => ({
-      id: item.id || item.message_id || `msg_${Date.now()}_${idx}`,
-      room_id: Number(item.room_id || roomId),
-      sender_id: Number(item.sender_id || item.sender || item.from_user || 0),
-      receiver_id: Number(item.receiver_id || item.receiver || item.to_user || roomId),
-      message: item.message || item.content || item.text || '',
-      content: item.content || item.message || item.text || '',
-      created_at: item.created_at || item.timestamp || item.created_on || new Date().toISOString(),
-      timestamp: item.timestamp || item.created_at || item.created_on || new Date().toISOString(),
-      is_me: item.is_me ?? (item.sender_id === currentUserId || item.sender === currentUserId),
-      read: item.read ?? item.is_read ?? false
-    }));
+    const isGenericStatusText = (str: string) => {
+      const lower = str.trim().toLowerCase();
+      return lower === 'message sent successfully.' ||
+        lower === 'message sent successfully' ||
+        lower === 'success' ||
+        lower === 'ok';
+    };
+
+    const apiMapped: ChatMessageOut[] = rawList
+      .filter(item => {
+        const text = String(item.message || item.content || item.text || '').trim();
+        return text && !isGenericStatusText(text);
+      })
+      .map((item, idx) => ({
+        id: item.id || item.message_id || `msg_${Date.now()}_${idx}`,
+        room_id: Number(item.room_id || roomId),
+        sender_id: Number(item.sender_id || item.sender || item.from_user || 0),
+        receiver_id: Number(item.receiver_id || item.receiver || item.to_user || roomId),
+        message: item.message || item.content || item.text || '',
+        content: item.content || item.message || item.text || '',
+        created_at: item.created_at || item.timestamp || item.created_on || new Date().toISOString(),
+        timestamp: item.timestamp || item.created_at || item.created_on || new Date().toISOString(),
+        is_me: item.is_me ?? (item.sender_id === currentUserId || item.sender === currentUserId),
+        read: item.read ?? item.is_read ?? false
+      }));
 
     try {
-      const localStored: ChatMessageOut[] = JSON.parse(localStorage.getItem(`local_chat_messages_${roomId}`) || '[]');
-      const mergedMap = new Map<string | number, ChatMessageOut>();
-      apiMapped.forEach(m => mergedMap.set(String(m.id), m));
-      localStored.forEach(m => {
-        const key = String(m.id);
-        if (!mergedMap.has(key)) {
-          mergedMap.set(key, m);
-        }
+      const rawLocalStored: ChatMessageOut[] = JSON.parse(localStorage.getItem(`local_chat_messages_${roomId}`) || '[]');
+      const localStored = rawLocalStored.filter(m => {
+        const text = String(m.message || m.content || m.text || '').trim();
+        return text && !isGenericStatusText(text);
       });
-      return Array.from(mergedMap.values());
+
+      // Update clean local storage
+      localStorage.setItem(`local_chat_messages_${roomId}`, JSON.stringify(localStored));
+
+      const allMessages = [...apiMapped, ...localStored];
+      const deduped: ChatMessageOut[] = [];
+
+      for (const m of allMessages) {
+        const idKey = String(m.id);
+        const mText = String(m.message || m.content || '').trim();
+        const mTime = new Date(m.timestamp || m.created_at || 0).getTime() || Number(m.id) || 0;
+
+        const isDup = deduped.some(existing => {
+          if (String(existing.id) === idKey) return true;
+          const exText = String(existing.message || existing.content || '').trim();
+          const exTime = new Date(existing.timestamp || existing.created_at || 0).getTime() || Number(existing.id) || 0;
+          if (exText === mText && Math.abs(exTime - mTime) < 10000) return true;
+          return false;
+        });
+
+        if (!isDup) deduped.push(m);
+      }
+
+      const parseTime = (msg: ChatMessageOut): number => {
+        const ts = msg.timestamp || msg.created_at;
+        if (!ts) return 0;
+        const num = Number(ts);
+        if (!isNaN(num) && num > 1000000000) return num;
+        const parsed = new Date(ts).getTime();
+        return isNaN(parsed) ? (typeof msg.id === 'number' ? msg.id : 0) : parsed;
+      };
+
+      return deduped.sort((a, b) => parseTime(a) - parseTime(b));
     } catch {
       return apiMapped;
     }
@@ -146,28 +187,24 @@ export const chatApi = {
             continue;
           }
 
-          createdMsg = resData && (resData.id || resData.message || resData.content) ? {
+          const rawResMsg = typeof resData.message === 'string' ? resData.message : '';
+          const isGenericStatusMsg = rawResMsg.toLowerCase().includes('success') ||
+            rawResMsg.toLowerCase().includes('sent') ||
+            rawResMsg.toLowerCase().includes('ok');
+
+          const finalMsgText = (!isGenericStatusMsg && rawResMsg ? rawResMsg : (resData.content || resData.text || msgText)).trim();
+
+          createdMsg = {
             ...resData,
             id: resData.id || Date.now(),
             room_id: roomIdNum,
             sender_id: currentUserId,
             receiver_id: roomIdNum,
-            message: resData.message || resData.content || msgText,
-            content: resData.content || resData.message || msgText,
+            message: finalMsgText || msgText,
+            content: finalMsgText || msgText,
             created_at: resData.created_at || new Date().toISOString(),
             timestamp: resData.timestamp || new Date().toISOString(),
             is_me: true
-          } : {
-            id: Date.now(),
-            room_id: roomIdNum,
-            sender_id: currentUserId,
-            receiver_id: roomIdNum,
-            message: msgText,
-            content: msgText,
-            created_at: new Date().toISOString(),
-            timestamp: new Date().toISOString(),
-            is_me: true,
-            read: false
           };
           break;
         }

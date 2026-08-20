@@ -83,12 +83,13 @@ export const matchingApi = {
     }
     
     try {
+      const ignoredSet = new Set(JSON.parse(localStorage.getItem('local_ignored_user_ids') || '[]'));
       const deletedSet = new Set(JSON.parse(localStorage.getItem('local_deleted_interest_ids') || '[]'));
       const acceptedSet = new Set(JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]'));
       const rejectedSet = new Set(JSON.parse(localStorage.getItem('local_rejected_interest_ids') || '[]'));
 
       return rawList
-        .filter(item => !deletedSet.has(item.id))
+        .filter(item => !deletedSet.has(item.id) && !ignoredSet.has(item.to_user) && !ignoredSet.has(item.from_user))
         .map(item => {
           const itemStatus = String(item.status || '').toLowerCase();
           if (itemStatus === 'accepted' || acceptedSet.has(item.id) || acceptedSet.has(item.to_user)) {
@@ -133,12 +134,13 @@ export const matchingApi = {
     }
 
     try {
+      const ignoredSet = new Set(JSON.parse(localStorage.getItem('local_ignored_user_ids') || '[]'));
       const deletedSet = new Set(JSON.parse(localStorage.getItem('local_deleted_interest_ids') || '[]'));
       const acceptedSet = new Set(JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]'));
       const rejectedSet = new Set(JSON.parse(localStorage.getItem('local_rejected_interest_ids') || '[]'));
 
       return rawList
-        .filter(item => !deletedSet.has(item.id))
+        .filter(item => !deletedSet.has(item.id) && !ignoredSet.has(item.from_user) && !ignoredSet.has(item.to_user))
         .map(item => {
           const itemStatus = String(item.status || '').toLowerCase();
           if (itemStatus === 'accepted' || acceptedSet.has(item.id) || acceptedSet.has(item.from_user)) {
@@ -175,6 +177,12 @@ export const matchingApi = {
 
     if (isAccepting) {
       candidateUrls = [
+        { method: 'patch', url: `/matching/interest/${interestId}/update` },
+        { method: 'patch', url: `/matching/interest/${interestId}/update/` },
+        { method: 'put', url: `/matching/interest/${interestId}/update` },
+        { method: 'put', url: `/matching/interest/${interestId}/update/` },
+        { method: 'post', url: `/matching/interest/${interestId}/update` },
+        { method: 'post', url: `/matching/interest/${interestId}/update/` },
         { method: 'post', url: `/matching/interest/${interestId}/accept/` },
         { method: 'post', url: `/matching/interest/${interestId}/accept` },
         { method: 'post', url: `/matching/interests/${interestId}/accept/` },
@@ -187,11 +195,16 @@ export const matchingApi = {
         { method: 'patch', url: `/matching/interest/${interestId}` },
         { method: 'put', url: `/matching/interests/${interestId}/` },
         { method: 'patch', url: `/matching/interests/${interestId}/` },
-        { method: 'put', url: `/matching/interest/${interestId}/update` },
         { method: 'post', url: `/matching/interest/accept/${interestId}` }
       ];
     } else if (isRejecting) {
       candidateUrls = [
+        { method: 'patch', url: `/matching/interest/${interestId}/update` },
+        { method: 'patch', url: `/matching/interest/${interestId}/update/` },
+        { method: 'put', url: `/matching/interest/${interestId}/update` },
+        { method: 'put', url: `/matching/interest/${interestId}/update/` },
+        { method: 'post', url: `/matching/interest/${interestId}/update` },
+        { method: 'post', url: `/matching/interest/${interestId}/update/` },
         { method: 'post', url: `/matching/interest/${interestId}/decline/` },
         { method: 'post', url: `/matching/interest/${interestId}/decline` },
         { method: 'post', url: `/matching/interests/${interestId}/decline/` },
@@ -207,6 +220,12 @@ export const matchingApi = {
       ];
     } else {
       candidateUrls = [
+        { method: 'patch', url: `/matching/interest/${interestId}/update` },
+        { method: 'patch', url: `/matching/interest/${interestId}/update/` },
+        { method: 'put', url: `/matching/interest/${interestId}/update` },
+        { method: 'put', url: `/matching/interest/${interestId}/update/` },
+        { method: 'post', url: `/matching/interest/${interestId}/update` },
+        { method: 'post', url: `/matching/interest/${interestId}/update/` },
         { method: 'put', url: `/matching/interest/${interestId}/` },
         { method: 'patch', url: `/matching/interest/${interestId}/` },
         { method: 'post', url: `/matching/interest/${interestId}/respond` },
@@ -319,6 +338,13 @@ export const matchingApi = {
     if (!userId || userId <= 0) {
       throw new Error('Invalid user ID for ignore');
     }
+
+    try {
+      const ignoredSet = new Set(JSON.parse(localStorage.getItem('local_ignored_user_ids') || '[]'));
+      ignoredSet.add(userId);
+      localStorage.setItem('local_ignored_user_ids', JSON.stringify(Array.from(ignoredSet)));
+    } catch {}
+
     const cleanPayload = { user: userId, reason: payload.reason || 'Not interested' };
     const res = await axiosClient.post<MessageResponseSchema>('/matching/ignore/add', cleanPayload);
     if (res.status >= 200 && res.status < 300) {

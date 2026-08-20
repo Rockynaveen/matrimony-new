@@ -58,7 +58,13 @@ export const ViewProfile: React.FC = () => {
   const receivedMatch = receivedInterests?.find(i => i.from_user === numericUserId);
   const sentMatch = sentInterests?.find(i => i.to_user === numericUserId);
 
-  const isInterestAccepted = (receivedMatch?.status?.toLowerCase() === 'accepted') || (sentMatch?.status?.toLowerCase() === 'accepted');
+  const acceptedSet = new Set(JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]'));
+  const isInterestAccepted =
+    (receivedMatch?.status?.toLowerCase() === 'accepted') ||
+    (sentMatch?.status?.toLowerCase() === 'accepted') ||
+    acceptedSet.has(numericUserId) ||
+    acceptedSet.has(Number(id));
+
   const isInterestDeclined = (receivedMatch?.status?.toLowerCase() === 'rejected' || receivedMatch?.status?.toLowerCase() === 'declined') || (sentMatch?.status?.toLowerCase() === 'rejected' || sentMatch?.status?.toLowerCase() === 'declined');
 
   // Resolve profile from AppContext profiles array or backend API recommendations/shortlist

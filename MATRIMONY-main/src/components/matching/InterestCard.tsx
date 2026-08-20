@@ -184,27 +184,14 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
         </div>
       </div>
 
-      <div className="flex flex-row md:flex-col items-center justify-end gap-2.5 w-full md:w-auto shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-stone-100">
+      <div className="flex flex-row md:flex-col items-center justify-end gap-2 w-full md:w-auto shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-stone-100">
+        {/* RECEIVED INTEREST (Pending) */}
         {type === 'received' && statusText.toLowerCase() === 'pending' && (
-          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={updateInterestMutation.isPending || deleteInterestMutation.isPending}
-              onClick={() => handleUpdateStatus('Rejected')}
-              className="text-xs border-amber-300 text-amber-900 hover:bg-amber-50 rounded-xl font-bold"
-            >
-              {updateInterestMutation.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <UserX className="h-3.5 w-3.5 mr-1 text-amber-700" />
-              )}
-              Ignore
-            </Button>
+          <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto justify-end">
             <Button
               size="sm"
               variant="primary"
-              disabled={updateInterestMutation.isPending || deleteInterestMutation.isPending}
+              disabled={updateInterestMutation.isPending || deleteInterestMutation.isPending || ignoreMutation.isPending}
               onClick={() => handleUpdateStatus('Accepted')}
               className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold"
             >
@@ -215,53 +202,93 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
               )}
               Accept
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={updateInterestMutation.isPending || deleteInterestMutation.isPending || ignoreMutation.isPending}
+              onClick={handleIgnoreProfile}
+              className="text-xs border-amber-300 text-amber-900 hover:bg-amber-50 rounded-xl font-bold"
+            >
+              {ignoreMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <UserX className="h-3.5 w-3.5 mr-1 text-amber-700" />
+              )}
+              Ignore
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={deleteInterestMutation.isPending}
+              onClick={handleDeleteInterest}
+              className="text-xs border-rose-200 text-rose-700 hover:bg-rose-50 rounded-xl font-bold"
+            >
+              {deleteInterestMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+              )}
+              Delete
+            </Button>
           </div>
         )}
 
+        {/* ACCEPTED INTEREST (Both Sender & Receiver) */}
         {statusText.toLowerCase() === 'accepted' && (
+          <div className="flex flex-col gap-1.5 w-full md:w-auto">
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={handleStartChat}
+              className="text-xs bg-[#8B1E3F] hover:bg-[#721733] text-white rounded-xl font-bold flex items-center gap-1 w-full justify-center"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              Open Chat
+            </Button>
+            <div className="flex items-center gap-1.5 w-full">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={ignoreMutation.isPending}
+                onClick={handleIgnoreProfile}
+                className="text-[11px] border-stone-200 text-stone-600 hover:bg-stone-50 rounded-xl font-bold flex-1 justify-center"
+              >
+                {ignoreMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserX className="h-3 w-3 mr-1" />}
+                Ignore Profile
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={deleteInterestMutation.isPending}
+                onClick={handleDeleteInterest}
+                className="text-[11px] border-rose-200 text-rose-700 hover:bg-rose-50 rounded-xl font-bold flex-1 justify-center"
+              >
+                {deleteInterestMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3 mr-1" />}
+                Withdraw Profile
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* SENT INTEREST (Pending) */}
+        {type === 'sent' && statusText.toLowerCase() === 'pending' && (
           <Button
             size="sm"
-            variant="primary"
-            onClick={handleStartChat}
-            className="text-xs bg-[#8B1E3F] hover:bg-[#721733] text-white rounded-xl font-bold flex items-center gap-1 w-full md:w-auto justify-center"
+            variant="outline"
+            disabled={deleteInterestMutation.isPending}
+            onClick={handleDeleteInterest}
+            className="text-xs border-rose-200 text-rose-700 hover:bg-rose-50 rounded-xl font-bold flex items-center gap-1 w-full md:w-auto justify-center"
           >
-            <MessageSquare className="h-3.5 w-3.5" />
-            Open Chat
+            {deleteInterestMutation.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+            )}
+            Withdraw
           </Button>
         )}
 
-        {/* Ignore Profile Button */}
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={ignoreMutation.isPending}
-          onClick={handleIgnoreProfile}
-          className="text-xs border-stone-200 text-stone-600 hover:bg-stone-50 rounded-xl font-bold flex items-center gap-1 w-full md:w-auto justify-center"
-        >
-          {ignoreMutation.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <UserX className="h-3.5 w-3.5" />
-          )}
-          Ignore Profile
-        </Button>
-
-        {/* Delete / Withdraw Button */}
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={deleteInterestMutation.isPending}
-          onClick={handleDeleteInterest}
-          className="text-xs border-rose-200 text-rose-700 hover:bg-rose-50 rounded-xl font-bold flex items-center gap-1 w-full md:w-auto justify-center"
-        >
-          {deleteInterestMutation.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5" />
-          )}
-          {type === 'sent' ? 'Withdraw' : 'Delete Interest'}
-        </Button>
-
+        {/* View Profile Button (Always Present) */}
         <Button
           size="sm"
           variant="outline"

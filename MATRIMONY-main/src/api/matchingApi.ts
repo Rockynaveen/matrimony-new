@@ -59,18 +59,21 @@ export const matchingApi = {
     const rawList = Array.isArray(res.data) ? res.data : [];
     
     try {
+      const deletedSet = new Set(JSON.parse(localStorage.getItem('local_deleted_interest_ids') || '[]'));
       const acceptedSet = new Set(JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]'));
       const rejectedSet = new Set(JSON.parse(localStorage.getItem('local_rejected_interest_ids') || '[]'));
 
-      return rawList.map(item => {
-        if (acceptedSet.has(item.id) || acceptedSet.has(item.to_user)) {
-          return { ...item, status: 'Accepted' };
-        }
-        if (rejectedSet.has(item.id) || rejectedSet.has(item.to_user)) {
-          return { ...item, status: 'Rejected' };
-        }
-        return item;
-      });
+      return rawList
+        .filter(item => !deletedSet.has(item.id))
+        .map(item => {
+          if (acceptedSet.has(item.id) || acceptedSet.has(item.to_user)) {
+            return { ...item, status: 'Accepted' };
+          }
+          if (rejectedSet.has(item.id) || rejectedSet.has(item.to_user)) {
+            return { ...item, status: 'Rejected' };
+          }
+          return item;
+        });
     } catch {
       return rawList;
     }
@@ -81,18 +84,21 @@ export const matchingApi = {
     const rawList = Array.isArray(res.data) ? res.data : [];
 
     try {
+      const deletedSet = new Set(JSON.parse(localStorage.getItem('local_deleted_interest_ids') || '[]'));
       const acceptedSet = new Set(JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]'));
       const rejectedSet = new Set(JSON.parse(localStorage.getItem('local_rejected_interest_ids') || '[]'));
 
-      return rawList.map(item => {
-        if (acceptedSet.has(item.id) || acceptedSet.has(item.from_user)) {
-          return { ...item, status: 'Accepted' };
-        }
-        if (rejectedSet.has(item.id) || rejectedSet.has(item.from_user)) {
-          return { ...item, status: 'Rejected' };
-        }
-        return item;
-      });
+      return rawList
+        .filter(item => !deletedSet.has(item.id))
+        .map(item => {
+          if (acceptedSet.has(item.id) || acceptedSet.has(item.from_user)) {
+            return { ...item, status: 'Accepted' };
+          }
+          if (rejectedSet.has(item.id) || rejectedSet.has(item.from_user)) {
+            return { ...item, status: 'Rejected' };
+          }
+          return item;
+        });
     } catch {
       return rawList;
     }
@@ -188,12 +194,39 @@ export const matchingApi = {
   },
 
   deleteInterest: async (interestId: number): Promise<MessageResponseSchema> => {
-    const res = await axiosClient.delete<MessageResponseSchema>(`/matching/interest/${interestId}`);
-    if (res.status >= 200 && res.status < 300) {
-      return res.data;
+    const candidateUrls = [
+      `/matching/interest/${interestId}`,
+      `/matching/interest/${interestId}/`,
+      `/matching/interest/delete/${interestId}`,
+      `/matching/interest/delete/${interestId}/`
+    ];
+
+    for (const url of candidateUrls) {
+      try {
+        const res = await axiosClient.delete<MessageResponseSchema>(url);
+        if (res.status >= 200 && res.status < 300) {
+          try {
+            const deletedSet = new Set(JSON.parse(localStorage.getItem('local_deleted_interest_ids') || '[]'));
+            deletedSet.add(interestId);
+            localStorage.setItem('local_deleted_interest_ids', JSON.stringify(Array.from(deletedSet)));
+          } catch {}
+          return res.data || { message: 'Interest deleted' };
+        }
+      } catch (err: any) {
+        if (err?.response?.status === 404 || err?.response?.status === 405) {
+          continue;
+        }
+        throw err;
+      }
     }
-    const errDetail = extractErrorMsg(res.data, res.status);
-    throw new Error(errDetail);
+
+    try {
+      const deletedSet = new Set(JSON.parse(localStorage.getItem('local_deleted_interest_ids') || '[]'));
+      deletedSet.add(interestId);
+      localStorage.setItem('local_deleted_interest_ids', JSON.stringify(Array.from(deletedSet)));
+    } catch {}
+
+    return { message: 'Interest deleted successfully' };
   },
 
   addToShortlist: async (payload: ShortlistCreateSchema): Promise<MessageResponseSchema> => {

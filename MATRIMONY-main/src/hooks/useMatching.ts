@@ -78,7 +78,19 @@ export function useUpdateInterest() {
   return useMutation({
     mutationFn: ({ interestId, payload }: { interestId: number; payload: InterestUpdateSchema }) =>
       matchingApi.updateInterest(interestId, payload),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      const status = variables.payload.status;
+
+      queryClient.setQueryData<InterestResponseSchema[]>(matchingKeys.receivedInterests(), (old) => {
+        if (!old) return [];
+        return old.map(item => item.id === variables.interestId ? { ...item, status } : item);
+      });
+
+      queryClient.setQueryData<InterestResponseSchema[]>(matchingKeys.sentInterests(), (old) => {
+        if (!old) return [];
+        return old.map(item => item.id === variables.interestId ? { ...item, status } : item);
+      });
+
       queryClient.invalidateQueries({ queryKey: matchingKeys.receivedInterests() });
       queryClient.invalidateQueries({ queryKey: matchingKeys.sentInterests() });
       queryClient.invalidateQueries({ queryKey: matchingKeys.recommendations() });
@@ -92,7 +104,17 @@ export function useDeleteInterest() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (interestId: number) => matchingApi.deleteInterest(interestId),
-    onSuccess: () => {
+    onSuccess: (data, interestId) => {
+      queryClient.setQueryData<InterestResponseSchema[]>(matchingKeys.receivedInterests(), (old) => {
+        if (!old) return [];
+        return old.filter(item => item.id !== interestId);
+      });
+
+      queryClient.setQueryData<InterestResponseSchema[]>(matchingKeys.sentInterests(), (old) => {
+        if (!old) return [];
+        return old.filter(item => item.id !== interestId);
+      });
+
       queryClient.invalidateQueries({ queryKey: matchingKeys.sentInterests() });
       queryClient.invalidateQueries({ queryKey: matchingKeys.receivedInterests() });
     }
@@ -138,7 +160,24 @@ export function useAddToIgnore() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: IgnoreCreateSchema) => matchingApi.addToIgnore(payload),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      const targetUserId = variables.user;
+
+      queryClient.setQueryData<InterestResponseSchema[]>(matchingKeys.receivedInterests(), (old) => {
+        if (!old) return [];
+        return old.filter(item => item.from_user !== targetUserId && item.to_user !== targetUserId);
+      });
+
+      queryClient.setQueryData<InterestResponseSchema[]>(matchingKeys.sentInterests(), (old) => {
+        if (!old) return [];
+        return old.filter(item => item.from_user !== targetUserId && item.to_user !== targetUserId);
+      });
+
+      queryClient.setQueryData<MatchResponseSchema[]>(matchingKeys.recommendations(), (old) => {
+        if (!old) return [];
+        return old.filter(item => item.user_id !== targetUserId);
+      });
+
       queryClient.invalidateQueries({ queryKey: matchingKeys.ignored() });
       queryClient.invalidateQueries({ queryKey: matchingKeys.recommendations() });
       queryClient.invalidateQueries({ queryKey: matchingKeys.receivedInterests() });

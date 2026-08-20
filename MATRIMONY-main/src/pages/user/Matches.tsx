@@ -22,9 +22,11 @@ export const MatchesPage: React.FC = () => {
   const sentInterestUserIds = sentInterests?.map(i => i.to_user) || [];
   const ignoredUserIds = ignoredList?.map(i => i.user_id) || [];
 
+  const localAcceptedSet = new Set(JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]'));
   const acceptedUserIds = new Set([
     ...(receivedInterests || []).filter(i => i.status?.toLowerCase() === 'accepted').map(i => i.from_user),
-    ...(sentInterests || []).filter(i => i.status?.toLowerCase() === 'accepted').map(i => i.to_user)
+    ...(sentInterests || []).filter(i => i.status?.toLowerCase() === 'accepted').map(i => i.to_user),
+    ...Array.from(localAcceptedSet).map(val => Number(val))
   ]);
 
   const userGender = (currentUser.gender || localStorage.getItem('logged_in_gender') || '').toLowerCase();

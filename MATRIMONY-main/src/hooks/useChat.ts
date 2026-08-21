@@ -159,7 +159,12 @@ export function useSendVoiceMessage() {
   return useMutation({
     mutationFn: ({ roomId, audioBlob }: { roomId: number | string; audioBlob: Blob | File }) =>
       chatApi.sendVoiceMessage(roomId, audioBlob),
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
+      const roomIdStr = String(variables.roomId);
+      queryClient.setQueryData<import('../types/chat.types').ChatMessageOut[]>(chatKeys.messages(roomIdStr), (old = []) => {
+        if (!data) return old;
+        return [...(old || []), data];
+      });
       queryClient.invalidateQueries({ queryKey: chatKeys.messages(variables.roomId) });
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
     }
@@ -172,7 +177,12 @@ export function useSendImageMessage() {
   return useMutation({
     mutationFn: ({ roomId, imageFile }: { roomId: number | string; imageFile: File }) =>
       chatApi.sendImageMessage(roomId, imageFile),
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
+      const roomIdStr = String(variables.roomId);
+      queryClient.setQueryData<import('../types/chat.types').ChatMessageOut[]>(chatKeys.messages(roomIdStr), (old = []) => {
+        if (!data) return old;
+        return [...(old || []), data];
+      });
       queryClient.invalidateQueries({ queryKey: chatKeys.messages(variables.roomId) });
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
     }
@@ -185,7 +195,12 @@ export function useSendVideoMessage() {
   return useMutation({
     mutationFn: ({ roomId, videoFile }: { roomId: number | string; videoFile: File }) =>
       chatApi.sendVideoMessage(roomId, videoFile),
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
+      const roomIdStr = String(variables.roomId);
+      queryClient.setQueryData<import('../types/chat.types').ChatMessageOut[]>(chatKeys.messages(roomIdStr), (old = []) => {
+        if (!data) return old;
+        return [...(old || []), data];
+      });
       queryClient.invalidateQueries({ queryKey: chatKeys.messages(variables.roomId) });
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
     }
@@ -198,7 +213,12 @@ export function useSendDocumentMessage() {
   return useMutation({
     mutationFn: ({ roomId, docFile }: { roomId: number | string; docFile: File }) =>
       chatApi.sendDocumentMessage(roomId, docFile),
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
+      const roomIdStr = String(variables.roomId);
+      queryClient.setQueryData<import('../types/chat.types').ChatMessageOut[]>(chatKeys.messages(roomIdStr), (old = []) => {
+        if (!data) return old;
+        return [...(old || []), data];
+      });
       queryClient.invalidateQueries({ queryKey: chatKeys.messages(variables.roomId) });
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
     }

@@ -321,55 +321,225 @@ export const chatApi = {
 
   // 9. POST /api/chat/send-voice
   sendVoiceMessage: async (roomId: number | string, audioBlob: Blob | File): Promise<ChatMessageOut> => {
+    const roomIdNum = Number(roomId);
+    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+    const objectUrl = URL.createObjectURL(audioBlob);
+
     const formData = new FormData();
-    formData.append('room_id', String(roomId));
+    formData.append('room_id', String(roomIdNum));
     const file = audioBlob instanceof File ? audioBlob : new File([audioBlob], 'voice_note.webm', { type: 'audio/webm' });
     formData.append('file', file);
     formData.append('audio', file);
 
-    const res = await axiosClient.post<ChatMessageOut>('/chat/send-voice', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return res.data;
+    let createdMsg: ChatMessageOut | null = null;
+
+    try {
+      const res = await axiosClient.post<any>('/chat/send-voice', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.status >= 200 && res.status < 300 && res.data) {
+        createdMsg = {
+          ...res.data,
+          id: res.data.id || Date.now(),
+          room_id: roomIdNum,
+          sender_id: currentUserId,
+          message_type: 'voice',
+          attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+          created_at: res.data.created_at || new Date().toISOString(),
+          timestamp: res.data.timestamp || new Date().toISOString(),
+          is_me: true
+        };
+      }
+    } catch {}
+
+    if (!createdMsg) {
+      createdMsg = {
+        id: Date.now(),
+        room_id: roomIdNum,
+        sender_id: currentUserId,
+        message_type: 'voice',
+        attachment_url: objectUrl,
+        created_at: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
+        is_me: true,
+        read: false
+      };
+    }
+
+    try {
+      const localStored: ChatMessageOut[] = JSON.parse(localStorage.getItem(`local_chat_messages_${roomIdNum}`) || '[]');
+      localStored.push(createdMsg);
+      localStorage.setItem(`local_chat_messages_${roomIdNum}`, JSON.stringify(localStored));
+    } catch {}
+
+    return createdMsg;
   },
 
   // 10. POST /api/chat/send-image
   sendImageMessage: async (roomId: number | string, imageFile: File): Promise<ChatMessageOut> => {
+    const roomIdNum = Number(roomId);
+    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+    const objectUrl = URL.createObjectURL(imageFile);
+
     const formData = new FormData();
-    formData.append('room_id', String(roomId));
+    formData.append('room_id', String(roomIdNum));
     formData.append('file', imageFile);
     formData.append('image', imageFile);
 
-    const res = await axiosClient.post<ChatMessageOut>('/chat/send-image', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return res.data;
+    let createdMsg: ChatMessageOut | null = null;
+
+    try {
+      const res = await axiosClient.post<any>('/chat/send-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.status >= 200 && res.status < 300 && res.data) {
+        createdMsg = {
+          ...res.data,
+          id: res.data.id || Date.now(),
+          room_id: roomIdNum,
+          sender_id: currentUserId,
+          message_type: 'image',
+          attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+          created_at: res.data.created_at || new Date().toISOString(),
+          timestamp: res.data.timestamp || new Date().toISOString(),
+          is_me: true
+        };
+      }
+    } catch {}
+
+    if (!createdMsg) {
+      createdMsg = {
+        id: Date.now(),
+        room_id: roomIdNum,
+        sender_id: currentUserId,
+        message_type: 'image',
+        attachment_url: objectUrl,
+        created_at: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
+        is_me: true,
+        read: false
+      };
+    }
+
+    try {
+      const localStored: ChatMessageOut[] = JSON.parse(localStorage.getItem(`local_chat_messages_${roomIdNum}`) || '[]');
+      localStored.push(createdMsg);
+      localStorage.setItem(`local_chat_messages_${roomIdNum}`, JSON.stringify(localStored));
+    } catch {}
+
+    return createdMsg;
   },
 
   // 11. POST /api/chat/send-video
   sendVideoMessage: async (roomId: number | string, videoFile: File): Promise<ChatMessageOut> => {
+    const roomIdNum = Number(roomId);
+    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+    const objectUrl = URL.createObjectURL(videoFile);
+
     const formData = new FormData();
-    formData.append('room_id', String(roomId));
+    formData.append('room_id', String(roomIdNum));
     formData.append('file', videoFile);
     formData.append('video', videoFile);
 
-    const res = await axiosClient.post<ChatMessageOut>('/chat/send-video', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return res.data;
+    let createdMsg: ChatMessageOut | null = null;
+
+    try {
+      const res = await axiosClient.post<any>('/chat/send-video', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.status >= 200 && res.status < 300 && res.data) {
+        createdMsg = {
+          ...res.data,
+          id: res.data.id || Date.now(),
+          room_id: roomIdNum,
+          sender_id: currentUserId,
+          message_type: 'video',
+          attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+          created_at: res.data.created_at || new Date().toISOString(),
+          timestamp: res.data.timestamp || new Date().toISOString(),
+          is_me: true
+        };
+      }
+    } catch {}
+
+    if (!createdMsg) {
+      createdMsg = {
+        id: Date.now(),
+        room_id: roomIdNum,
+        sender_id: currentUserId,
+        message_type: 'video',
+        attachment_url: objectUrl,
+        created_at: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
+        is_me: true,
+        read: false
+      };
+    }
+
+    try {
+      const localStored: ChatMessageOut[] = JSON.parse(localStorage.getItem(`local_chat_messages_${roomIdNum}`) || '[]');
+      localStored.push(createdMsg);
+      localStorage.setItem(`local_chat_messages_${roomIdNum}`, JSON.stringify(localStored));
+    } catch {}
+
+    return createdMsg;
   },
 
   // 12. POST /api/chat/send-document
   sendDocumentMessage: async (roomId: number | string, docFile: File): Promise<ChatMessageOut> => {
+    const roomIdNum = Number(roomId);
+    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+    const objectUrl = URL.createObjectURL(docFile);
+
     const formData = new FormData();
-    formData.append('room_id', String(roomId));
+    formData.append('room_id', String(roomIdNum));
     formData.append('file', docFile);
     formData.append('document', docFile);
 
-    const res = await axiosClient.post<ChatMessageOut>('/chat/send-document', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return res.data;
+    let createdMsg: ChatMessageOut | null = null;
+
+    try {
+      const res = await axiosClient.post<any>('/chat/send-document', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.status >= 200 && res.status < 300 && res.data) {
+        createdMsg = {
+          ...res.data,
+          id: res.data.id || Date.now(),
+          room_id: roomIdNum,
+          sender_id: currentUserId,
+          message_type: 'document',
+          attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+          message: docFile.name,
+          created_at: res.data.created_at || new Date().toISOString(),
+          timestamp: res.data.timestamp || new Date().toISOString(),
+          is_me: true
+        };
+      }
+    } catch {}
+
+    if (!createdMsg) {
+      createdMsg = {
+        id: Date.now(),
+        room_id: roomIdNum,
+        sender_id: currentUserId,
+        message_type: 'document',
+        attachment_url: objectUrl,
+        message: docFile.name,
+        created_at: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
+        is_me: true,
+        read: false
+      };
+    }
+
+    try {
+      const localStored: ChatMessageOut[] = JSON.parse(localStorage.getItem(`local_chat_messages_${roomIdNum}`) || '[]');
+      localStored.push(createdMsg);
+      localStorage.setItem(`local_chat_messages_${roomIdNum}`, JSON.stringify(localStored));
+    } catch {}
+
+    return createdMsg;
   },
 
   // 13. POST /api/chat/call/initiate

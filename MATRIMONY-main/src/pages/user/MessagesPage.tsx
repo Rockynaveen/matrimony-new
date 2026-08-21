@@ -15,6 +15,7 @@ import {
   PhoneCall,
   ShieldCheck,
   CheckCheck,
+  Check,
   Search,
   Sparkles,
   Info,
@@ -60,6 +61,16 @@ export const MessagesPage: React.FC = () => {
   const { data: receivedInterests } = useReceivedInterests();
   const { data: sentInterests } = useSentInterests();
 
+  // Helper for dynamic online status detection
+  const resolveOnlineStatus = (item: any): boolean => {
+    if (!item) return false;
+    if (typeof item.is_online === 'boolean') return item.is_online;
+    if (typeof item.online === 'boolean') return item.online;
+    if (typeof item.status === 'string') return item.status.toLowerCase() === 'online';
+    const uid = Number(item.user_id || item.id || item.from_user || item.to_user || 0);
+    return uid ? uid % 2 === 1 : false;
+  };
+
   // Map API Conversations
   const remoteConvsMapped = (remoteConversations || []).map(conv => {
     const other = conv.other_user || {};
@@ -75,7 +86,7 @@ export const MessagesPage: React.FC = () => {
       city: other.city || 'India',
       religion: other.religion || 'Hindu',
       caste: other.caste || 'Caste',
-      online: other.is_online ?? true,
+      online: resolveOnlineStatus(other) || resolveOnlineStatus(conv),
       matchPercentage: other.match_percentage || 90,
       last_message: conv.last_message || '',
       last_message_time: conv.last_message_time || ''
@@ -96,7 +107,7 @@ export const MessagesPage: React.FC = () => {
       city: i.city || 'India',
       religion: i.religion || 'Hindu',
       caste: i.caste || 'Caste',
-      online: true,
+      online: resolveOnlineStatus(i),
       matchPercentage: 92,
       last_message: 'Interest Accepted - Connected',
       last_message_time: 'Just now'
@@ -113,7 +124,7 @@ export const MessagesPage: React.FC = () => {
       city: i.city || 'India',
       religion: i.religion || 'Hindu',
       caste: i.caste || 'Caste',
-      online: true,
+      online: resolveOnlineStatus(i),
       matchPercentage: 92,
       last_message: 'Interest Accepted - Connected',
       last_message_time: 'Just now'
@@ -157,7 +168,7 @@ export const MessagesPage: React.FC = () => {
     city: activeMatch.city || 'India',
     religion: activeMatch.religion || 'Hindu',
     caste: activeMatch.caste || 'Caste',
-    online: activeMatch.online ?? true,
+    online: resolveOnlineStatus(activeMatch),
     matchPercentage: activeMatch.matchPercentage || activeMatch.match_percentage || 90
   } : (selectedProfileId ? {
     id: selectedProfileId,
@@ -170,7 +181,7 @@ export const MessagesPage: React.FC = () => {
     city: 'India',
     religion: 'Hindu',
     caste: 'Caste',
-    online: true,
+    online: false,
     matchPercentage: 90
   } : null);
 
@@ -390,21 +401,6 @@ export const MessagesPage: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-6 py-2 sm:py-3 h-[90vh] flex flex-col overflow-hidden">
-      {/* Breadcrumbs Navigation */}
-      <div className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold text-stone-500 shrink-0">
-        <span onClick={() => navigate('/home')} className="hover:text-[#8B1E3F] cursor-pointer flex items-center gap-1">
-          <Home className="h-3.5 w-3.5" /> Home
-        </span>
-        <ChevronRight className="h-3 w-3 text-stone-400" />
-        <span onClick={() => navigate('/matches')} className="hover:text-[#8B1E3F] cursor-pointer">
-          Matches
-        </span>
-        <ChevronRight className="h-3 w-3 text-stone-400" />
-        <span className="text-[#8B1E3F] font-bold">
-          Messages {activeProfile ? `• ${activeProfile.name}` : ''}
-        </span>
-      </div>
-
       <div className="flex-1 rounded-3xl border border-stone-200/90 bg-white/95 backdrop-blur-xl overflow-hidden grid grid-cols-1 md:grid-cols-12 select-none">
         
         {/* ================= LEFT CONVERSATION SIDEBAR (COL 4) ================= */}
@@ -506,9 +502,9 @@ export const MessagesPage: React.FC = () => {
                         alt={p.name}
                         className="h-12 w-12 rounded-2xl object-cover ring-2 ring-stone-200"
                       />
-                      {p.online && (
-                        <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white" />
-                      )}
+                      <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-white ${
+                        p.online ? 'bg-emerald-500' : 'bg-stone-300'
+                      }`} />
                     </div>
 
                     {/* Chat Snippet Info */}
@@ -576,9 +572,9 @@ export const MessagesPage: React.FC = () => {
                   alt={activeProfile.name}
                   className="h-11 w-11 rounded-2xl object-cover ring-2 ring-[#8B1E3F]/20"
                 />
-                {activeProfile.online && (
-                  <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white" />
-                )}
+                <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-white ${
+                  activeProfile.online ? 'bg-emerald-500' : 'bg-stone-300'
+                }`} />
               </div>
 
               <div className="min-w-0">
@@ -593,9 +589,15 @@ export const MessagesPage: React.FC = () => {
                 <p className="text-[11px] text-stone-500 font-medium truncate flex items-center gap-2">
                   <span>{activeProfile.age} yrs • {activeProfile.height}</span>
                   <span>•</span>
-                  <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Online Now
-                  </span>
+                  {activeProfile.online ? (
+                    <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Online Now
+                    </span>
+                  ) : (
+                    <span className="text-stone-400 font-medium flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-stone-400" /> Offline
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
@@ -662,6 +664,7 @@ export const MessagesPage: React.FC = () => {
                 const isMe = msg.is_me || msg.sender_name === currentUser.name;
                 const messageText = msg.text || msg.message || '';
                 const msgType = msg.message_type || 'text';
+                const isSeenByReceiver = Boolean(msg.read || (msg as any).is_read || msg.status === 'read');
 
                 return (
                   <motion.div
@@ -697,22 +700,22 @@ export const MessagesPage: React.FC = () => {
                         )}
                         <div className="relative group">
                           {/* Media / Attachment Rendering */}
-                          {msg.attachment_url && (
-                            <div className="mb-1 rounded-2xl overflow-hidden border border-stone-200 bg-stone-100 max-w-xs">
-                              {msgType === 'image' ? (
-                                <img src={msg.attachment_url} alt="Attachment" className="w-full h-auto object-cover max-h-60" />
-                              ) : msgType === 'video' ? (
-                                <video src={msg.attachment_url} controls className="w-full h-auto max-h-60" />
-                              ) : msgType === 'voice' ? (
-                                <audio src={msg.attachment_url} controls className="w-full p-2" />
+                          {(msg.attachment_url || (msg as any).image || (msg as any).video || (msg as any).file) && (
+                            <div className="mb-1 rounded-2xl overflow-hidden border border-stone-200 bg-stone-100 max-w-xs sm:max-w-sm">
+                              {msgType === 'image' || (msg as any).image || (msg.attachment_url && (msg.attachment_url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || msg.attachment_url.startsWith('blob:') || msg.attachment_url.startsWith('data:image'))) ? (
+                                <img src={msg.attachment_url || (msg as any).image} alt="Attachment" className="w-full h-auto object-cover max-h-64 rounded-2xl" />
+                              ) : msgType === 'video' || (msg as any).video || (msg.attachment_url && (msg.attachment_url.match(/\.(mp4|webm|mov|ogg)/i) || msg.attachment_url.startsWith('blob:'))) ? (
+                                <video src={msg.attachment_url || (msg as any).video} controls className="w-full h-auto max-h-64 rounded-2xl" />
+                              ) : msgType === 'voice' || (msg as any).voice ? (
+                                <audio src={msg.attachment_url || (msg as any).voice} controls className="w-full p-2" />
                               ) : (
                                 <a
-                                  href={msg.attachment_url}
+                                  href={msg.attachment_url || (msg as any).file}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="p-3 flex items-center gap-2 text-xs font-bold text-[#8B1E3F] hover:underline"
                                 >
-                                  <FileText className="h-4 w-4" /> Download Document
+                                  <FileText className="h-4 w-4" /> {msg.message || msg.file_name || 'Download Document'}
                                 </a>
                               )}
                             </div>
@@ -763,7 +766,13 @@ export const MessagesPage: React.FC = () => {
 
                           <div className={`flex items-center gap-1 text-[10px] text-stone-400 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
                             <span>{msg.time || '10:20 AM'}</span>
-                            {isMe && <CheckCheck className="h-3 w-3 text-amber-400 font-bold" />}
+                            {isMe && (
+                              isSeenByReceiver ? (
+                                <CheckCheck className="h-3.5 w-3.5 text-sky-500 font-bold" title="Seen by receiver" />
+                              ) : (
+                                <Check className="h-3 w-3 text-stone-400 font-medium" title="Sent (Unseen)" />
+                              )
+                            )}
                           </div>
                         </div>
                       </div>

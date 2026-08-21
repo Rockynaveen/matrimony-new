@@ -5,6 +5,7 @@ import { Footer } from '../components/layout/Footer';
 import { Breadcrumbs } from '../components/layout/Breadcrumbs';
 import { Toast } from '../components/ui/Toast';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
+import { UserLayout } from '../components/layout/UserLayout';
 
 // Public Pages
 import { Home } from '../pages/public/Home';
@@ -70,9 +71,6 @@ const MainLayout: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen bg-transparent text-foreground">
       <Navbar />
-      <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8">
-        <Breadcrumbs />
-      </div>
       <main className="flex-1">
         <React.Suspense fallback={<LoadingScreen message="Navigating to page..." />}>
           <Outlet />
@@ -122,56 +120,59 @@ export const AppRouter: React.FC = () => (
         <Route path="/two-factor-auth" element={<TwoFactorAuth />} />
         <Route path="/auth/google/callback" element={<GoogleCallback />} />
 
-        {/* User Dashboard & Feature Routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/search" element={<SearchPage />} />
+        {/* User Workspace Routes with Permanent Fixed Left Sidebar */}
+        <Route element={<UserLayout />}>
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/profile" element={<MyProfilePage />} />
+          <Route path="/my-profile" element={<MyProfilePage />} />
+          <Route path="/profile/edit" element={<EditProfile />} />
+          <Route path="/preferences" element={<PreferencesPage />} />
+          <Route path="/interests" element={<InterestsPage />} />
+          <Route
+            path="/matching/shortlist"
+            element={
+              <ProtectedRoute>
+                <ShortlistPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/matching/ignored"
+            element={
+              <ProtectedRoute>
+                <IgnoredProfilesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/matching/blocked"
+            element={
+              <ProtectedRoute>
+                <BlockedProfilesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/messages" element={<MessagesPage />} />
+          <Route path="/messages/:id" element={<MessagesPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/privacy-settings" element={<PrivacySettingsPage />} />
+          <Route path="/settings" element={<PrivacySettingsPage />} />
+        </Route>
+
         <Route path="/matches" element={<MatchesPage />} />
-        <Route path="/profile" element={<MyProfilePage />} />
-        <Route path="/my-profile" element={<MyProfilePage />} />
         <Route path="/profile/:id" element={<ViewProfile />} />
-        <Route path="/profile/edit" element={<EditProfile />} />
-        <Route path="/preferences" element={<PreferencesPage />} />
-        <Route path="/interests" element={<InterestsPage />} />
-        <Route
-          path="/matching/shortlist"
-          element={
-            <ProtectedRoute>
-              <ShortlistPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/matching/ignored"
-          element={
-            <ProtectedRoute>
-              <IgnoredProfilesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/matching/blocked"
-          element={
-            <ProtectedRoute>
-              <BlockedProfilesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/messages" element={<MessagesPage />} />
-        <Route path="/messages/:id" element={<MessagesPage />} />
         <Route path="/photos" element={<PhotosPage />} />
         <Route path="/verification" element={<VerificationPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/payment-history" element={<PaymentHistoryPage />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/privacy-settings" element={<PrivacySettingsPage />} />
-        <Route path="/settings" element={<PrivacySettingsPage />} />
 
         {/* Marriage Bureau Portal */}
         <Route path="/bureau/dashboard" element={<BureauDashboard />} />

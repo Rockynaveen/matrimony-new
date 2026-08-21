@@ -5,6 +5,11 @@
     scroll-behavior: smooth;
   }
 
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
   :root {
     --background: #FAF6F0;
     --foreground: #111827;

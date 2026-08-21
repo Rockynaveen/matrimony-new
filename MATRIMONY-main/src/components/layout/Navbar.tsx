@@ -3,7 +3,13 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useApp, extractNameFromEmail, isGenericName } from '../../context/AppContext';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { useSentInterests, useReceivedInterests } from '../../hooks/useMatching';
+import {
+  useSentInterests,
+  useReceivedInterests,
+  useShortlist,
+  useIgnoredProfiles,
+  useBlockedProfiles
+} from '../../hooks/useMatching';
 import {
   Heart,
   Search,
@@ -28,9 +34,16 @@ import {
 import type { UserRole } from '../../types';
 
 export const Navbar: React.FC = () => {
-  const { currentUser, setCurrentUserRole, notifications, unreadCount, markNotificationRead, logout, isAuthenticated } = useApp();
+  const { currentUser, setCurrentUserRole, notifications, unreadCount, markNotificationRead, logout, isAuthenticated, shortlistedIds } = useApp();
   const { data: sentInterests } = useSentInterests();
   const { data: receivedInterests } = useReceivedInterests();
+  const { data: shortlistData } = useShortlist();
+  const { data: ignoredData } = useIgnoredProfiles();
+  const { data: blockedData } = useBlockedProfiles();
+
+  const shortlistCount = shortlistData?.length ?? shortlistedIds.length;
+  const ignoredCount = ignoredData?.length ?? 0;
+  const blockedCount = blockedData?.length ?? 0;
 
   const displayName = (currentUser.name && !isGenericName(currentUser.name))
     ? currentUser.name
@@ -251,8 +264,11 @@ export const Navbar: React.FC = () => {
               {currentUser.role === 'user' ? (
                 <div className="relative" ref={userDropdownRef}>
                   <button
-                    onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                    className="flex items-center gap-2 p-1.5 pr-3 rounded-full border border-border/80 bg-white hover:border-[#8B1E3F]/40 transition-all duration-200 shadow-2xs hover:shadow-md"
+                    onClick={() => {
+                      navigate('/dashboard');
+                      setIsUserDropdownOpen(false);
+                    }}
+                    className="flex items-center gap-2 p-1.5 pr-3 rounded-full border border-border/80 bg-white hover:border-[#8B1E3F]/40 transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer"
                   >
                     {currentUser.avatar ? (
                       <img
@@ -275,111 +291,180 @@ export const Navbar: React.FC = () => {
                   </button>
 
                   {isUserDropdownOpen && (
-                    <div className="absolute right-0 mt-3 w-64 rounded-3xl border border-border bg-white shadow-2xl z-50 p-2 divide-y divide-border/50">
-                      <div className="p-3 bg-muted/20 rounded-2xl mb-1">
-                        <p className="font-serif font-bold text-sm text-foreground">{displayName}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{currentUser.email}</p>
-                        <Badge variant="verified" className="mt-2 text-[9px]">ID Verified Member</Badge>
+                    <div className="absolute right-0 mt-3 w-72 rounded-3xl border border-stone-200 bg-white shadow-2xl z-50 overflow-hidden divide-y divide-stone-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {/* Top Header Card - Theme Color Gradient */}
+                      <div className="bg-gradient-to-b from-[#8B1E3F] via-[#A0284C] to-[#721733] p-5 text-center flex flex-col items-center relative border-b border-[#D4AF37]/30">
+                        <div className="relative mb-2">
+                          {currentUser.avatar ? (
+                            <img
+                              src={currentUser.avatar}
+                              alt={displayName}
+                              className="h-16 w-16 rounded-full object-cover ring-4 ring-white/90 shadow-md"
+                            />
+                          ) : (
+                            <img
+                              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300"
+                              alt="Profile Avatar"
+                              className="h-16 w-16 rounded-full object-cover ring-4 ring-white/90 shadow-md"
+                            />
+                          )}
+                        </div>
+                        <h4 className="font-extrabold text-sm tracking-wide text-white drop-shadow-xs line-clamp-1">
+                          {displayName ? displayName.toUpperCase() : 'NAVEEN GANDHAM'}
+                        </h4>
+                        <p className="text-[11px] text-[#F5ECE5]/90 font-medium truncate max-w-full mt-0.5">
+                          {currentUser.email || 'naveengandham970@gmail.com'}
+                        </p>
                       </div>
 
-                      <div className="py-1">
+                      {/* Menu Navigation Links */}
+                      <div className="p-2 space-y-0.5 max-h-[380px] overflow-y-auto">
                         <Link
                           to="/profile"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-foreground hover:bg-stone-100 rounded-xl"
+                          className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
                         >
-                          <User className="h-4 w-4 text-[#8B1E3F]" /> My Profile 👤
+                          <User className="h-4 w-4 text-stone-400" />
+                          <span>My Profile</span>
                         </Link>
+
                         <Link
                           to="/profile/edit"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-stone-100 rounded-xl"
+                          className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
                         >
-                          <Edit3 className="h-4 w-4 text-[#8B1E3F]" /> Edit Profile ✏️
+                          <Edit3 className="h-4 w-4 text-stone-400" />
+                          <span>Edit Profile</span>
                         </Link>
+
                         <Link
                           to="/dashboard"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-stone-100 rounded-xl"
+                          className="flex items-center gap-3 px-3 py-2 text-xs font-bold text-[#8B1E3F] bg-[#8B1E3F]/10 border-l-4 border-l-[#8B1E3F] rounded-xl transition-colors"
                         >
-                          <LayoutDashboard className="h-4 w-4 text-[#8B1E3F]" /> User Dashboard
+                          <LayoutDashboard className="h-4 w-4 text-[#8B1E3F]" />
+                          <span>User Dashboard</span>
                         </Link>
+
                         <Link
                           to="/search"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted rounded-xl"
+                          className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
                         >
-                          <Search className="h-4 w-4 text-[#8B1E3F]" /> Search Matches
+                          <Search className="h-4 w-4 text-stone-400" />
+                          <span>Search Matches</span>
                         </Link>
+
                         <Link
                           to="/interests"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted rounded-xl w-full"
+                          className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
                         >
-                          <div className="flex items-center gap-2.5">
-                            <Heart className="h-4 w-4 text-[#8B1E3F]" />
+                          <div className="flex items-center gap-3">
+                            <Heart className="h-4 w-4 text-stone-400" />
                             <span>My Interests</span>
                           </div>
                           {totalInterestsCount > 0 && (
-                            <Badge variant="primary" className="text-[10px] px-1.5 py-0 bg-[#8B1E3F]">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#8B1E3F]/10 text-[#8B1E3F]">
                               {totalInterestsCount}
-                            </Badge>
+                            </span>
                           )}
                         </Link>
+
                         <Link
                           to="/messages"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted rounded-xl"
+                          className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
                         >
-                          <MessageSquare className="h-4 w-4 text-[#8B1E3F]" /> Chat Messages
+                          <div className="flex items-center gap-3">
+                            <MessageSquare className="h-4 w-4 text-stone-400" />
+                            <span>Chat Messages</span>
+                          </div>
+                          {unreadNotifs > 0 && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#8B1E3F]/10 text-[#8B1E3F]">
+                              {unreadNotifs}
+                            </span>
+                          )}
                         </Link>
+
                         <Link
                           to="/preferences"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted rounded-xl"
+                          className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
                         >
-                          <Sliders className="h-4 w-4 text-[#8B1E3F]" /> Partner Preferences
+                          <Sliders className="h-4 w-4 text-stone-400" />
+                          <span>Partner Preferences</span>
                         </Link>
+
                         <Link
                           to="/matching/shortlist"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted rounded-xl"
+                          className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
                         >
-                          <Star className="h-4 w-4 text-[#8B1E3F]" /> Shortlisted Profiles
+                          <div className="flex items-center gap-3">
+                            <Star className="h-4 w-4 text-stone-400" />
+                            <span>Shortlisted Profiles</span>
+                          </div>
+                          {shortlistCount > 0 && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#8B1E3F]/10 text-[#8B1E3F]">
+                              {shortlistCount}
+                            </span>
+                          )}
                         </Link>
+
                         <Link
                           to="/matching/ignored"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted rounded-xl"
+                          className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
                         >
-                          <EyeOff className="h-4 w-4 text-[#8B1E3F]" /> Ignored Profiles
+                          <div className="flex items-center gap-3">
+                            <EyeOff className="h-4 w-4 text-stone-400" />
+                            <span>Ignored Profiles</span>
+                          </div>
+                          {ignoredCount > 0 && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#8B1E3F]/10 text-[#8B1E3F]">
+                              {ignoredCount}
+                            </span>
+                          )}
                         </Link>
+
                         <Link
                           to="/matching/blocked"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted rounded-xl"
+                          className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
                         >
-                          <Ban className="h-4 w-4 text-[#8B1E3F]" /> Blocked Profiles
+                          <div className="flex items-center gap-3">
+                            <Ban className="h-4 w-4 text-stone-400" />
+                            <span>Blocked Profiles</span>
+                          </div>
+                          {blockedCount > 0 && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#8B1E3F]/10 text-[#8B1E3F]">
+                              {blockedCount}
+                            </span>
+                          )}
                         </Link>
+
                         <Link
                           to="/privacy-settings"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted rounded-xl"
+                          className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
                         >
-                          <Lock className="h-4 w-4 text-[#8B1E3F]" /> Privacy Settings
+                          <Lock className="h-4 w-4 text-stone-400" />
+                          <span>Privacy Settings</span>
                         </Link>
                       </div>
 
-                      <div className="pt-1">
+                      {/* Bottom Logout Button */}
+                      <div className="p-2 bg-stone-50/80">
                         <Link
                           to="/login"
                           onClick={() => {
                             logout();
                             setIsUserDropdownOpen(false);
                           }}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-destructive hover:bg-red-50 rounded-xl"
+                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                         >
-                          <LogOut className="h-4 w-4" /> Sign Out
+                          <LogOut className="h-4 w-4 text-red-500" /> Sign Out
                         </Link>
                       </div>
                     </div>

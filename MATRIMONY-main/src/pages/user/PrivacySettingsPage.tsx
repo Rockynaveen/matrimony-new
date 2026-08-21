@@ -275,7 +275,7 @@ export const PrivacySettingsPage: React.FC = () => {
                 : 'text-stone-600 hover:text-stone-900'
             }`}
           >
-            <Eye className="h-3.5 w-3.5 text-blue-600" />
+            <Eye className="h-3.5 w-3.5 text-[#8B1E3F]" />
             <span>Photo Permissions</span>
           </button>
         </div>

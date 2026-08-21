@@ -4,7 +4,7 @@ import { BlockedProfileCard } from '../../components/matching/BlockedProfileCard
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { ShieldOff, RefreshCw, AlertCircle } from 'lucide-react';
+import { ShieldOff, RefreshCw, AlertCircle, Ban } from 'lucide-react';
 import { LoadingScreen } from '../../components/ui/LoadingScreen';
 
 export const BlockedProfilesPage: React.FC = () => {

@@ -96,7 +96,7 @@ export const NotificationsPage: React.FC = () => {
       case 'Matches':
         return <Sparkles className="h-4 w-4 text-amber-500" />;
       case 'Messages':
-        return <MessageSquare className="h-4 w-4 text-blue-500" />;
+        return <MessageSquare className="h-4 w-4 text-[#8B1E3F]" />;
       case 'Profile':
         return <ShieldCheck className="h-4 w-4 text-emerald-500" />;
       case 'Membership':

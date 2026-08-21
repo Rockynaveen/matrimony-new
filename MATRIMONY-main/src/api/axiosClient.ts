@@ -163,9 +163,25 @@ class AxiosClient {
     return { data, status: response.status, statusText: response.statusText };
   }
 
+  private buildUrl(url: string, params?: Record<string, any>): string {
+    const fullUrl = `${this.baseURL}${url}`;
+    if (!params || Object.keys(params).length === 0) return fullUrl;
+    const query = new URLSearchParams();
+    for (const [key, val] of Object.entries(params)) {
+      if (val !== undefined && val !== null) {
+        query.append(key, String(val));
+      }
+    }
+    const queryString = query.toString();
+    if (!queryString) return fullUrl;
+    const sep = fullUrl.includes('?') ? '&' : '?';
+    return `${fullUrl}${sep}${queryString}`;
+  }
+
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    const targetUrl = this.buildUrl(url, config?.params);
     return this.handleResponse(() =>
-      fetch(`${this.baseURL}${url}`, {
+      fetch(targetUrl, {
         method: 'GET',
         headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) }
       })
@@ -173,38 +189,45 @@ class AxiosClient {
   }
 
   async post<T>(url: string, body?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    if (body instanceof FormData) {
+      return this.postForm<T>(url, body, config);
+    }
+    const targetUrl = this.buildUrl(url, config?.params);
     return this.handleResponse(() =>
-      fetch(`${this.baseURL}${url}`, {
+      fetch(targetUrl, {
         method: 'POST',
         headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) },
-        body: JSON.stringify(body)
+        body: body !== undefined ? JSON.stringify(body) : undefined
       })
     );
   }
 
   async patch<T>(url: string, body?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    const targetUrl = this.buildUrl(url, config?.params);
     return this.handleResponse(() =>
-      fetch(`${this.baseURL}${url}`, {
+      fetch(targetUrl, {
         method: 'PATCH',
         headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) },
-        body: JSON.stringify(body)
+        body: body !== undefined ? JSON.stringify(body) : undefined
       })
     );
   }
 
   async put<T>(url: string, body?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    const targetUrl = this.buildUrl(url, config?.params);
     return this.handleResponse(() =>
-      fetch(`${this.baseURL}${url}`, {
+      fetch(targetUrl, {
         method: 'PUT',
         headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) },
-        body: JSON.stringify(body)
+        body: body !== undefined ? JSON.stringify(body) : undefined
       })
     );
   }
 
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    const targetUrl = this.buildUrl(url, config?.params);
     return this.handleResponse(() =>
-      fetch(`${this.baseURL}${url}`, {
+      fetch(targetUrl, {
         method: 'DELETE',
         headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) }
       })
@@ -212,13 +235,14 @@ class AxiosClient {
   }
 
   async postForm<T>(url: string, formData: FormData, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    const targetUrl = this.buildUrl(url, config?.params);
     return this.handleResponse(() => {
       const token = localStorage.getItem('access_token');
       const headers: Record<string, string> = { ...(config?.headers || {}) };
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      return fetch(`${this.baseURL}${url}`, {
+      return fetch(targetUrl, {
         method: 'POST',
         headers,
         body: formData

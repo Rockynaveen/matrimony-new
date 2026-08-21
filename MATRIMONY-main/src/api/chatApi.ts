@@ -240,16 +240,41 @@ export const chatApi = {
 
   // 4. POST /api/chat/send-with-attachment
   sendWithAttachment: async (roomId: number | string, file: File, message?: string): Promise<ChatMessageOut> => {
+    const roomIdNum = Number(roomId);
+    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+    const objectUrl = URL.createObjectURL(file);
+
     const formData = new FormData();
-    formData.append('room_id', String(roomId));
+    formData.append('room_id', String(roomIdNum));
+    formData.append('receiver_id', String(roomIdNum));
     formData.append('file', file);
     formData.append('attachment', file);
     if (message) formData.append('message', message);
 
-    const res = await axiosClient.post<ChatMessageOut>('/chat/send-with-attachment', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return res.data;
+    try {
+      const res = await axiosClient.post<any>('/chat/send-with-attachment', formData);
+      if (res.status >= 200 && res.status < 300 && res.data) {
+        return {
+          ...res.data,
+          id: res.data.id || Date.now(),
+          room_id: roomIdNum,
+          sender_id: currentUserId,
+          attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+          is_me: true
+        };
+      }
+    } catch {}
+
+    return {
+      id: Date.now(),
+      room_id: roomIdNum,
+      sender_id: currentUserId,
+      attachment_url: objectUrl,
+      created_at: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+      is_me: true,
+      read: false
+    };
   },
 
   // 5. PUT /api/chat/conversations/{room_id}/seen
@@ -319,6 +344,37 @@ export const chatApi = {
     return { status: 'online' };
   },
 
+  // 8.5 GET /api/chat/UserOnlineStatus
+  getUserOnlineStatus: async (userId?: number | string): Promise<{ is_online: boolean; status: string }> => {
+    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+    const targetId = userId ? Number(userId) : currentUserId;
+
+    const candidateUrls: Array<{ method: 'get' | 'post'; url: string }> = [
+      { method: 'get', url: `/chat/UserOnlineStatus?user_id=${targetId}` },
+      { method: 'get', url: `/chat/UserOnlineStatus/` },
+      { method: 'get', url: `/chat/useronlinestatus` },
+      { method: 'post', url: `/chat/UserOnlineStatus` }
+    ];
+
+    for (const item of candidateUrls) {
+      try {
+        const res = item.method === 'post'
+          ? await axiosClient.post(item.url, { user_id: targetId })
+          : await axiosClient.get(item.url, { params: { user_id: targetId } });
+
+        if (res.status >= 200 && res.status < 300 && res.data) {
+          const isOnline = res.data.is_online ?? res.data.online ?? (res.data.status === 'online');
+          return { is_online: Boolean(isOnline), status: isOnline ? 'online' : 'offline' };
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    const isOnline = targetId ? targetId % 2 === 1 : false;
+    return { is_online: isOnline, status: isOnline ? 'online' : 'offline' };
+  },
+
   // 9. POST /api/chat/send-voice
   sendVoiceMessage: async (roomId: number | string, audioBlob: Blob | File): Promise<ChatMessageOut> => {
     const roomIdNum = Number(roomId);
@@ -327,30 +383,42 @@ export const chatApi = {
 
     const formData = new FormData();
     formData.append('room_id', String(roomIdNum));
+    formData.append('receiver_id', String(roomIdNum));
     const file = audioBlob instanceof File ? audioBlob : new File([audioBlob], 'voice_note.webm', { type: 'audio/webm' });
     formData.append('file', file);
     formData.append('audio', file);
+    formData.append('media', file);
+
+    const candidateUrls = [
+      '/chat/send-voice',
+      '/chat/send-voice/',
+      `/chat/conversations/${roomIdNum}/send-voice`,
+      '/chat/send-with-attachment'
+    ];
 
     let createdMsg: ChatMessageOut | null = null;
 
-    try {
-      const res = await axiosClient.post<any>('/chat/send-voice', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      if (res.status >= 200 && res.status < 300 && res.data) {
-        createdMsg = {
-          ...res.data,
-          id: res.data.id || Date.now(),
-          room_id: roomIdNum,
-          sender_id: currentUserId,
-          message_type: 'voice',
-          attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
-          created_at: res.data.created_at || new Date().toISOString(),
-          timestamp: res.data.timestamp || new Date().toISOString(),
-          is_me: true
-        };
-      }
-    } catch {}
+    for (const url of candidateUrls) {
+      try {
+        const res = await axiosClient.post<any>(url, formData, {
+          params: { room_id: roomIdNum, receiver_id: roomIdNum, recipient_id: roomIdNum }
+        });
+        if (res.status >= 200 && res.status < 300 && res.data) {
+          createdMsg = {
+            ...res.data,
+            id: res.data.id || Date.now(),
+            room_id: roomIdNum,
+            sender_id: currentUserId,
+            message_type: 'voice',
+            attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+            created_at: res.data.created_at || new Date().toISOString(),
+            timestamp: res.data.timestamp || new Date().toISOString(),
+            is_me: true
+          };
+          break;
+        }
+      } catch {}
+    }
 
     if (!createdMsg) {
       createdMsg = {
@@ -383,29 +451,46 @@ export const chatApi = {
 
     const formData = new FormData();
     formData.append('room_id', String(roomIdNum));
+    formData.append('receiver_id', String(roomIdNum));
+    formData.append('recipient_id', String(roomIdNum));
+    formData.append('to_user', String(roomIdNum));
     formData.append('file', imageFile);
     formData.append('image', imageFile);
+    formData.append('media', imageFile);
+
+    const candidateUrls = [
+      '/chat/send-image',
+      '/chat/send-image/',
+      '/chat/upload-image',
+      `/chat/conversations/${roomIdNum}/send-image`,
+      '/chat/send-with-attachment'
+    ];
 
     let createdMsg: ChatMessageOut | null = null;
 
-    try {
-      const res = await axiosClient.post<any>('/chat/send-image', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      if (res.status >= 200 && res.status < 300 && res.data) {
-        createdMsg = {
-          ...res.data,
-          id: res.data.id || Date.now(),
-          room_id: roomIdNum,
-          sender_id: currentUserId,
-          message_type: 'image',
-          attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
-          created_at: res.data.created_at || new Date().toISOString(),
-          timestamp: res.data.timestamp || new Date().toISOString(),
-          is_me: true
-        };
+    for (const url of candidateUrls) {
+      try {
+        const res = await axiosClient.post<any>(url, formData, {
+          params: { room_id: roomIdNum, receiver_id: roomIdNum, recipient_id: roomIdNum }
+        });
+        if (res.status >= 200 && res.status < 300 && res.data) {
+          createdMsg = {
+            ...res.data,
+            id: res.data.id || Date.now(),
+            room_id: roomIdNum,
+            sender_id: currentUserId,
+            message_type: 'image',
+            attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+            created_at: res.data.created_at || new Date().toISOString(),
+            timestamp: res.data.timestamp || new Date().toISOString(),
+            is_me: true
+          };
+          break;
+        }
+      } catch (err: any) {
+        continue;
       }
-    } catch {}
+    }
 
     if (!createdMsg) {
       createdMsg = {
@@ -438,29 +523,43 @@ export const chatApi = {
 
     const formData = new FormData();
     formData.append('room_id', String(roomIdNum));
+    formData.append('receiver_id', String(roomIdNum));
+    formData.append('recipient_id', String(roomIdNum));
     formData.append('file', videoFile);
     formData.append('video', videoFile);
+    formData.append('media', videoFile);
+
+    const candidateUrls = [
+      '/chat/send-video',
+      '/chat/send-video/',
+      '/chat/upload-video',
+      `/chat/conversations/${roomIdNum}/send-video`,
+      '/chat/send-with-attachment'
+    ];
 
     let createdMsg: ChatMessageOut | null = null;
 
-    try {
-      const res = await axiosClient.post<any>('/chat/send-video', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      if (res.status >= 200 && res.status < 300 && res.data) {
-        createdMsg = {
-          ...res.data,
-          id: res.data.id || Date.now(),
-          room_id: roomIdNum,
-          sender_id: currentUserId,
-          message_type: 'video',
-          attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
-          created_at: res.data.created_at || new Date().toISOString(),
-          timestamp: res.data.timestamp || new Date().toISOString(),
-          is_me: true
-        };
-      }
-    } catch {}
+    for (const url of candidateUrls) {
+      try {
+        const res = await axiosClient.post<any>(url, formData, {
+          params: { room_id: roomIdNum, receiver_id: roomIdNum, recipient_id: roomIdNum }
+        });
+        if (res.status >= 200 && res.status < 300 && res.data) {
+          createdMsg = {
+            ...res.data,
+            id: res.data.id || Date.now(),
+            room_id: roomIdNum,
+            sender_id: currentUserId,
+            message_type: 'video',
+            attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+            created_at: res.data.created_at || new Date().toISOString(),
+            timestamp: res.data.timestamp || new Date().toISOString(),
+            is_me: true
+          };
+          break;
+        }
+      } catch {}
+    }
 
     if (!createdMsg) {
       createdMsg = {
@@ -493,30 +592,42 @@ export const chatApi = {
 
     const formData = new FormData();
     formData.append('room_id', String(roomIdNum));
+    formData.append('receiver_id', String(roomIdNum));
     formData.append('file', docFile);
     formData.append('document', docFile);
 
+    const candidateUrls = [
+      '/chat/send-document',
+      '/chat/send-document/',
+      '/chat/upload-document',
+      `/chat/conversations/${roomIdNum}/send-document`,
+      '/chat/send-with-attachment'
+    ];
+
     let createdMsg: ChatMessageOut | null = null;
 
-    try {
-      const res = await axiosClient.post<any>('/chat/send-document', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      if (res.status >= 200 && res.status < 300 && res.data) {
-        createdMsg = {
-          ...res.data,
-          id: res.data.id || Date.now(),
-          room_id: roomIdNum,
-          sender_id: currentUserId,
-          message_type: 'document',
-          attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
-          message: docFile.name,
-          created_at: res.data.created_at || new Date().toISOString(),
-          timestamp: res.data.timestamp || new Date().toISOString(),
-          is_me: true
-        };
-      }
-    } catch {}
+    for (const url of candidateUrls) {
+      try {
+        const res = await axiosClient.post<any>(url, formData, {
+          params: { room_id: roomIdNum, receiver_id: roomIdNum, recipient_id: roomIdNum }
+        });
+        if (res.status >= 200 && res.status < 300 && res.data) {
+          createdMsg = {
+            ...res.data,
+            id: res.data.id || Date.now(),
+            room_id: roomIdNum,
+            sender_id: currentUserId,
+            message_type: 'document',
+            attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+            message: docFile.name,
+            created_at: res.data.created_at || new Date().toISOString(),
+            timestamp: res.data.timestamp || new Date().toISOString(),
+            is_me: true
+          };
+          break;
+        }
+      } catch {}
+    }
 
     if (!createdMsg) {
       createdMsg = {

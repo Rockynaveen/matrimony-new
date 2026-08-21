@@ -153,6 +153,18 @@ export function useChatHeartbeat(roomId?: number | string, enabled: boolean = tr
   }, [roomId, enabled]);
 }
 
+// 8.5 Get User Online Status (GET /api/chat/UserOnlineStatus)
+export function useGetUserOnlineStatus(userId?: number | string, enabled: boolean = true) {
+  const hasToken = !!localStorage.getItem('access_token');
+  return useQuery({
+    queryKey: [...chatKeys.all, 'onlineStatus', String(userId || 'me')],
+    queryFn: () => chatApi.getUserOnlineStatus(userId),
+    enabled: hasToken && enabled,
+    staleTime: 15 * 1000, // Reuse cached status at conversation level for 15s (no per-message calls)
+    refetchInterval: 30000 // Background polling every 30s
+  });
+}
+
 // 9. Send Voice Message (POST /api/chat/send-voice)
 export function useSendVoiceMessage() {
   const queryClient = useQueryClient();

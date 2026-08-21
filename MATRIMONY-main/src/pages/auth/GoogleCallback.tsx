@@ -30,6 +30,17 @@ export const GoogleCallback: React.FC = () => {
             if (resGoogle.user.email) {
               localStorage.setItem('logged_in_email', resGoogle.user.email);
             }
+            const avatarUrl = (resGoogle.user as any).picture ||
+              (resGoogle.user as any).avatar ||
+              (resGoogle.user as any).profile_image ||
+              (resGoogle.user as any).photo_url ||
+              (resGoogle.user as any).image ||
+              (resGoogle as any).picture ||
+              (resGoogle as any).avatar;
+            if (avatarUrl) {
+              localStorage.setItem('logged_in_avatar', avatarUrl);
+              localStorage.setItem('google_avatar', avatarUrl);
+            }
           }
           localStorage.setItem('login_method', 'google');
           const res = await checkProfileStatus();

@@ -49,6 +49,39 @@ import {
 import { useRecommendations, useShortlist, useReceivedInterests, useSentInterests } from '../../hooks/useMatching';
 import type { ChatMessageOut, ConversationOut } from '../../types/chat.types';
 
+const formatMessageTimestamp = (rawTs?: string | number): string => {
+  if (!rawTs) {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+  }
+
+  const num = Number(rawTs);
+  let d: Date;
+  if (!isNaN(num) && num > 1000000000) {
+    d = new Date(num);
+  } else {
+    d = new Date(rawTs);
+  }
+
+  if (isNaN(d.getTime())) {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+  }
+
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+};
+
+const formatSidebarTimestamp = (rawTs?: string | number): string => {
+  if (!rawTs) return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+  const num = Number(rawTs);
+  let d: Date = !isNaN(num) && num > 1000000000 ? new Date(num) : new Date(rawTs);
+  if (isNaN(d.getTime())) return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+  }
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
+
 export const MessagesPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { currentUser, showToast } = useApp();
@@ -212,6 +245,12 @@ export const MessagesPage: React.FC = () => {
   const [showRightDrawer, setShowRightDrawer] = useState(true);
   const [isVoiceRecording, setIsVoiceRecording] = useState(false);
   const [isAttachmentPickerOpen, setIsAttachmentPickerOpen] = useState(false);
+  const [pendingFile, setPendingFile] = useState<{
+    file: File;
+    type: 'image' | 'video' | 'document' | 'attachment';
+    previewUrl: string;
+  } | null>(null);
+  const [isUploadingPendingFile, setIsUploadingPendingFile] = useState(false);
   
   // Call Modal States
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
@@ -356,6 +395,37 @@ export const MessagesPage: React.FC = () => {
       showToast('Attachment uploaded successfully!');
     } catch (err: any) {
       showToast(err?.message || 'Attachment sent!');
+    }
+  };
+
+  const handleSelectFileForPreview = (file: File, type: 'image' | 'video' | 'document' | 'attachment') => {
+    if (pendingFile?.previewUrl) {
+      URL.revokeObjectURL(pendingFile.previewUrl);
+    }
+    setPendingFile({
+      file,
+      type,
+      previewUrl: URL.createObjectURL(file)
+    });
+  };
+
+  const handleConfirmSendPendingFile = async () => {
+    if (!pendingFile) return;
+    setIsUploadingPendingFile(true);
+    try {
+      if (pendingFile.type === 'image') {
+        await handleSendImageFile(pendingFile.file);
+      } else if (pendingFile.type === 'video') {
+        await handleSendVideoFile(pendingFile.file);
+      } else if (pendingFile.type === 'document') {
+        await handleSendDocumentFile(pendingFile.file);
+      } else {
+        await handleSendAttachmentFile(pendingFile.file);
+      }
+    } finally {
+      if (pendingFile.previewUrl) URL.revokeObjectURL(pendingFile.previewUrl);
+      setPendingFile(null);
+      setIsUploadingPendingFile(false);
     }
   };
 
@@ -514,7 +584,7 @@ export const MessagesPage: React.FC = () => {
                           {p.name}
                           {p.verified && <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
                         </h4>
-                        <span className="text-[10px] text-stone-400 font-medium">10:20 AM</span>
+                        <span className="text-[10px] text-stone-400 font-medium">{formatSidebarTimestamp((p as any).lastMessageTime || (p as any).timestamp || (p as any).created_at)}</span>
                       </div>
                       
                       <div className="flex items-center justify-between text-[11px]">
@@ -685,7 +755,7 @@ export const MessagesPage: React.FC = () => {
                         </p>
                         <div className="flex items-center justify-between text-[10px] font-bold text-amber-800 pt-1 border-t border-amber-200/60">
                           <span>Verified Guna Matching</span>
-                          <span>{msg.time || '10:17 AM'}</span>
+                          <span>{formatMessageTimestamp(msg.timestamp || msg.created_at || msg.time)}</span>
                         </div>
                       </div>
                     ) : (
@@ -713,9 +783,15 @@ export const MessagesPage: React.FC = () => {
                                   href={msg.attachment_url || (msg as any).file}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="p-3 flex items-center gap-2 text-xs font-bold text-[#8B1E3F] hover:underline"
+                                  className="p-3 flex items-center gap-3 text-xs font-bold text-[#8B1E3F] hover:underline bg-stone-50/90 border border-stone-200 rounded-2xl"
                                 >
-                                  <FileText className="h-4 w-4" /> {msg.message || msg.file_name || 'Download Document'}
+                                  <div className="h-9 w-9 bg-[#8B1E3F]/10 text-[#8B1E3F] rounded-xl flex items-center justify-center shrink-0">
+                                    <FileText className="h-4.5 w-4.5" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="truncate text-stone-900 font-bold">{msg.message || (msg as any).file_name || 'Document File'}</p>
+                                    <p className="text-[10px] text-stone-500 font-medium">Click to view / download document</p>
+                                  </div>
                                 </a>
                               )}
                             </div>
@@ -765,12 +841,14 @@ export const MessagesPage: React.FC = () => {
                           )}
 
                           <div className={`flex items-center gap-1 text-[10px] text-stone-400 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                            <span>{msg.time || '10:20 AM'}</span>
+                            <span>{formatMessageTimestamp(msg.timestamp || msg.created_at || msg.time)}</span>
                             {isMe && (
                               isSeenByReceiver ? (
-                                <CheckCheck className="h-3.5 w-3.5 text-sky-500 font-bold" title="Seen by receiver" />
+                                <CheckCheck className="h-3.5 w-3.5 text-sky-500 font-bold" title="Seen by recipient" />
+                              ) : (activeProfile?.online) ? (
+                                <CheckCheck className="h-3.5 w-3.5 text-stone-400 font-bold" title="Online (Delivered)" />
                               ) : (
-                                <Check className="h-3 w-3 text-stone-400 font-medium" title="Sent (Unseen)" />
+                                <Check className="h-3 w-3 text-stone-400 font-medium" title="Offline (Sent)" />
                               )
                             )}
                           </div>
@@ -805,11 +883,65 @@ export const MessagesPage: React.FC = () => {
             <AttachmentPicker
               isOpen={isAttachmentPickerOpen}
               onClose={() => setIsAttachmentPickerOpen(false)}
-              onSelectImage={handleSendImageFile}
-              onSelectVideo={handleSendVideoFile}
-              onSelectDocument={handleSendDocumentFile}
-              onSelectAttachment={handleSendAttachmentFile}
+              onSelectImage={file => handleSelectFileForPreview(file, 'image')}
+              onSelectVideo={file => handleSelectFileForPreview(file, 'video')}
+              onSelectDocument={file => handleSelectFileForPreview(file, 'document')}
+              onSelectAttachment={file => handleSelectFileForPreview(file, 'attachment')}
             />
+
+            {/* Pending File Preview Banner */}
+            {pendingFile && (
+              <div className="mb-2 p-3 bg-stone-900 text-white rounded-2xl flex items-center justify-between gap-3 shadow-lg animate-fade-in">
+                <div className="flex items-center gap-3 min-w-0">
+                  {pendingFile.type === 'image' ? (
+                    <img src={pendingFile.previewUrl} alt="Preview" className="h-12 w-12 rounded-xl object-cover ring-1 ring-white/30 shrink-0" />
+                  ) : pendingFile.type === 'video' ? (
+                    <video src={pendingFile.previewUrl} className="h-12 w-16 rounded-xl object-cover bg-black shrink-0" />
+                  ) : (
+                    <div className="h-10 w-10 bg-stone-800 rounded-xl flex items-center justify-center text-amber-300 shrink-0">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <h4 className="text-xs font-bold text-amber-300 truncate">{pendingFile.file.name}</h4>
+                    <p className="text-[10px] text-stone-400 font-medium">
+                      {(pendingFile.file.size / (1024 * 1024)).toFixed(2)} MB • {pendingFile.type.toUpperCase()} PREVIEW
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (pendingFile.previewUrl) URL.revokeObjectURL(pendingFile.previewUrl);
+                      setPendingFile(null);
+                    }}
+                    className="p-1.5 hover:bg-stone-800 rounded-xl text-stone-400 hover:text-rose-400 transition-colors"
+                    title="Cancel Upload"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="primary"
+                    onClick={handleConfirmSendPendingFile}
+                    disabled={isUploadingPendingFile}
+                    className="bg-[#8B1E3F] hover:bg-[#721733] text-white text-xs h-8 px-3 rounded-xl font-bold"
+                  >
+                    {isUploadingPendingFile ? (
+                      <DotsLoader size="sm" />
+                    ) : (
+                      <>
+                        <Send className="h-3.5 w-3.5 mr-1" /> Send {pendingFile.type}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Voice Recorder Overlay Bar */}
             {isVoiceRecording ? (

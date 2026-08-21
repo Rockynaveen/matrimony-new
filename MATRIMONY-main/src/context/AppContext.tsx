@@ -189,7 +189,7 @@ const defaultEmptyUser: User = {
 const getInitialUser = (): User => {
   const loggedInName = localStorage.getItem('logged_in_name');
   const loggedInEmail = localStorage.getItem('logged_in_email') || '';
-  const loggedInAvatar = localStorage.getItem('logged_in_avatar');
+  const loggedInAvatar = localStorage.getItem('logged_in_avatar') || localStorage.getItem('google_avatar');
   const draftPhoto = (() => {
     try {
       const draft = localStorage.getItem('user_profile_draft');
@@ -198,9 +198,11 @@ const getInitialUser = (): User => {
       return '';
     }
   })();
-  const avatarUrl = loggedInAvatar || draftPhoto || '';
   const emailName = extractNameFromEmail(loggedInEmail);
   const resolvedName = (loggedInName && !isGenericName(loggedInName)) ? loggedInName : emailName;
+
+  const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(resolvedName || loggedInEmail || 'User')}&background=8B1E3F&color=ffffff&bold=true&size=256`;
+  const avatarUrl = loggedInAvatar || draftPhoto || defaultAvatar;
 
   if (localStorage.getItem('access_token')) {
     return {
@@ -403,13 +405,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('logged_in_email', storedEmail);
       }
 
-      const photoUrl = (res as any).profile_photo || res.detailed_profile?.profile_photo || '';
+      const storedAvatar = localStorage.getItem('logged_in_avatar') || localStorage.getItem('google_avatar') || '';
+      const photoUrl = (res as any).profile_photo || (res as any).profile_image || (res as any).avatar || res.detailed_profile?.profile_photo || storedAvatar;
+      const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(finalName || storedEmail || 'User')}&background=8B1E3F&color=ffffff&bold=true&size=256`;
+      const finalAvatar = photoUrl || defaultAvatar;
+
+      if (finalAvatar) {
+        localStorage.setItem('logged_in_avatar', finalAvatar);
+      }
+
       setCurrentUser(prev => ({
         ...prev,
         name: finalName,
         email: res.email || storedEmail || prev.email,
         phone: res.phone || prev.phone,
-        avatar: photoUrl || prev.avatar
+        avatar: finalAvatar
       }));
       return {
         ...res,
@@ -584,13 +594,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           googleName = `${decoded.given_name} ${decoded.family_name || ''}`.trim();
         }
         if (decoded.email) googleEmail = decoded.email;
-        if (decoded.picture) googleAvatar = decoded.picture;
+        if (decoded.picture || decoded.avatar || decoded.photo_url || decoded.photo) {
+          googleAvatar = decoded.picture || decoded.avatar || decoded.photo_url || decoded.photo;
+        }
       }
     }
 
     const res = await googleAuthApi.googleLogin(payload);
     let userEmail = res.user?.email || googleEmail || localStorage.getItem('logged_in_email') || '';
     const apiName = `${res.user?.first_name || ''} ${res.user?.last_name || ''}`.trim();
+    const apiAvatar = (res.user as any)?.picture ||
+      (res.user as any)?.avatar ||
+      (res.user as any)?.profile_image ||
+      (res.user as any)?.photo_url ||
+      (res.user as any)?.image ||
+      (res as any)?.picture ||
+      (res as any)?.avatar;
+
     const storedName = localStorage.getItem('logged_in_name');
     const emailName = extractNameFromEmail(userEmail);
 
@@ -605,14 +625,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       finalName = emailName;
     }
 
+    const resolvedAvatar = apiAvatar || googleAvatar || localStorage.getItem('logged_in_avatar') || localStorage.getItem('google_avatar') || `https://ui-avatars.com/api/?name=${encodeURIComponent(finalName || userEmail || 'User')}&background=8B1E3F&color=ffffff&bold=true&size=256`;
+
     if (finalName && !isGenericName(finalName)) {
       localStorage.setItem('logged_in_name', finalName);
     }
     if (userEmail) {
       localStorage.setItem('logged_in_email', userEmail);
     }
-    if (googleAvatar) {
-      localStorage.setItem('logged_in_avatar', googleAvatar);
+    if (resolvedAvatar) {
+      localStorage.setItem('logged_in_avatar', resolvedAvatar);
+      localStorage.setItem('google_avatar', resolvedAvatar);
     }
 
     localStorage.setItem('login_method', 'google');
@@ -621,7 +644,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...prev,
       name: finalName,
       email: userEmail,
-      avatar: googleAvatar || prev.avatar
+      avatar: resolvedAvatar
     }));
     showToast('Google Login successful!');
 

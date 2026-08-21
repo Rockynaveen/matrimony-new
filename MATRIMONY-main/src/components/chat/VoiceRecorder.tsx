@@ -11,6 +11,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSendVoice, onCan
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -21,6 +22,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSendVoice, onCan
     startRecording();
     return () => {
       stopRecordingCleanup();
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, []);
 
@@ -39,6 +41,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSendVoice, onCan
       recorder.onstop = () => {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         setAudioBlob(blob);
+        setPreviewUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -89,26 +92,37 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSendVoice, onCan
   };
 
   return (
-    <div className="p-3 bg-stone-900 text-white rounded-2xl flex items-center justify-between gap-3 shadow-lg w-full animate-fade-in">
-      <div className="flex items-center gap-3">
-        <div className="relative flex items-center justify-center">
-          <span className="h-3.5 w-3.5 rounded-full bg-rose-500 animate-ping absolute" />
-          <Mic className="h-4 w-4 text-rose-400 relative z-10" />
-        </div>
-        <span className="font-mono text-xs font-bold text-amber-300">
-          {formatTime(recordingTime)}
-        </span>
-        <span className="text-[11px] text-stone-300 font-medium">Recording voice message...</span>
+    <div className="p-3 bg-stone-900 text-white rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg w-full animate-fade-in">
+      <div className="flex items-center gap-3 w-full sm:w-auto">
+        {isRecording ? (
+          <div className="flex items-center gap-2">
+            <div className="relative flex items-center justify-center">
+              <span className="h-3.5 w-3.5 rounded-full bg-rose-500 animate-ping absolute" />
+              <Mic className="h-4 w-4 text-rose-400 relative z-10" />
+            </div>
+            <span className="font-mono text-xs font-bold text-amber-300">
+              {formatTime(recordingTime)}
+            </span>
+            <span className="text-[11px] text-stone-300 font-medium truncate">Recording voice note...</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 flex-1">
+            <span className="text-xs font-bold text-amber-300">Voice Note Preview:</span>
+            {previewUrl && (
+              <audio src={previewUrl} controls className="h-8 max-w-[220px] rounded-lg border border-stone-700" />
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 self-end sm:self-auto">
         <button
           type="button"
           onClick={() => {
             stopRecordingCleanup();
             onCancel();
           }}
-          className="p-1.5 hover:bg-stone-800 rounded-xl text-stone-400 hover:text-rose-400 transition-colors"
+          className="p-2 hover:bg-stone-800 rounded-xl text-stone-400 hover:text-rose-400 transition-colors"
           title="Cancel Voice Note"
         >
           <Trash2 className="h-4 w-4" />
@@ -118,10 +132,10 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSendVoice, onCan
           <button
             type="button"
             onClick={handleStopAndPreview}
-            className="p-1.5 hover:bg-stone-800 rounded-xl text-amber-400 transition-colors text-xs font-bold flex items-center gap-1"
-            title="Stop Recording"
+            className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl transition-colors text-xs font-bold flex items-center gap-1.5 border border-amber-400/30"
+            title="Stop & Preview"
           >
-            <Square className="h-3.5 w-3.5 fill-current" />
+            <Square className="h-3.5 w-3.5 fill-current" /> Stop
           </button>
         )}
 
@@ -131,13 +145,13 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSendVoice, onCan
           variant="primary"
           onClick={handleSend}
           disabled={isSubmitting}
-          className="bg-[#8B1E3F] hover:bg-[#721733] text-white text-xs h-8 px-3 rounded-xl font-bold"
+          className="bg-[#8B1E3F] hover:bg-[#721733] text-white text-xs h-9 px-4 rounded-xl font-bold"
         >
           {isSubmitting ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
             <>
-              <Send className="h-3.5 w-3.5 mr-1" /> Send
+              <Send className="h-3.5 w-3.5 mr-1" /> Send Voice
             </>
           )}
         </Button>

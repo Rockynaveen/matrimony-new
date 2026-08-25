@@ -30,6 +30,20 @@ export interface ProfileOutAPI {
   country: string | null;
   state: string | null;
   city: string | null;
+  video_type?: 'UPLOAD' | 'YOUTUBE' | 'EXTERNAL' | null;
+  video_url?: string | null;
+  hide_photos?: boolean;
+  is_private_profile?: boolean;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  gender?: string;
+  date_of_birth?: string;
+  is_basic_complete?: boolean;
+  is_detailed_complete?: boolean;
+  profile_completion_percentage?: number;
+  is_verified?: boolean;
   created_at: string;                // ISO datetime, required
   updated_at: string;                // ISO datetime, required
 }

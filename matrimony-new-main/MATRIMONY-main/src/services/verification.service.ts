@@ -61,7 +61,7 @@ export const verificationService = {
           if (res.status >= 200 && res.status < 300 && res.data) {
             const rawStatus = (res.data.status || '').toUpperCase();
             let mappedStatus: VerificationState = 'NOT_SUBMITTED';
-            if (rawStatus === 'VERIFIED' || res.data.is_verified) {
+            if (rawStatus === 'VERIFIED' || rawStatus === 'APPROVED' || res.data.is_verified) {
               mappedStatus = 'VERIFIED';
             } else if (rawStatus === 'PENDING' || rawStatus === 'IN_REVIEW' || rawStatus === 'SUBMITTED') {
               mappedStatus = 'PENDING';

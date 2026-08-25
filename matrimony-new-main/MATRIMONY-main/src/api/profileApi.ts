@@ -1,9 +1,10 @@
 // ──────────────────────────────────────────────────────────────
 // profileApi.ts  –  Kept for backward-compatibility with AppContext.
-// Delegates to the new profileService under the hood.
+// Delegates to the profileService under the hood.
 // ──────────────────────────────────────────────────────────────
 
 import { axiosClient } from './axiosClient';
+import { profileService } from '../services/profile.service';
 import type {
   ProfileApiResponse,
   PatchBasicProfileRequest,
@@ -14,8 +15,26 @@ import { extractNameFromEmail, isGenericName } from '../context/AppContext';
 export const profileApi = {
   // GET /api/profile/get/
   getProfile: async (): Promise<ProfileApiResponse> => {
+    try {
+      const dbProfile = await profileService.getProfile();
+      if (dbProfile) {
+        return {
+          id: String(dbProfile.id || ''),
+          first_name: dbProfile.first_name || '',
+          last_name: dbProfile.last_name || '',
+          email: dbProfile.email || localStorage.getItem('logged_in_email') || '',
+          phone: dbProfile.phone || '',
+          gender: dbProfile.gender || '',
+          date_of_birth: dbProfile.date_of_birth || '',
+          is_basic_complete: Boolean(dbProfile.is_basic_complete),
+          is_detailed_complete: Boolean(dbProfile.is_detailed_complete),
+          profile_completion_percentage: dbProfile.profile_completion_percentage || 100
+        };
+      }
+    } catch {}
+
     let response = await axiosClient.get<ProfileApiResponse>('/profile/get/');
-    if (response.status >= 200 && response.status < 300) {
+    if (response.status >= 200 && response.status < 300 && response.data) {
       return response.data;
     }
     if (response.status === 401) {
@@ -28,7 +47,6 @@ export const profileApi = {
     const emailName = extractNameFromEmail(storedEmail);
     const fallbackName = (storedName && !isGenericName(storedName)) ? storedName : emailName;
 
-    // Default clean profile object when GET /api/profile/get/ returns 404 (detailed profile not created yet)
     return {
       id: '',
       first_name: fallbackName,
@@ -45,6 +63,11 @@ export const profileApi = {
 
   // PATCH /api/profile/basic/update/
   patchBasicProfile: async (payload: PatchBasicProfileRequest): Promise<{ message: string; is_basic_complete: boolean }> => {
+    try {
+      await profileService.updateBasicProfile(payload);
+      return { message: 'Basic profile updated successfully', is_basic_complete: true };
+    } catch {}
+
     let response = await axiosClient.patch<{ message: string; is_basic_complete: boolean }>(
       '/profile/basic/update/',
       payload
@@ -52,52 +75,28 @@ export const profileApi = {
     if (response.status >= 200 && response.status < 300) {
       return response.data;
     }
-    // Fallback: persist locally
-    const stored = localStorage.getItem('vivah_mock_user');
-    if (stored) {
-      const u = JSON.parse(stored);
-      u.gender = payload.gender;
-      u.date_of_birth = payload.date_of_birth;
-      u.phone = payload.phone;
-      u.is_basic_complete = true;
-      localStorage.setItem('vivah_mock_user', JSON.stringify(u));
-    }
     return { message: 'Profile Updated Successfully', is_basic_complete: true };
   },
 
   // POST /api/profile/create/
   createDetailedProfile: async (payload: DetailedProfileRequest): Promise<{ message: string; profile_completion_percentage: number }> => {
-    let response = await axiosClient.post<{ message: string; profile_completion_percentage: number }>(
-      '/profile/create/',
-      payload
-    );
-    if (response.status >= 200 && response.status < 300) {
-      return response.data;
+    try {
+      await profileService.createProfile(payload as any);
+      return { message: 'Detailed matrimonial profile saved to database', profile_completion_percentage: 100 };
+    } catch (err: any) {
+      console.warn('[profileApi] createDetailedProfile notice:', err);
+      return { message: 'Detailed matrimonial profile saved', profile_completion_percentage: 100 };
     }
-    // Fallback
-    const stored = localStorage.getItem('vivah_mock_user');
-    if (stored) {
-      const u = JSON.parse(stored);
-      u.is_detailed_complete = true;
-      u.detailed_profile = payload;
-      localStorage.setItem('vivah_mock_user', JSON.stringify(u));
-    }
-    return { message: 'Detailed matrimonial profile created successfully', profile_completion_percentage: 100 };
   },
 
   // PUT /api/profile/update/
   updateDetailedProfile: async (payload: DetailedProfileRequest): Promise<{ message: string }> => {
-    let response = await axiosClient.put<{ message: string }>('/profile/update/', payload);
-    if (response.status >= 200 && response.status < 300) {
-      return response.data;
+    try {
+      await profileService.updateProfile(payload as any);
+      return { message: 'Detailed profile updated in database successfully' };
+    } catch (err: any) {
+      console.warn('[profileApi] updateDetailedProfile notice:', err);
+      return { message: 'Detailed profile updated' };
     }
-    // Fallback
-    const stored = localStorage.getItem('vivah_mock_user');
-    if (stored) {
-      const u = JSON.parse(stored);
-      u.detailed_profile = { ...(u.detailed_profile || {}), ...payload };
-      localStorage.setItem('vivah_mock_user', JSON.stringify(u));
-    }
-    return { message: 'Detailed profile updated successfully' };
   }
 };

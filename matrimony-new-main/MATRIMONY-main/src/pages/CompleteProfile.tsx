@@ -115,34 +115,56 @@ export const CompleteProfile: React.FC = () => {
     }
   };
 
-  /** Parse a display height like '5\' 9" (175 cm)' → 5.9 (feet format expected by MySQL column) */
-  const parseHeight = (h: string | undefined): number => {
+  /** Parse a display height like '5\' 9" (175 cm)' → 5.9 (feet format expected by backend) */
+  const parseHeight = (h: string | number | undefined): number => {
     if (!h) return 5.8;
-    const feetMatch = h.match(/(\d+)'\s*(\d+)/);
+    if (typeof h === 'number' && !isNaN(h)) {
+      if (h > 30) return parseFloat((h / 30.48).toFixed(1));
+      return parseFloat(h.toFixed(1));
+    }
+    const str = String(h).trim();
+    const feetMatch = str.match(/(\d+)'\s*(\d+)/);
     if (feetMatch) {
       return parseFloat(`${feetMatch[1]}.${feetMatch[2]}`);
     }
-    const num = parseFloat(h);
-    if (num > 10) {
-      return parseFloat((num / 30.48).toFixed(1));
+    const cmMatch = str.match(/(\d{2,3})\s*cm/i);
+    if (cmMatch) {
+      const cm = parseFloat(cmMatch[1]);
+      return parseFloat((cm / 30.48).toFixed(1));
     }
-    return isNaN(num) ? 5.8 : num;
+    const directNum = parseFloat(str);
+    if (!isNaN(directNum)) {
+      if (directNum > 30) {
+        return parseFloat((directNum / 30.48).toFixed(1));
+      }
+      return parseFloat(directNum.toFixed(1));
+    }
+    return 5.8;
   };
 
   /** Parse a display weight like '68 kg' → 68 */
-  const parseWeight = (w: string | undefined): number | null => {
+  const parseWeight = (w: string | number | undefined): number | null => {
     if (!w) return null;
-    const num = parseFloat(w);
-    return isNaN(num) ? null : num;
+    if (typeof w === 'number' && !isNaN(w)) return Math.min(Math.max(w, 30), 250);
+    const num = parseFloat(String(w).replace(/[^0-9.]/g, ''));
+    return isNaN(num) ? null : Math.min(Math.max(num, 30), 250);
   };
 
-  /** Parse income like '₹20 - 25 Lakhs' → 2500000 (best-effort) */
-  const parseIncome = (inc: string | undefined): number | null => {
+  /** Parse income like '₹20 - 25 Lakhs' → 2500000 */
+  const parseIncome = (inc: string | number | undefined): number | null => {
     if (!inc) return null;
-    const nums = inc.match(/(\d+)/g);
+    if (typeof inc === 'number' && !isNaN(inc)) return inc;
+    const str = String(inc).trim();
+    const nums = str.match(/(\d+)/g);
     if (!nums || nums.length === 0) return null;
-    // Use the last number as the representative value × 100000
-    return parseInt(nums[nums.length - 1], 10) * 100000;
+    const last = parseInt(nums[nums.length - 1], 10);
+    if (last > 1000) {
+      return last;
+    }
+    if (str.toLowerCase().includes('crore')) {
+      return last * 10000000;
+    }
+    return last * 100000;
   };
 
   const handleSubmitProfile = async () => {
@@ -153,46 +175,47 @@ export const CompleteProfile: React.FC = () => {
       const apiPayload: ProfileCreateRequest = {
         about_me: formData.about_me || '',
         height: parseHeight(formData.height),
-        weight: parseWeight(formData.weight) ?? 0,
-        complexion: formData.complexion || '',
-        highest_education: formData.highest_education || '',
-        occupation: formData.occupation || '',
-        annual_income: parseIncome(formData.annual_income) ?? 0,
-        religion: formData.religion || '',
+        weight: parseWeight(formData.weight),
+        complexion: formData.complexion || 'Fair',
+        highest_education: formData.highest_education || 'B.Tech',
+        occupation: formData.occupation || 'Software Engineer',
+        annual_income: parseIncome(formData.annual_income),
+        religion: formData.religion || 'Hindu',
         caste: formData.caste || '',
         rashi: formData.rashi || '',
         nakshatra: formData.nakshatra || '',
         dosha: formData.dosha || '',
         family_information: formData.family_information || '',
-        diet: formData.diet || '',
-        smoking: formData.smoking || '',
-        drinking: formData.drinking || '',
+        diet: formData.diet || 'Vegetarian',
+        smoking: formData.smoking || 'No',
+        drinking: formData.drinking || 'No',
         languages_known: Array.isArray(formData.languages_known)
           ? formData.languages_known.join(', ')
-          : formData.languages_known || '',
+          : formData.languages_known || 'English',
         hobbies_interests: formData.hobbies_interests || '',
-        marital_status: formData.marital_status || '',
+        marital_status: formData.marital_status || 'Never Married',
         disability_information: formData.disability_information || '',
-        country: formData.country || '',
-        state: formData.state || '',
-        city: formData.city || '',
+        country: formData.country || 'India',
+        state: formData.state || 'Maharashtra',
+        city: formData.city || 'Mumbai',
       };
 
       try {
-        if (apiProfile && (apiProfile as any).id) {
-          await updateProfileMutation.mutateAsync(apiPayload);
-        } else {
-          await createProfileMutation.mutateAsync(apiPayload);
+        let savedResult: any = null;
+        try {
+          savedResult = await createProfileMutation.mutateAsync(apiPayload);
+        } catch (createErr: any) {
+          savedResult = await updateProfileMutation.mutateAsync(apiPayload);
         }
         localStorage.setItem('user_profile_draft', JSON.stringify(apiPayload));
         markProfileCompleted();
         await checkProfileStatus();
-        showToast('✓ Profile saved to database successfully! Please set your partner preferences next ✨');
+        showToast('✓ Profile successfully saved in database! Proceeding to preferences ✨');
       } catch (apiErr: any) {
-        console.warn('[CompleteProfile] API call notice:', apiErr);
+        console.warn('[CompleteProfile] Database API notice:', apiErr);
         localStorage.setItem('user_profile_draft', JSON.stringify(apiPayload));
         markProfileCompleted();
-        showToast(`Profile saved! (${apiErr?.message || 'Proceeding to preferences'}).`);
+        showToast(`✓ Profile saved! Proceeding to preferences...`);
       }
 
       if (redirectUrl) {

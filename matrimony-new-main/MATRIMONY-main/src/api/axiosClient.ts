@@ -251,9 +251,6 @@ class AxiosClient {
   }
 }
 
-// In dev → '/api' (Vite proxy handles CORS)
-// In prod → full backend URL
-const API_BASE_URL = import.meta.env.DEV
-  ? '/api'
-  : (import.meta.env.VITE_API_BASE_URL || 'https://matrimony-production-e116.up.railway.app/api');
+// In dev (Vite proxy) & prod (Vercel rewrites proxy) → '/api' avoids CORS completely
+const API_BASE_URL = '/api';
 export const axiosClient = new AxiosClient(API_BASE_URL);

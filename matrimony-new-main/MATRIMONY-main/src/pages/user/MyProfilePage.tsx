@@ -31,8 +31,13 @@ export const MyProfilePage: React.FC = () => {
   const { data: apiProfile, isLoading, refetch } = useProfile();
 
   // Retrieve local draft backup if server returns empty or during cold start
-  const localDraftRaw = localStorage.getItem('user_profile_draft');
-  const localDraft = localDraftRaw ? JSON.parse(localDraftRaw) : null;
+  let localDraft: any = null;
+  try {
+    const localDraftRaw = localStorage.getItem('user_profile_draft');
+    if (localDraftRaw) {
+      localDraft = JSON.parse(localDraftRaw);
+    }
+  } catch {}
 
   const apiFullName = (apiProfile as any)?.first_name ? `${(apiProfile as any).first_name} ${(apiProfile as any).last_name || ''}`.trim() : '';
   const emailName = extractNameFromEmail(currentUser.email || (apiProfile as any)?.email || localStorage.getItem('logged_in_email'));
@@ -48,9 +53,9 @@ export const MyProfilePage: React.FC = () => {
 
   // Synthesize displayed profile values from API -> localDraft -> currentUser context
   const profile = {
-    name: resolvedProfileName,
-    email: currentUser.email || (apiProfile as any)?.email || '',
-    avatar: apiProfile?.profile_photo || localDraft?.profile_photo || currentUser.avatar || '',
+    name: resolvedProfileName || 'User Profile',
+    email: currentUser.email || (apiProfile as any)?.email || localStorage.getItem('logged_in_email') || '',
+    avatar: apiProfile?.profile_photo || localDraft?.profile_photo || currentUser.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
     about_me: apiProfile?.about_me || localDraft?.about_me || 'No description provided yet. Click edit to add your bio.',
     height: apiProfile?.height || (localDraft?.height ? String(localDraft.height) : 'Not Specified'),
     weight: apiProfile?.weight || (localDraft?.weight ? String(localDraft.weight) : 'Not Specified'),

@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Sparkles,
   ShieldCheck,
+  CheckCircle2,
   Loader2,
   Camera,
   FileText,

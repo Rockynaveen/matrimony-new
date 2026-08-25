@@ -32,7 +32,7 @@ import {
   Ban
 } from 'lucide-react';
 export const Navbar: React.FC = () => {
-  const { currentUser, notifications, unreadCount, markNotificationRead, logout, isAuthenticated, shortlistedIds, onboardingStatus, getPendingRoute } = useApp();
+  const { currentUser, verificationStatus, notifications, unreadCount, markNotificationRead, logout, isAuthenticated, shortlistedIds, onboardingStatus, getPendingRoute } = useApp();
   const { data: sentInterests } = useSentInterests();
   const { data: receivedInterests } = useReceivedInterests();
   const { data: shortlistData } = useShortlist();
@@ -261,6 +261,11 @@ export const Navbar: React.FC = () => {
                         <p className="text-[11px] text-[#F5ECE5]/90 font-medium truncate max-w-full mt-0.5">
                           {currentUser.email || 'naveengandham970@gmail.com'}
                         </p>
+                        {(verificationStatus === 'VERIFIED' || currentUser.verified) && (
+                          <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-200 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-400/40">
+                            <ShieldCheck className="h-3 w-3 text-emerald-400" /> Approved Member
+                          </span>
+                        )}
                       </div>
 
                       {/* Menu Navigation Links */}

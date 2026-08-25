@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const { currentUser, profiles, unreadCount, interests, profileStatus } = useApp();
+  const { currentUser, verificationStatus, profiles, unreadCount, interests, profileStatus } = useApp();
   const navigate = useNavigate();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [timeFilter, setTimeFilter] = useState('This Week');
@@ -106,9 +106,16 @@ export const Dashboard: React.FC = () => {
               </button>
 
               <div>
-                <h1 className="font-bold text-lg sm:text-xl text-stone-900 flex items-center gap-2">
-                  Welcome back, {firstName}! 👋
-                </h1>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="font-bold text-lg sm:text-xl text-stone-900 flex items-center gap-2">
+                    Welcome back, {firstName}! 👋
+                  </h1>
+                  {(verificationStatus === 'VERIFIED' || Boolean((apiProfile as any)?.is_verified) || currentUser.verified) && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300 shadow-2xs">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> Approved Member
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-stone-500 font-medium mt-0.5">
                   Here's what's happening with your journey today.
                 </p>

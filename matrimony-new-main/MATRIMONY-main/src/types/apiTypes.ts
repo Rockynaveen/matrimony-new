@@ -164,6 +164,7 @@ export interface OnboardingStatus {
   verification_completed: boolean;
   verification_status: VerificationState;
   rejection_reason?: string | null;
+  verification_skipped_for_session?: boolean;
 }
 
 export interface VerificationStatusResponse {

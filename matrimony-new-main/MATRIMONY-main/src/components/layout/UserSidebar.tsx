@@ -13,7 +13,8 @@ import {
   EyeOff,
   Ban,
   Lock,
-  LogOut
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
 
 import {
@@ -32,7 +33,7 @@ interface UserSidebarProps {
 export const UserSidebar: React.FC<UserSidebarProps> = ({ onNavClick, className = '' }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentUser, unreadCount, shortlistedIds, interests, logout } = useApp();
+  const { currentUser, verificationStatus, unreadCount, shortlistedIds, interests, logout } = useApp();
 
   const handleLogout = () => {
     if (onNavClick) onNavClick();
@@ -101,6 +102,12 @@ export const UserSidebar: React.FC<UserSidebarProps> = ({ onNavClick, className 
           <p className="text-xs text-[#F5ECE5]/90 font-medium truncate max-w-full mt-0.5">
             {userEmail}
           </p>
+
+          {(verificationStatus === 'VERIFIED' || currentUser.verified) && (
+            <div className="mt-2.5 inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-200 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-400/40">
+              <ShieldCheck className="h-3 w-3 text-emerald-400" /> Approved Member
+            </div>
+          )}
         </div>
 
         {/* Navigation Items List */}

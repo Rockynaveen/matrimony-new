@@ -64,6 +64,7 @@ interface AppContextType {
   submitMemberVerification: (formData: FormData, details?: { docType?: string; docPreview?: string; photoPreview?: string }) => Promise<void>;
   checkVerificationStatus: (email?: string) => Promise<VerificationState>;
   markVerificationCompleted: (status?: VerificationState) => void;
+  skipVerificationForSession: () => void;
   adminApproveUserVerification: (userIdOrEmail: string | number) => Promise<void>;
   adminRejectUserVerification: (userIdOrEmail: string | number, reason: string) => Promise<void>;
   updateOnboardingStatus: (partial: Partial<OnboardingStatus>) => OnboardingStatus;
@@ -582,6 +583,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('✓ Verification documents submitted for Admin Review');
   };
 
+  const skipVerificationForSession = () => {
+    sessionStorage.setItem('verification_skipped_session', 'true');
+    setOnboardingStatus(prev => ({
+      ...prev,
+      verification_skipped_for_session: true
+    }));
+    showToast('Verification skipped for now. Redirecting to matches...');
+  };
+
   const checkVerificationStatus = async (email?: string): Promise<VerificationState> => {
     const targetEmail = (email || localStorage.getItem('logged_in_email') || currentUser.email || '').toLowerCase().trim();
     try {
@@ -1078,6 +1088,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('user_partner_preferences');
     localStorage.removeItem('vivah_mock_profile');
     localStorage.removeItem('vivah_mock_user');
+    sessionStorage.removeItem('verification_skipped_session');
     setIsAuthenticated(false);
     setOnboardingStatus(getStoredOnboardingStatus(''));
     setProfileStatus({
@@ -1337,6 +1348,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         submitMemberVerification,
         checkVerificationStatus,
         markVerificationCompleted,
+        skipVerificationForSession,
         adminApproveUserVerification,
         adminRejectUserVerification,
         updateOnboardingStatus,

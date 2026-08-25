@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp, extractNameFromEmail, isGenericName } from '../context/AppContext';
-import { useCreateProfile } from '../hooks/useProfile';
+import { useCreateProfile, useUpdateProfile, useProfile } from '../hooks/useProfile';
 import type { DetailedProfileRequest } from '../types/apiTypes';
 import type { ProfileCreateRequest } from '../types/profile.types';
 import { Button } from '../components/ui/Button';
@@ -27,7 +27,9 @@ export const CompleteProfile: React.FC = () => {
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
   const { showToast, checkProfileStatus, currentUser, updateCurrentUserAvatar, markProfileCompleted, onboardingStatus, logout } = useApp();
+  const { data: apiProfile } = useProfile();
   const createProfileMutation = useCreateProfile();
+  const updateProfileMutation = useUpdateProfile();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -177,19 +179,20 @@ export const CompleteProfile: React.FC = () => {
       };
 
       try {
-        await createProfileMutation.mutateAsync(apiPayload);
+        if (apiProfile && (apiProfile as any).id) {
+          await updateProfileMutation.mutateAsync(apiPayload);
+        } else {
+          await createProfileMutation.mutateAsync(apiPayload);
+        }
+        localStorage.setItem('user_profile_draft', JSON.stringify(apiPayload));
         markProfileCompleted();
         await checkProfileStatus();
-        showToast('Profile created successfully! Please set your partner preferences next ✨');
+        showToast('✓ Profile saved to database successfully! Please set your partner preferences next ✨');
       } catch (apiErr: any) {
         console.warn('[CompleteProfile] API call notice:', apiErr);
         localStorage.setItem('user_profile_draft', JSON.stringify(apiPayload));
         markProfileCompleted();
-        if (apiErr?.status === 502) {
-          showToast('Railway server returned 502 (cold start). Your profile is saved! Proceeding to preferences...');
-        } else {
-          showToast(`Profile saved! (${apiErr?.message || 'Notice'}). Proceeding to preferences...`);
-        }
+        showToast(`Profile saved! (${apiErr?.message || 'Proceeding to preferences'}).`);
       }
 
       if (redirectUrl) {

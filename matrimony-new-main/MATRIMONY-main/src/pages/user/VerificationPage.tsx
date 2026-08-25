@@ -37,6 +37,7 @@ export const VerificationPage: React.FC = () => {
     currentUser,
     submitMemberVerification,
     checkVerificationStatus,
+    skipVerificationForSession,
     logout,
     showToast
   } = useApp();
@@ -213,6 +214,11 @@ export const VerificationPage: React.FC = () => {
     }
   };
 
+  const handleSkipVerification = () => {
+    skipVerificationForSession();
+    navigate('/matches');
+  };
+
   const handleLogoutAndResumeLater = () => {
     logout();
     navigate('/login');
@@ -236,12 +242,12 @@ export const VerificationPage: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="gold" className="bg-[#D4AF37] text-stone-950 font-extrabold text-[11px] uppercase tracking-wider px-3 py-0.5">
-                <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Mandatory Trust & Safety
+                <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Trust & Verification
               </Badge>
 
               {verificationStatus === 'VERIFIED' && (
                 <span className="text-xs text-emerald-300 font-bold flex items-center gap-1 bg-emerald-950/70 px-3 py-0.5 rounded-full border border-emerald-400/40">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Verified Member
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Approved Member
                 </span>
               )}
 
@@ -253,7 +259,7 @@ export const VerificationPage: React.FC = () => {
 
               {verificationStatus === 'REJECTED' && (
                 <span className="text-xs text-rose-300 font-bold flex items-center gap-1 bg-rose-950/70 px-3 py-0.5 rounded-full border border-rose-400/40">
-                  <AlertCircle className="h-3.5 w-3.5" /> Verification Action Required
+                  <AlertCircle className="h-3.5 w-3.5" /> Action Required
                 </span>
               )}
             </div>
@@ -262,11 +268,20 @@ export const VerificationPage: React.FC = () => {
               Member Identity Verification
             </h1>
             <p className="text-xs sm:text-sm text-stone-200 max-w-2xl leading-relaxed">
-              To safeguard our matrimonial community, all members must complete Government ID and Live Photo verification before matching.
+              Upload your Government ID and Live Selfie Photo to unlock your verified green badge and build trust with prospective matches.
             </p>
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSkipVerification}
+              className="bg-white/10 hover:bg-white/20 text-white border-white/30 text-xs shadow-sm font-semibold"
+            >
+              Skip for now <ArrowRight className="h-3.5 w-3.5 ml-1" />
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -280,22 +295,22 @@ export const VerificationPage: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* State View 1: VERIFIED */}
+      {/* State View 1: VERIFIED / APPROVED */}
       {verificationStatus === 'VERIFIED' && (
-        <Card className="p-8 text-center space-y-6 border-2 border-emerald-500/30 bg-emerald-50/20 shadow-lg">
+        <Card className="p-8 text-center space-y-6 border-2 border-emerald-500/40 bg-emerald-50/30 shadow-lg">
           <div className="mx-auto h-20 w-20 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-inner">
             <ShieldCheck className="h-10 w-10 text-emerald-600 fill-emerald-100" />
           </div>
 
           <div className="space-y-2 max-w-lg mx-auto">
-            <Badge variant="verified" className="text-sm px-4 py-1">
-              ✓ Verification Status: VERIFIED
+            <Badge variant="verified" className="text-sm px-4 py-1.5 bg-emerald-600 text-white font-extrabold shadow-sm">
+              ✓ Verification Status: APPROVED & VERIFIED
             </Badge>
             <h2 className="font-serif text-2xl font-bold text-foreground">
-              Your Profile is Verified!
+              Your Profile is Officially Approved!
             </h2>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Congratulations! Your Government ID document and Live Selfie Photo have been approved by our Trust & Safety Team. The official green <strong>Verified Badge</strong> is now active on your matrimonial profile.
+              Congratulations! Your Government ID document and Live Selfie Photo have been reviewed and approved by the backend admin. The official green <strong>Approved Member Badge</strong> is now prominently displayed across your profile.
             </p>
           </div>
 
@@ -303,7 +318,7 @@ export const VerificationPage: React.FC = () => {
             <Button
               variant="primary"
               onClick={() => navigate('/matches')}
-              className="px-8 bg-[#8B1E3F] hover:bg-[#721733] text-white shadow-lg"
+              className="px-8 bg-[#8B1E3F] hover:bg-[#721733] text-white shadow-lg font-bold"
             >
               Explore Matching Profiles <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
@@ -627,6 +642,14 @@ export const VerificationPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSkipVerification}
+                className="w-full sm:w-auto px-5 py-2 text-stone-600 hover:bg-stone-100 border-stone-300 text-xs font-semibold rounded-2xl"
+              >
+                Skip for now
+              </Button>
               <Button
                 type="submit"
                 disabled={!idFile || !photoFile || isSubmitting}

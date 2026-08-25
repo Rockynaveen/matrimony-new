@@ -125,13 +125,13 @@ export const MyProfilePage: React.FC = () => {
 
             <div className="space-y-2 w-full">
               <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
-                {verificationStatus === 'VERIFIED' ? (
+                {(verificationStatus === 'VERIFIED' || Boolean((apiProfile as any)?.is_verified) || currentUser.verified) ? (
                   <>
-                    <Badge variant="gold" className="bg-[#D4AF37] text-stone-950 font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider px-2.5 py-0.5">
-                      Verified Member
+                    <Badge variant="verified" className="bg-emerald-600 text-white font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider px-3 py-1 shadow-sm">
+                      <ShieldCheck className="h-3.5 w-3.5 mr-1 inline" /> Approved Member
                     </Badge>
-                    <span className="text-[10px] sm:text-xs text-amber-200 font-semibold flex items-center gap-1 bg-black/30 px-2.5 py-0.5 rounded-full border border-amber-300/30">
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> ID & Photo Verified
+                    <span className="text-[10px] sm:text-xs text-emerald-200 font-semibold flex items-center gap-1 bg-black/40 px-3 py-1 rounded-full border border-emerald-400/40">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Identity Verified & Approved by Admin
                     </span>
                   </>
                 ) : verificationStatus === 'PENDING' ? (

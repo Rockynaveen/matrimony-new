@@ -73,10 +73,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // 6. For fully onboarded core app routes (Matches, Dashboard, Search, etc.):
+  const isSkippedForSession =
+    Boolean(onboardingStatus.verification_skipped_for_session) ||
+    sessionStorage.getItem('verification_skipped_session') === 'true';
+
   const hasPassedVerification =
     onboardingStatus.verification_completed ||
     onboardingStatus.verification_status === 'PENDING' ||
-    onboardingStatus.verification_status === 'VERIFIED';
+    onboardingStatus.verification_status === 'VERIFIED' ||
+    isSkippedForSession;
 
   const isFullyOnboarded =
     onboardingStatus.registration_completed &&

@@ -51,6 +51,7 @@ export function useCreateProfile() {
     mutationFn: (payload) => profileService.createProfile(payload),
     onSuccess: (data) => {
       queryClient.setQueryData(profileKeys.detail(), data);
+      queryClient.invalidateQueries({ queryKey: profileKeys.all });
     },
   });
 }
@@ -64,6 +65,7 @@ export function useUpdateProfile() {
     mutationFn: (payload) => profileService.updateProfile(payload),
     onSuccess: (data) => {
       queryClient.setQueryData(profileKeys.detail(), data);
+      queryClient.invalidateQueries({ queryKey: profileKeys.all });
     },
   });
 }

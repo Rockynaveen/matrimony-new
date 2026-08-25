@@ -41,19 +41,77 @@ function extractErrorMessage(data: any, fallback: string): string {
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-function sanitizeProfilePayload(payload: any): any {
-  if (!payload || typeof payload !== 'object') return payload;
-
-  const parseClampedNum = (val: any, fallback: number, min: number, max: number): number => {
-    if (typeof val === 'number' && !isNaN(val)) {
-      return Math.min(Math.max(val, min), max);
+function parseHeightValue(val: any): number {
+  if (typeof val === 'number' && !isNaN(val)) {
+    if (val > 30) {
+      // CM to Feet conversion (e.g. 175 cm -> 5.7)
+      return parseFloat((val / 30.48).toFixed(1));
     }
-    if (!val) return fallback;
-    const str = String(val).replace(/[^0-9.]/g, '');
-    const num = parseFloat(str);
-    if (isNaN(num)) return fallback;
-    return Math.min(Math.max(num, min), max);
-  };
+    return parseFloat(val.toFixed(1));
+  }
+  if (!val) return 5.8;
+  const str = String(val).trim();
+  // Check for feet pattern like 5' 9" or 5'9
+  const feetMatch = str.match(/(\d+)'\s*(\d+)/);
+  if (feetMatch) {
+    return parseFloat(`${feetMatch[1]}.${feetMatch[2]}`);
+  }
+  // Check for pure cm like "175 cm"
+  const cmMatch = str.match(/(\d{2,3})\s*cm/i);
+  if (cmMatch) {
+    const cm = parseFloat(cmMatch[1]);
+    return parseFloat((cm / 30.48).toFixed(1));
+  }
+  const directNum = parseFloat(str);
+  if (!isNaN(directNum)) {
+    if (directNum > 30) {
+      return parseFloat((directNum / 30.48).toFixed(1));
+    }
+    return parseFloat(directNum.toFixed(1));
+  }
+  return 5.8;
+}
+
+function parseWeightValue(val: any): number | null {
+  if (typeof val === 'number' && !isNaN(val)) {
+    return Math.min(Math.max(val, 30), 300);
+  }
+  if (!val) return null;
+  const numMatch = String(val).match(/(\d+(\.\d+)?)/);
+  if (numMatch) {
+    const num = parseFloat(numMatch[1]);
+    if (!isNaN(num) && num > 0) {
+      return Math.min(Math.max(num, 30), 300);
+    }
+  }
+  return null;
+}
+
+function parseIncomeValue(val: any): number | null {
+  if (typeof val === 'number' && !isNaN(val)) {
+    return Math.min(Math.max(val, 0), 100000000);
+  }
+  if (!val) return null;
+  const str = String(val);
+  const nums = str.match(/(\d+)/g);
+  if (nums && nums.length > 0) {
+    const last = parseInt(nums[nums.length - 1], 10);
+    if (str.toLowerCase().includes('lakh')) {
+      return last * 100000;
+    }
+    if (str.toLowerCase().includes('crore')) {
+      return last * 10000000;
+    }
+    if (last > 1000) return last;
+    return last * 100000;
+  }
+  return null;
+}
+
+function sanitizeProfilePayload(payload: any): ProfileCreateRequest {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Invalid profile payload');
+  }
 
   const sanitizeChoice = (val: any, allowed: string[], fallback: string): string => {
     if (!val || typeof val !== 'string' || val === 'string') return fallback;
@@ -61,25 +119,36 @@ function sanitizeProfilePayload(payload: any): any {
     return match || val;
   };
 
-  // Strip read-only DB & non-model fields that cause 400 Bad Request
-  const { id, created_at, updated_at, video_type, video_url, ...rest } = payload;
+  const str = (v: any, fallback = ''): string => {
+    if (typeof v === 'string' && v !== 'string') return v.trim();
+    return fallback;
+  };
 
+  // Strictly include only the 23 fields defined in backend ProfileIn schema
   return {
-    ...rest,
-    about_me: rest.about_me && rest.about_me !== 'string' ? rest.about_me : '',
-    height: parseClampedNum(rest.height, 5.8, 3.0, 300),
-    weight: parseClampedNum(rest.weight, 68, 30, 300),
-    complexion: rest.complexion && rest.complexion !== 'string' ? rest.complexion : 'Fair',
-    highest_education: rest.highest_education && rest.highest_education !== 'string' ? rest.highest_education : 'B.Tech',
-    occupation: rest.occupation && rest.occupation !== 'string' ? rest.occupation : 'Professional',
-    annual_income: parseClampedNum(rest.annual_income, 2000000, 0, 100000000),
-    religion: rest.religion && rest.religion !== 'string' ? rest.religion : 'Hindu',
-    caste: rest.caste && rest.caste !== 'string' ? rest.caste : 'General',
-    diet: sanitizeChoice(rest.diet, ['Vegetarian', 'Non-Vegetarian', 'Eggetarian'], 'Vegetarian'),
-    smoking: sanitizeChoice(rest.smoking, ['No', 'Occasionally', 'Yes'], 'No'),
-    drinking: sanitizeChoice(rest.drinking, ['No', 'Occasionally', 'Yes'], 'No'),
-    marital_status: sanitizeChoice(rest.marital_status, ['Never Married', 'Divorced', 'Widowed'], 'Never Married'),
-    languages_known: rest.languages_known && rest.languages_known !== 'string' ? rest.languages_known : 'English',
+    about_me: str(payload.about_me, ''),
+    height: parseHeightValue(payload.height),
+    weight: parseWeightValue(payload.weight),
+    complexion: str(payload.complexion, 'Fair'),
+    highest_education: str(payload.highest_education, 'Bachelor of Technology'),
+    occupation: str(payload.occupation, 'Software Professional'),
+    annual_income: parseIncomeValue(payload.annual_income),
+    religion: str(payload.religion, 'Hindu'),
+    caste: str(payload.caste, ''),
+    rashi: str(payload.rashi, ''),
+    nakshatra: str(payload.nakshatra, ''),
+    dosha: str(payload.dosha, ''),
+    family_information: str(payload.family_information, ''),
+    diet: sanitizeChoice(payload.diet, ['Vegetarian', 'Non-Vegetarian', 'Eggetarian'], 'Vegetarian'),
+    smoking: sanitizeChoice(payload.smoking, ['No', 'Occasionally', 'Yes'], 'No'),
+    drinking: sanitizeChoice(payload.drinking, ['No', 'Occasionally', 'Yes'], 'No'),
+    languages_known: Array.isArray(payload.languages_known) ? payload.languages_known.join(', ') : str(payload.languages_known, 'English'),
+    hobbies_interests: str(payload.hobbies_interests, ''),
+    marital_status: sanitizeChoice(payload.marital_status, ['Never Married', 'Divorced', 'Widowed'], 'Never Married'),
+    disability_information: str(payload.disability_information, ''),
+    country: str(payload.country, 'India'),
+    state: str(payload.state, 'Maharashtra'),
+    city: str(payload.city, 'Mumbai')
   };
 }
 
@@ -98,12 +167,14 @@ export const profileService = {
       }
 
       if (res.status === 200 && res.data) {
+        localStorage.setItem('vivah_mock_profile', JSON.stringify(res.data));
         return res.data;
       }
     } catch (err: any) {
       // ignore
     }
-    return null;
+    const local = localStorage.getItem('vivah_mock_profile');
+    return local ? JSON.parse(local) : null;
   },
 
   /**
@@ -126,46 +197,25 @@ export const profileService = {
         return res.data;
       }
 
-      // Profile already exists in database → automatically switch to PUT /api/profile/update/
+      // Profile already exists in database -> automatically switch to PUT /api/profile/update/
       if (res.status === 400 || res.status === 409 || res.status === 405) {
-        return this.updateProfile(cleanPayload);
+        return await this.updateProfile(cleanPayload);
       }
-    } catch (err: any) {
-      // fallback to local persistence below
-    }
 
-    const mockProfile: ProfileOutAPI = {
-      id: 1001,
-      profile_photo: cleanPayload.profile_photo || null,
-      video_introduction: cleanPayload.video_introduction || null,
-      about_me: cleanPayload.about_me || '',
-      height: String(cleanPayload.height),
-      weight: cleanPayload.weight ? String(cleanPayload.weight) : null,
-      complexion: cleanPayload.complexion || null,
-      highest_education: cleanPayload.highest_education || '',
-      occupation: cleanPayload.occupation || '',
-      annual_income: cleanPayload.annual_income ? String(cleanPayload.annual_income) : null,
-      religion: cleanPayload.religion || '',
-      caste: cleanPayload.caste || null,
-      rashi: cleanPayload.rashi || null,
-      nakshatra: cleanPayload.nakshatra || null,
-      dosha: cleanPayload.dosha || null,
-      family_information: cleanPayload.family_information || null,
-      diet: cleanPayload.diet || 'Vegetarian',
-      smoking: cleanPayload.smoking || 'No',
-      drinking: cleanPayload.drinking || 'No',
-      languages_known: cleanPayload.languages_known || 'English',
-      hobbies_interests: cleanPayload.hobbies_interests || null,
-      marital_status: cleanPayload.marital_status || 'Never Married',
-      disability_information: cleanPayload.disability_information || null,
-      country: cleanPayload.country || null,
-      state: cleanPayload.state || null,
-      city: cleanPayload.city || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    localStorage.setItem('vivah_mock_profile', JSON.stringify(mockProfile));
-    return mockProfile;
+      const errMsg = extractErrorMessage(res.data, `Server returned status ${res.status}`);
+      console.error('[ProfileService] Create failed:', res.status, errMsg);
+      throw new ProfileServiceError(errMsg, res.status);
+    } catch (err: any) {
+      if (err instanceof ProfileServiceError) throw err;
+      try {
+        return await this.updateProfile(cleanPayload);
+      } catch (updateErr: any) {
+        throw new ProfileServiceError(
+          extractErrorMessage(err?.data || updateErr?.data, 'Failed to save profile to database. Please check your inputs or try again.'),
+          err?.status || updateErr?.status || 400
+        );
+      }
+    }
   },
 
   /**
@@ -189,43 +239,25 @@ export const profileService = {
         return res.data;
       }
 
-      // If profile not found or backend 500 (profile missing in DB), try POST /create/
-      if (res.status === 404 || res.status === 500 || res.status === 400) {
-        try {
-          const createRes = await axiosClient.post<ProfileOutAPI>('/profile/create/', cleanPayload);
-          if (createRes.status === 200 || createRes.status === 201) {
-            localStorage.setItem('vivah_mock_profile', JSON.stringify(createRes.data));
-            return createRes.data;
-          }
-        } catch {
-          // continue to local fallback
-        }
-      }
-    } catch (err: any) {
-      // If PUT throws 500 or network error, attempt POST /create/ once as fallback
-      try {
+      // If profile record does not exist yet (404), call POST /profile/create/
+      if (res.status === 404) {
         const createRes = await axiosClient.post<ProfileOutAPI>('/profile/create/', cleanPayload);
         if (createRes.status === 200 || createRes.status === 201) {
           localStorage.setItem('vivah_mock_profile', JSON.stringify(createRes.data));
           return createRes.data;
         }
-      } catch {
-        // fallback to local persistence below
       }
-    }
 
-    const stored = localStorage.getItem('vivah_mock_profile');
-    const existing = stored ? JSON.parse(stored) : {};
-    const updatedProfile: ProfileOutAPI = {
-      ...existing,
-      ...cleanPayload,
-      height: String(cleanPayload.height),
-      weight: cleanPayload.weight ? String(cleanPayload.weight) : (existing.weight || null),
-      annual_income: cleanPayload.annual_income ? String(cleanPayload.annual_income) : (existing.annual_income || null),
-      updated_at: new Date().toISOString()
-    };
-    localStorage.setItem('vivah_mock_profile', JSON.stringify(updatedProfile));
-    return updatedProfile;
+      const errMsg = extractErrorMessage(res.data, `Server returned status ${res.status}`);
+      console.error('[ProfileService] Update failed:', res.status, errMsg);
+      throw new ProfileServiceError(errMsg, res.status);
+    } catch (err: any) {
+      if (err instanceof ProfileServiceError) throw err;
+      throw new ProfileServiceError(
+        err?.message || 'Failed to update profile on server. Please check your inputs.',
+        err?.status || 400
+      );
+    }
   },
 
   /**

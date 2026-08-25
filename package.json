@@ -1,0 +1,12 @@
+{
+  "name": "matrimony-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix matrimony-new-main/MATRIMONY-main run dev",
+    "start": "npm --prefix matrimony-new-main/MATRIMONY-main run dev",
+    "build": "npm --prefix matrimony-new-main/MATRIMONY-main run build",
+    "lint": "npm --prefix matrimony-new-main/MATRIMONY-main run lint",
+    "typecheck": "npm --prefix matrimony-new-main/MATRIMONY-main run lint",
+    "install:all": "npm --prefix matrimony-new-main/MATRIMONY-main install"
+  }
+}

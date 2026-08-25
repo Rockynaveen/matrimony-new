@@ -1,0 +1,282 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  :root {
+    --background: #FAF6F0;
+    --foreground: #111827;
+    
+    --card: #FFFFFF;
+    --card-foreground: #111827;
+
+    --popover: #FFFFFF;
+    --popover-foreground: #111827;
+
+    --primary: #8B1E3F;
+    --primary-foreground: #FFFFFF;
+
+    --secondary: #C44569;
+    --secondary-foreground: #FFFFFF;
+
+    --accent: #D4AF37;
+    --accent-foreground: #111827;
+
+    --muted: #F3ECE7;
+    --muted-foreground: #374151;
+
+    --destructive: #D32F2F;
+    --destructive-foreground: #FFFFFF;
+
+    --success: #2E7D32;
+    --success-foreground: #FFFFFF;
+
+    --border: #E5E7EB;
+    --input: #E5E7EB;
+    --ring: #8B1E3F;
+
+    --radius: 0.75rem;
+
+    --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-serif: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .dark {
+    --background: #1A1416;
+    --foreground: #F7F3F0;
+
+    --card: #241D20;
+    --card-foreground: #F7F3F0;
+
+    --popover: #241D20;
+    --popover-foreground: #F7F3F0;
+
+    --primary: #C44569;
+    --primary-foreground: #FFFFFF;
+
+    --secondary: #8B1E3F;
+    --secondary-foreground: #FFFFFF;
+
+    --accent: #E5C158;
+    --accent-foreground: #1A1416;
+
+    --muted: #2E2529;
+    --muted-foreground: #A89B9E;
+
+    --destructive: #EF5350;
+    --destructive-foreground: #FFFFFF;
+
+    --success: #4CAF50;
+    --success-foreground: #FFFFFF;
+
+    --border: #3D3237;
+    --input: #3D3237;
+    --ring: #C44569;
+  }
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-serif: var(--font-sans);
+  --font-sans: var(--font-sans);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #FAF6F0;
+  background-image: 
+    radial-gradient(ellipse at 50% 0%, rgba(212, 175, 55, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 100%, rgba(139, 30, 63, 0.05) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%23D4AF37' stroke-opacity='0.08' stroke-width='0.75'%3E%3Cpath d='M20 0 L40 20 L20 40 L0 20 Z'/%3E%3Ccircle cx='20' cy='20' r='1.5' fill='%23D4AF37' fill-opacity='0.12'/%3E%3C/g%3E%3C/svg%3E");
+  background-attachment: fixed;
+  background-repeat: repeat;
+  color: var(--foreground);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, .font-serif {
+  font-family: var(--font-sans);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D5C2B5;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Glassmorphism utilities */
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.dark .glass-card {
+  background: rgba(36, 29, 32, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #D4AF37 0%, #F3E5AB 50%, #AA7C11 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.primary-gradient {
+  background: linear-gradient(135deg, #8B1E3F 0%, #C44569 100%);
+}
+
+.primary-gradient-text {
+  background: linear-gradient(135deg, #8B1E3F 0%, #C44569 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Traditional Indian Matrimony Background Utilities */
+.traditional-bg {
+  background-color: #FAF6F0;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.10) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%23D4AF37' stroke-opacity='0.08' stroke-width='0.75'%3E%3Cpath d='M20 0 L40 20 L20 40 L0 20 Z'/%3E%3Ccircle cx='20' cy='20' r='1.5' fill='%23D4AF37' fill-opacity='0.12'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+.traditional-mandala-bg {
+  background-color: #5C0F26;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.15) 0%, transparent 75%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23D4AF37' stroke-opacity='0.12' stroke-width='0.75'%3E%3Ccircle cx='40' cy='40' r='20'/%3E%3Ccircle cx='40' cy='40' r='8'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.traditional-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow: 0 10px 25px -5px rgba(139, 30, 63, 0.08), 0 8px 10px -6px rgba(212, 175, 55, 0.06);
+}
+
+.dark .traditional-card {
+  background: rgba(28, 16, 20, 0.92);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+/* Animation Keyframe Preset Utilities */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeLeft {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeRight {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes zoomIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in { animation: fadeIn 0.5s cubic-bezier(0.2, 0.6, 0.35, 1) forwards; }
+.animate-fade-up { animation: fadeUp 0.6s cubic-bezier(0.2, 0.6, 0.35, 1) forwards; }
+.animate-fade-down { animation: fadeDown 0.6s cubic-bezier(0.2, 0.6, 0.35, 1) forwards; }
+.animate-fade-left { animation: fadeLeft 0.6s cubic-bezier(0.2, 0.6, 0.35, 1) forwards; }
+.animate-fade-right { animation: fadeRight 0.6s cubic-bezier(0.2, 0.6, 0.35, 1) forwards; }
+.animate-zoom-in { animation: zoomIn 0.5s cubic-bezier(0.2, 0.6, 0.35, 1) forwards; }
+
+/* 3rd Loading State: 4 Staggered Pulsing Dots Loader */
+@keyframes pulseDots {
+  0%, 100% {
+    transform: scale(0.65);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+}
+
+.pulse-dot-1 {
+  animation: pulseDots 1.4s infinite ease-in-out;
+  animation-delay: 0s;
+}
+.pulse-dot-2 {
+  animation: pulseDots 1.4s infinite ease-in-out;
+  animation-delay: 0.2s;
+}
+.pulse-dot-3 {
+  animation: pulseDots 1.4s infinite ease-in-out;
+  animation-delay: 0.4s;
+}
+.pulse-dot-4 {
+  animation: pulseDots 1.4s infinite ease-in-out;
+  animation-delay: 0.6s;
+}

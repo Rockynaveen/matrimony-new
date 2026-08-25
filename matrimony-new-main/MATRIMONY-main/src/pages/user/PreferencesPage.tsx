@@ -293,14 +293,14 @@ export const PreferencesPage: React.FC = () => {
         await createMutation.mutateAsync(payload);
       }
 
-      showToast('Partner preferences saved successfully! ✨ Redirecting to your matches...');
+      showToast('Partner preferences saved successfully! ✨ Proceeding to Member Verification...');
       localStorage.setItem('user_partner_preferences', JSON.stringify(prefs));
       markPreferencesCompleted();
       refetch();
-      // Flow rule: Preferences Saved -> Matching Profiles (/matches)
+      // Flow rule: Preferences Saved -> Verification (/verification) -> Matches (/matches)
       const searchParams = new URLSearchParams(window.location.search);
       const redirectUrl = searchParams.get('redirect');
-      setTimeout(() => navigate(redirectUrl || '/matches'), 1000);
+      setTimeout(() => navigate(redirectUrl || '/verification'), 800);
     } catch (err: any) {
       showToast(err?.message || 'Failed to save partner preferences');
     } finally {

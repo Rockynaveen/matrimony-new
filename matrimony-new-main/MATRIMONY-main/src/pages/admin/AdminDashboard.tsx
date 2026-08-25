@@ -39,9 +39,17 @@ export const AdminDashboard: React.FC = () => {
           <h1 className="font-serif text-3xl font-bold text-foreground">SaaS Admin Control Dashboard</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Real-time system health, revenue growth analytics, and moderation queues.</p>
         </div>
-        <Button variant="outline" size="sm">
-          <FileSpreadsheet className="h-4 w-4 mr-2" /> Export CSV Report
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <a
+            href="/admin/verifications"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#8B1E3F] hover:bg-[#721733] text-white text-xs font-bold shadow-md transition-colors"
+          >
+            Identity Verifications Queue
+          </a>
+          <Button variant="outline" size="sm">
+            <FileSpreadsheet className="h-4 w-4 mr-2" /> Export CSV Report
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards Row */}

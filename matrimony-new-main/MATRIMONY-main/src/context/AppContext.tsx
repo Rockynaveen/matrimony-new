@@ -7,7 +7,8 @@ import type {
   GoogleLoginRequest,
   PatchBasicProfileRequest,
   ProfileApiResponse,
-  OnboardingStatus
+  OnboardingStatus,
+  VerificationState
 } from '../types/apiTypes';
 import { MOCK_PROFILES } from '../data/mockProfiles';
 import { authApi } from '../api/authApi';
@@ -15,6 +16,7 @@ import { googleAuthApi } from '../api/googleAuthApi';
 import { profileApi } from '../api/profileApi';
 import { matchingApi } from '../api/matchingApi';
 import { notificationApi } from '../api/notificationApi';
+import { verificationService } from '../services/verification.service';
 import { queryClient } from '../lib/queryClient';
 
 interface AppContextType {
@@ -44,6 +46,7 @@ interface AppContextType {
   // Authentication & Profile Status State
   isAuthenticated: boolean;
   onboardingStatus: OnboardingStatus;
+  verificationStatus: VerificationState;
   profileStatus: {
     is_basic_complete: boolean;
     is_detailed_complete: boolean;
@@ -58,6 +61,11 @@ interface AppContextType {
   markBasicProfileCompleted: () => void;
   markProfileCompleted: () => void;
   markPreferencesCompleted: () => void;
+  submitMemberVerification: (formData: FormData, details?: { docType?: string; docPreview?: string; photoPreview?: string }) => Promise<void>;
+  checkVerificationStatus: (email?: string) => Promise<VerificationState>;
+  markVerificationCompleted: (status?: VerificationState) => void;
+  adminApproveUserVerification: (userIdOrEmail: string | number) => Promise<void>;
+  adminRejectUserVerification: (userIdOrEmail: string | number, reason: string) => Promise<void>;
   updateOnboardingStatus: (partial: Partial<OnboardingStatus>) => OnboardingStatus;
   getPendingRoute: () => string;
   updateCurrentUserAvatar: (avatarUrl: string) => void;
@@ -105,6 +113,9 @@ export const getStoredOnboardingStatus = (email?: string): OnboardingStatus => {
     basic_profile_completed: regMethod === 'manual' ? hasToken : false,
     complete_profile_completed: false,
     partner_preferences_completed: false,
+    verification_completed: false,
+    verification_status: 'NOT_SUBMITTED',
+    rejection_reason: null
   };
 
   if (!hasToken && !currentEmail) {
@@ -117,10 +128,13 @@ export const getStoredOnboardingStatus = (email?: string): OnboardingStatus => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        const mappedStatus: VerificationState = parsed.verification_status || (parsed.verification_completed ? 'PENDING' : 'NOT_SUBMITTED');
         return {
           ...defaultStatus,
           ...parsed,
           registration_completed: parsed.registration_completed ?? hasToken,
+          verification_completed: parsed.verification_completed || mappedStatus === 'PENDING' || mappedStatus === 'VERIFIED',
+          verification_status: mappedStatus
         };
       } catch {}
     }
@@ -146,7 +160,11 @@ export const saveStoredOnboardingStatus = (partial: Partial<OnboardingStatus>, e
     localStorage.setItem('registration_method', updated.registration_method);
   }
 
-  if (updated.complete_profile_completed && updated.partner_preferences_completed) {
+  if (
+    updated.complete_profile_completed &&
+    updated.partner_preferences_completed &&
+    (updated.verification_status === 'PENDING' || updated.verification_status === 'VERIFIED')
+  ) {
     if (currentEmail) {
       localStorage.setItem(`user_profile_completed_${currentEmail}`, 'true');
     }
@@ -176,7 +194,12 @@ export const getNextPendingRoute = (status: OnboardingStatus): string => {
     return '/preferences';
   }
 
-  // Priority 5: If all required onboarding steps are complete -> Matches
+  // Priority 5: If Verification is not submitted or rejected -> Verification
+  if (!status.verification_completed || status.verification_status === 'NOT_SUBMITTED' || status.verification_status === 'REJECTED') {
+    return '/verification';
+  }
+
+  // Priority 6: If all required onboarding steps are complete (verification is PENDING or VERIFIED) -> Matches
   return '/matches';
 };
 
@@ -186,7 +209,11 @@ export const isUserProfileCompleted = (email?: string): boolean => {
   const key = `user_profile_completed_${targetEmail}`;
   if (localStorage.getItem(key) === 'true') return true;
   const status = getStoredOnboardingStatus(targetEmail);
-  return Boolean(status.complete_profile_completed && status.partner_preferences_completed);
+  return Boolean(
+    status.complete_profile_completed &&
+    status.partner_preferences_completed &&
+    (status.verification_status === 'PENDING' || status.verification_status === 'VERIFIED')
+  );
 };
 
 export const markUserProfileCompleted = (email?: string): void => {
@@ -309,33 +336,8 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User>(getInitialUser);
   const [profiles, setProfiles] = useState<Profile[]>(MOCK_PROFILES);
-  const [shortlistedIds, setShortlistedIds] = useState<string[]>(['MAT-1001', 'MAT-1003']);
-  const [interests, setInterests] = useState<Interest[]>([
-    {
-      id: 'INT-1',
-      senderId: 'USER-CURRENT-101',
-      senderName: 'User',
-      senderImage: '',
-      senderAge: 29,
-      senderProfession: 'Product Manager',
-      senderLocation: 'Bengaluru',
-      receiverId: 'MAT-1001',
-      status: 'accepted',
-      sentAt: '2 days ago'
-    },
-    {
-      id: 'INT-2',
-      senderId: 'MAT-1002',
-      senderName: 'Rohan Verma',
-      senderImage: '/images/profiles/recommended_groom.jpg',
-      senderAge: 29,
-      senderProfession: 'Product Manager',
-      senderLocation: 'Bengaluru',
-      receiverId: 'USER-CURRENT-101',
-      status: 'pending',
-      sentAt: '1 day ago'
-    }
-  ]);
+  const [shortlistedIds, setShortlistedIds] = useState<string[]>([]);
+  const [interests, setInterests] = useState<Interest[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
     try {
       const saved = localStorage.getItem('local_user_notifications');
@@ -437,6 +439,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return getStoredOnboardingStatus(email);
   });
 
+  const [verificationStatus, setVerificationStatus] = useState<VerificationState>(() => {
+    const email = localStorage.getItem('logged_in_email') || '';
+    const stored = getStoredOnboardingStatus(email);
+    return stored.verification_status || (stored.verification_completed ? 'PENDING' : 'NOT_SUBMITTED');
+  });
+
   const [profileStatus, setProfileStatus] = useState<{
     is_basic_complete: boolean;
     is_detailed_complete: boolean;
@@ -457,6 +465,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const email = localStorage.getItem('logged_in_email') || currentUser.email || '';
     const updated = saveStoredOnboardingStatus(partial, email);
     setOnboardingStatus(updated);
+    if (updated.verification_status) {
+      setVerificationStatus(updated.verification_status);
+    }
     return updated;
   };
 
@@ -477,7 +488,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const markProfileCompleted = () => {
     const email = localStorage.getItem('logged_in_email') || currentUser.email || '';
-    markUserProfileCompleted(email);
     const updated = saveStoredOnboardingStatus({ complete_profile_completed: true, basic_profile_completed: true }, email);
     setOnboardingStatus(updated);
     setProfileStatus({
@@ -495,12 +505,198 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       basic_profile_completed: true
     }, email);
     setOnboardingStatus(updated);
-    markUserProfileCompleted(email);
-    setProfileStatus({
-      is_basic_complete: true,
-      is_detailed_complete: true,
-      completion_percentage: 100
-    });
+    setProfileStatus(prev => ({
+      ...prev,
+      completion_percentage: 90
+    }));
+  };
+
+  const markVerificationCompleted = (status: VerificationState = 'PENDING') => {
+    const email = (localStorage.getItem('logged_in_email') || currentUser.email || '').toLowerCase().trim();
+    const updated = saveStoredOnboardingStatus({
+      verification_completed: status === 'PENDING' || status === 'VERIFIED',
+      verification_status: status,
+      rejection_reason: null
+    }, email);
+    setOnboardingStatus(updated);
+    setVerificationStatus(status);
+    if (status === 'VERIFIED') {
+      setCurrentUser(prev => ({ ...prev, verified: true }));
+      markUserProfileCompleted(email);
+    }
+  };
+
+  const submitMemberVerification = async (
+    formData: FormData,
+    details?: { docType?: string; docPreview?: string; photoPreview?: string }
+  ) => {
+    const email = (localStorage.getItem('logged_in_email') || currentUser.email || '').toLowerCase().trim();
+    try {
+      await verificationService.submitVerification(formData);
+    } catch (err: any) {
+      console.warn('[AppContext] Backend verification submission warning:', err?.message);
+    }
+
+    const updated = saveStoredOnboardingStatus({
+      verification_completed: true,
+      verification_status: 'PENDING',
+      rejection_reason: null
+    }, email);
+
+    setOnboardingStatus(updated);
+    setVerificationStatus('PENDING');
+
+    const userRecord = {
+      status: 'PENDING',
+      is_verified: false,
+      rejection_reason: null,
+      id_document_type: details?.docType || 'Government ID',
+      id_document_url: details?.docPreview || '',
+      live_photo_url: details?.photoPreview || '',
+      submitted_at: new Date().toISOString()
+    };
+    if (email) {
+      localStorage.setItem(`user_verification_${email}`, JSON.stringify(userRecord));
+    }
+
+    try {
+      const existingQueueRaw = localStorage.getItem('admin_pending_verifications');
+      const queue: any[] = existingQueueRaw ? JSON.parse(existingQueueRaw) : [];
+      const filtered = queue.filter(item => item.user_email?.toLowerCase() !== email);
+      filtered.unshift({
+        id: `VERIFY-${Date.now()}`,
+        user_id: currentUser.id || `USR-${Math.floor(1000 + Math.random() * 9000)}`,
+        user_email: email,
+        user_name: currentUser.name || extractNameFromEmail(email),
+        user_phone: currentUser.phone || '',
+        gender: currentUser.gender || '',
+        id_document_type: details?.docType || 'Government ID',
+        id_document_url: details?.docPreview || '',
+        live_photo_url: details?.photoPreview || '',
+        status: 'PENDING',
+        submitted_at: new Date().toLocaleString()
+      });
+      localStorage.setItem('admin_pending_verifications', JSON.stringify(filtered));
+    } catch {}
+
+    showToast('✓ Verification documents submitted for Admin Review');
+  };
+
+  const checkVerificationStatus = async (email?: string): Promise<VerificationState> => {
+    const targetEmail = (email || localStorage.getItem('logged_in_email') || currentUser.email || '').toLowerCase().trim();
+    try {
+      const res = await verificationService.getVerificationStatus();
+      const mapped = (res.status || (res.is_verified ? 'VERIFIED' : 'NOT_SUBMITTED')) as VerificationState;
+      if (targetEmail) {
+        saveStoredOnboardingStatus({
+          verification_completed: mapped === 'PENDING' || mapped === 'VERIFIED',
+          verification_status: mapped,
+          rejection_reason: res.rejection_reason || null
+        }, targetEmail);
+      }
+      setVerificationStatus(mapped);
+      if (mapped === 'VERIFIED') {
+        setCurrentUser(prev => ({ ...prev, verified: true }));
+      }
+      return mapped;
+    } catch {
+      const stored = getStoredOnboardingStatus(targetEmail);
+      return stored.verification_status;
+    }
+  };
+
+  const adminApproveUserVerification = async (userIdOrEmail: string | number) => {
+    const target = String(userIdOrEmail).toLowerCase().trim();
+    try {
+      await verificationService.approveVerification(userIdOrEmail, target);
+    } catch {}
+
+    let targetEmail = target.includes('@') ? target : '';
+    try {
+      const existingQueueRaw = localStorage.getItem('admin_pending_verifications');
+      let queue: any[] = existingQueueRaw ? JSON.parse(existingQueueRaw) : [];
+      const found = queue.find(item => String(item.user_id).toLowerCase() === target || item.user_email?.toLowerCase() === target);
+      if (found?.user_email) targetEmail = found.user_email.toLowerCase();
+
+      queue = queue.map(item => {
+        if (String(item.user_id).toLowerCase() === target || item.user_email?.toLowerCase() === target) {
+          return { ...item, status: 'VERIFIED' };
+        }
+        return item;
+      });
+      localStorage.setItem('admin_pending_verifications', JSON.stringify(queue));
+    } catch {}
+
+    if (targetEmail) {
+      saveStoredOnboardingStatus({
+        verification_completed: true,
+        verification_status: 'VERIFIED',
+        rejection_reason: null
+      }, targetEmail);
+
+      const userRecord = {
+        status: 'VERIFIED',
+        is_verified: true,
+        rejection_reason: null,
+        updated_at: new Date().toISOString()
+      };
+      localStorage.setItem(`user_verification_${targetEmail}`, JSON.stringify(userRecord));
+
+      const currentEmail = (localStorage.getItem('logged_in_email') || currentUser.email || '').toLowerCase().trim();
+      if (currentEmail === targetEmail) {
+        setVerificationStatus('VERIFIED');
+        setCurrentUser(prev => ({ ...prev, verified: true }));
+      }
+    }
+
+    showToast('✓ Member successfully verified! Verified badge activated.');
+  };
+
+  const adminRejectUserVerification = async (userIdOrEmail: string | number, reason: string) => {
+    const target = String(userIdOrEmail).toLowerCase().trim();
+    try {
+      await verificationService.rejectVerification(userIdOrEmail, reason, target);
+    } catch {}
+
+    let targetEmail = target.includes('@') ? target : '';
+    try {
+      const existingQueueRaw = localStorage.getItem('admin_pending_verifications');
+      let queue: any[] = existingQueueRaw ? JSON.parse(existingQueueRaw) : [];
+      const found = queue.find(item => String(item.user_id).toLowerCase() === target || item.user_email?.toLowerCase() === target);
+      if (found?.user_email) targetEmail = found.user_email.toLowerCase();
+
+      queue = queue.map(item => {
+        if (String(item.user_id).toLowerCase() === target || item.user_email?.toLowerCase() === target) {
+          return { ...item, status: 'REJECTED', rejection_reason: reason };
+        }
+        return item;
+      });
+      localStorage.setItem('admin_pending_verifications', JSON.stringify(queue));
+    } catch {}
+
+    if (targetEmail) {
+      saveStoredOnboardingStatus({
+        verification_completed: false,
+        verification_status: 'REJECTED',
+        rejection_reason: reason
+      }, targetEmail);
+
+      const userRecord = {
+        status: 'REJECTED',
+        is_verified: false,
+        rejection_reason: reason,
+        updated_at: new Date().toISOString()
+      };
+      localStorage.setItem(`user_verification_${targetEmail}`, JSON.stringify(userRecord));
+
+      const currentEmail = (localStorage.getItem('logged_in_email') || currentUser.email || '').toLowerCase().trim();
+      if (currentEmail === targetEmail) {
+        setVerificationStatus('REJECTED');
+        setCurrentUser(prev => ({ ...prev, verified: false }));
+      }
+    }
+
+    showToast('Verification rejected.');
   };
 
   const checkProfileStatus = async (): Promise<ProfileApiResponse> => {
@@ -514,13 +710,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const isDetailedDone = Boolean(res.is_detailed_complete) || storedStatus.complete_profile_completed;
       const isPreferencesDone = Boolean((res as any).is_preferences_complete) || storedStatus.partner_preferences_completed;
 
+      let mappedVStatus: VerificationState = storedStatus.verification_status || (storedStatus.verification_completed ? 'PENDING' : 'NOT_SUBMITTED');
+      let isVerifiedMember = mappedVStatus === 'VERIFIED';
+      let vRejectionReason: string | null = storedStatus.rejection_reason || null;
+
+      try {
+        const vRes = await verificationService.getVerificationStatus();
+        if (vRes.status) {
+          mappedVStatus = vRes.status as VerificationState;
+          isVerifiedMember = mappedVStatus === 'VERIFIED' || Boolean(vRes.is_verified);
+          vRejectionReason = vRes.rejection_reason || null;
+        }
+      } catch {}
+
       const syncedStatus = saveStoredOnboardingStatus({
         registration_completed: true,
         basic_profile_completed: isBasicDone,
         complete_profile_completed: isDetailedDone,
-        partner_preferences_completed: isPreferencesDone
+        partner_preferences_completed: isPreferencesDone,
+        verification_completed: mappedVStatus === 'PENDING' || mappedVStatus === 'VERIFIED',
+        verification_status: mappedVStatus,
+        rejection_reason: vRejectionReason
       }, email);
       setOnboardingStatus(syncedStatus);
+      setVerificationStatus(mappedVStatus);
 
       setProfileStatus({
         is_basic_complete: isBasicDone,
@@ -1110,6 +1323,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         isAuthenticated,
         onboardingStatus,
+        verificationStatus,
         profileStatus,
         loginUser,
         registerUser,
@@ -1120,6 +1334,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         markBasicProfileCompleted,
         markProfileCompleted,
         markPreferencesCompleted,
+        submitMemberVerification,
+        checkVerificationStatus,
+        markVerificationCompleted,
+        adminApproveUserVerification,
+        adminRejectUserVerification,
         updateOnboardingStatus,
         getPendingRoute,
         updateCurrentUserAvatar,

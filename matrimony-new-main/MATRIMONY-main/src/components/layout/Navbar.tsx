@@ -265,21 +265,21 @@ export const Navbar: React.FC = () => {
 
                       {/* Menu Navigation Links */}
                       <div className="p-2 space-y-0.5 max-h-[380px] overflow-y-auto">
-                        {!onboardingStatus.partner_preferences_completed && (
+                        {(!onboardingStatus.partner_preferences_completed || (onboardingStatus.verification_status !== 'PENDING' && onboardingStatus.verification_status !== 'VERIFIED')) && (
                           <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200/80 mb-2 space-y-2">
                             <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-900">
                               <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-                              <span>Onboarding in Progress</span>
+                              <span>Profile Setup in Progress</span>
                             </div>
                             <p className="text-[10px] text-amber-700 font-medium">
-                              Complete your registration to unlock matches and search.
+                              Complete required profile & verification steps to unlock matches.
                             </p>
                             <Link
                               to={getPendingRoute()}
                               onClick={() => setIsUserDropdownOpen(false)}
                               className="block text-center py-1.5 px-3 bg-[#8B1E3F] text-white text-xs font-bold rounded-xl hover:bg-[#721733] transition-colors"
                             >
-                              Resume Profile Setup →
+                              Resume Setup →
                             </Link>
                           </div>
                         )}

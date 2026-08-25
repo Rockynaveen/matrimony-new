@@ -49,7 +49,7 @@ export const UserSidebar: React.FC<UserSidebarProps> = ({ onNavClick, className 
   const shortlistCount = shortlistData?.length ?? shortlistedIds.length;
   const ignoredCount = ignoredData?.length ?? 0;
   const blockedCount = blockedData?.length ?? 0;
-  const totalInterestsCount = (sentInterests?.length || 0) + (receivedInterests?.length || 0) || interests.length;
+  const totalInterestsCount = (sentInterests?.length || 0) + (receivedInterests?.length || 0);
 
   const rawName = (currentUser.name && !isGenericName(currentUser.name))
     ? currentUser.name

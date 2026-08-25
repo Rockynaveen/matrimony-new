@@ -55,6 +55,7 @@ import { AdminDashboard } from '../pages/admin/AdminDashboard';
 import { UserManagement } from '../pages/admin/UserManagement';
 import { ProfileApprovals } from '../pages/admin/ProfileApprovals';
 import { PhotoModeration } from '../pages/admin/PhotoModeration';
+import { AdminVerificationQueue } from '../pages/admin/AdminVerificationQueue';
 
 // Super Admin
 import { SuperAdminDashboard } from '../pages/super-admin/SuperAdminDashboard';
@@ -146,6 +147,14 @@ export const AppRouter: React.FC = () => (
         <Route path="/verification" element={<ProtectedRoute><VerificationPage /></ProtectedRoute>} />
         <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
         <Route path="/payment-history" element={<ProtectedRoute><PaymentHistoryPage /></ProtectedRoute>} />
+
+        {/* Admin Workspace Routes */}
+        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerificationQueue /></ProtectedRoute>} />
+        <Route path="/admin/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+        <Route path="/admin/approvals" element={<ProtectedRoute><ProfileApprovals /></ProtectedRoute>} />
+        <Route path="/admin/moderation" element={<ProtectedRoute><PhotoModeration /></ProtectedRoute>} />
+        <Route path="/super-admin" element={<ProtectedRoute><SuperAdminDashboard /></ProtectedRoute>} />
 
         {/* Catch-all redirect to Home */}
         <Route path="*" element={<Home />} />

@@ -153,10 +153,41 @@ export interface PhotoAccessRequestCreateIn {
   profile_owner_id: number;
 }
 
+export type VerificationState = 'NOT_SUBMITTED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+
 export interface OnboardingStatus {
   registration_completed: boolean;
   registration_method: 'manual' | 'google' | null;
   basic_profile_completed: boolean;
   complete_profile_completed: boolean;
   partner_preferences_completed: boolean;
+  verification_completed: boolean;
+  verification_status: VerificationState;
+  rejection_reason?: string | null;
+}
+
+export interface VerificationStatusResponse {
+  status: VerificationState | string;
+  is_verified: boolean;
+  rejection_reason?: string | null;
+  id_document_url?: string | null;
+  live_photo_url?: string | null;
+  submitted_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface AdminPendingVerificationItem {
+  id?: number | string;
+  user_id: number | string;
+  user_email: string;
+  user_name: string;
+  user_phone?: string;
+  gender?: string;
+  age?: number;
+  id_document_type?: string;
+  id_document_url: string;
+  live_photo_url: string;
+  status: VerificationState | string;
+  submitted_at: string;
+  rejection_reason?: string | null;
 }

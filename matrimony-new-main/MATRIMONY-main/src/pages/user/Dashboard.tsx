@@ -48,7 +48,7 @@ export const Dashboard: React.FC = () => {
 
   // Dynamic calculations for Stats
   const profileViewsCount = (apiProfile as any)?.profile_views ?? 0;
-  const interestedInYouCount = receivedInterests?.length ?? interests.filter(i => i.receiverId === currentUser.id).length;
+  const interestedInYouCount = receivedInterests?.length ?? 0;
   const newMessagesCount = unreadCount || 0;
   const profileMatchesCount = recommendations?.length ?? 0;
 
@@ -62,7 +62,7 @@ export const Dashboard: React.FC = () => {
     { title: 'Basic Information', completed: Boolean(apiProfile?.first_name || currentUser.name || profileStatus.is_basic_complete) },
     { title: 'Education & Career', completed: Boolean((apiProfile as any)?.highest_education || (apiProfile as any)?.occupation || apiProfile?.is_detailed_complete) },
     { title: 'Photos', completed: Boolean((apiProfile as any)?.profile_photo || currentUser.avatar) },
-    { title: 'Interests', completed: Boolean((sentInterests && sentInterests.length > 0) || (interests && interests.length > 0)) },
+    { title: 'Interests', completed: Boolean((sentInterests && sentInterests.length > 0) || (receivedInterests && receivedInterests.length > 0)) },
     { title: 'Partner Preferences', completed: Boolean(profileStatus.is_detailed_complete || (shortlist && shortlist.length > 0)) }
   ];
 

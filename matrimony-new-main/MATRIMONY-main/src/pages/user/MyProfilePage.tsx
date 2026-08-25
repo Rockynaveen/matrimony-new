@@ -13,7 +13,9 @@ import {
   Loader2,
   Camera,
   FileText,
-  Users
+  Users,
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -24,7 +26,7 @@ import { DotsLoader } from '../../components/ui/LoadingScreen';
 
 export const MyProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser } = useApp();
+  const { currentUser, verificationStatus } = useApp();
   const { data: apiProfile, isLoading, refetch } = useProfile();
 
   // Retrieve local draft backup if server returns empty or during cold start
@@ -123,12 +125,34 @@ export const MyProfilePage: React.FC = () => {
 
             <div className="space-y-2 w-full">
               <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
-                <Badge variant="gold" className="bg-[#D4AF37] text-stone-950 font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider px-2.5 py-0.5">
-                  Verified Member
-                </Badge>
-                <span className="text-[10px] sm:text-xs text-amber-200 font-semibold flex items-center gap-1 bg-black/30 px-2.5 py-0.5 rounded-full border border-amber-300/30">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> ID & Photo Verified
-                </span>
+                {verificationStatus === 'VERIFIED' ? (
+                  <>
+                    <Badge variant="gold" className="bg-[#D4AF37] text-stone-950 font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider px-2.5 py-0.5">
+                      Verified Member
+                    </Badge>
+                    <span className="text-[10px] sm:text-xs text-amber-200 font-semibold flex items-center gap-1 bg-black/30 px-2.5 py-0.5 rounded-full border border-amber-300/30">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> ID & Photo Verified
+                    </span>
+                  </>
+                ) : verificationStatus === 'PENDING' ? (
+                  <span className="text-[10px] sm:text-xs text-amber-200 font-semibold flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded-full border border-amber-400/40">
+                    <Clock className="h-3.5 w-3.5 text-amber-400 animate-pulse" /> Verification Pending Admin Review
+                  </span>
+                ) : verificationStatus === 'REJECTED' ? (
+                  <button
+                    onClick={() => navigate('/verification')}
+                    className="text-[10px] sm:text-xs text-rose-200 font-semibold flex items-center gap-1.5 bg-rose-950/60 hover:bg-rose-900 px-3 py-1 rounded-full border border-rose-400/40 transition-colors"
+                  >
+                    <AlertCircle className="h-3.5 w-3.5 text-rose-400" /> Verification Rejected (Click to Re-submit)
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => navigate('/verification')}
+                    className="text-[10px] sm:text-xs text-stone-300 font-semibold flex items-center gap-1.5 bg-black/40 hover:bg-black/60 px-3 py-1 rounded-full border border-white/20 transition-colors"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5 text-amber-300" /> Complete Verification
+                  </button>
+                )}
               </div>
 
               <h1 className="font-serif text-2xl sm:text-4xl font-extrabold text-white tracking-tight">

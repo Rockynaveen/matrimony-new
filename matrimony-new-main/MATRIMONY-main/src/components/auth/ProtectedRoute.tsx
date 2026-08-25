@@ -7,6 +7,7 @@ export type StepRequirement =
   | 'basic_profile'
   | 'complete_profile'
   | 'partner_preferences'
+  | 'verification'
   | 'onboarded';
 
 interface ProtectedRouteProps {
@@ -31,7 +32,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // 1. If accessing Basic Profile page:
   if (currentPath === '/complete-basic-profile' || step === 'basic_profile') {
-    // If not a Google user or basic profile is already completed, redirect to the next pending step
     if (onboardingStatus.registration_method !== 'google' || onboardingStatus.basic_profile_completed) {
       const nextRoute = getNextPendingRoute(onboardingStatus);
       if (nextRoute !== '/complete-basic-profile') {
@@ -61,12 +61,29 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <>{children}</>;
   }
 
-  // 5. For fully onboarded core app routes (Matches, Dashboard, Search, etc.):
+  // 5. If accessing Verification page:
+  if (currentPath === '/verification' || step === 'verification') {
+    if (!onboardingStatus.complete_profile_completed) {
+      return <Navigate to="/profile/complete" replace />;
+    }
+    if (!onboardingStatus.partner_preferences_completed) {
+      return <Navigate to="/preferences" replace />;
+    }
+    return <>{children}</>;
+  }
+
+  // 6. For fully onboarded core app routes (Matches, Dashboard, Search, etc.):
+  const hasPassedVerification =
+    onboardingStatus.verification_completed ||
+    onboardingStatus.verification_status === 'PENDING' ||
+    onboardingStatus.verification_status === 'VERIFIED';
+
   const isFullyOnboarded =
     onboardingStatus.registration_completed &&
     (onboardingStatus.registration_method !== 'google' || onboardingStatus.basic_profile_completed) &&
     onboardingStatus.complete_profile_completed &&
-    onboardingStatus.partner_preferences_completed;
+    onboardingStatus.partner_preferences_completed &&
+    hasPassedVerification;
 
   if (!isFullyOnboarded) {
     const nextPending = getNextPendingRoute(onboardingStatus);

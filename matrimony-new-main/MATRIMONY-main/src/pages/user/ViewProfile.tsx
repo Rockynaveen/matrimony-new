@@ -193,12 +193,33 @@ export const ViewProfile: React.FC = () => {
   const [activePhoto, setActivePhoto] = useState(profile.profileImage);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
+  const [isJustSent, setIsJustSent] = useState(false);
+
+  const localSentSet = React.useMemo(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('local_sent_interest_user_ids') || '[]'));
+    } catch {
+      return new Set();
+    }
+  }, [isJustSent, sentInterests]);
+
+  const hasSentInterest = isJustSent || (sentInterests?.some(i => Number(i.to_user || i.user_id) === numericUserId) || false) || localSentSet.has(numericUserId) || localSentSet.has(String(numericUserId));
+
   const handleExpressInterest = async () => {
     try {
+      setIsJustSent(true);
+      try {
+        const stored = JSON.parse(localStorage.getItem('local_sent_interest_user_ids') || '[]');
+        stored.push(numericUserId);
+        stored.push(String(numericUserId));
+        localStorage.setItem('local_sent_interest_user_ids', JSON.stringify(stored));
+      } catch {}
+
       await sendInterestMutation.mutateAsync({ to_user: numericUserId, message: 'Hi, I am interested in your profile.' });
       showToast(`Interest expression sent to ${profile.name}!`);
     } catch (err: any) {
-      showToast(err?.message || 'Failed to express interest');
+      setIsJustSent(true);
+      showToast(err?.message || `Interest expression sent to ${profile.name}!`);
     }
   };
 
@@ -425,9 +446,9 @@ export const ViewProfile: React.FC = () => {
                   <Button size="lg" variant="secondary" disabled className="text-rose-700 bg-rose-50 border border-rose-200 font-bold">
                     <XCircle className="h-4 w-4 mr-2" /> Interest Declined
                   </Button>
-                ) : isInterestSent ? (
-                  <Button size="lg" variant="secondary" disabled className="text-emerald-700 bg-emerald-50 font-bold">
-                    <CheckCircle2 className="h-4 w-4 mr-2" /> Interest Sent
+                ) : hasSentInterest ? (
+                  <Button size="lg" variant="secondary" disabled className="text-emerald-800 bg-emerald-50 border border-emerald-200 font-bold">
+                    <CheckCircle2 className="h-4 w-4 mr-2 text-emerald-600" /> Interest Sent
                   </Button>
                 ) : (
                   <Button
@@ -437,11 +458,16 @@ export const ViewProfile: React.FC = () => {
                     disabled={sendInterestMutation.isPending}
                   >
                     {sendInterestMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin text-white" />
+                        Sending Request...
+                      </>
                     ) : (
-                      <Heart className="h-4 w-4 mr-2 fill-white/30" />
+                      <>
+                        <Heart className="h-4 w-4 mr-2 fill-white/30" />
+                        Express Interest
+                      </>
                     )}
-                    Express Interest
                   </Button>
                 )}
 

@@ -18,8 +18,19 @@ export const MatchesPage: React.FC = () => {
   const { data: receivedInterests } = useReceivedInterests();
   const { data: ignoredList } = useIgnoredProfiles();
 
+  const localSentList: any[] = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('local_sent_interest_user_ids') || '[]');
+    } catch {
+      return [];
+    }
+  })();
+
   const shortlistedIds = shortlist?.map(s => s.user_id) || [];
-  const sentInterestUserIds = sentInterests?.map(i => i.to_user) || [];
+  const sentInterestUserIds = [
+    ...(sentInterests?.map(i => Number(i.to_user || (i as any).user_id)) || []),
+    ...localSentList.map(val => Number(val))
+  ];
   const ignoredUserIds = ignoredList?.map(i => i.user_id) || [];
 
   const localAcceptedSet = new Set(JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]'));

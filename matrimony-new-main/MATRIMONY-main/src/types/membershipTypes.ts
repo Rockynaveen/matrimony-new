@@ -83,3 +83,11 @@ export interface VerifyCheckoutPayload {
   razorpay_signature: string;
   plan_id: number;
 }
+
+export interface MyMembershipOut {
+  plan_name: string;
+  price: number;
+  profile_credits: number;
+  used_credits: number;
+  remaining_credits: number;
+}

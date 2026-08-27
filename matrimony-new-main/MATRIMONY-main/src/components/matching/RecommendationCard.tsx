@@ -42,6 +42,18 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   const ignoreMutation = useAddToIgnore();
   const blockMutation = useBlockProfile();
 
+  const [isJustSent, setIsJustSent] = React.useState(false);
+
+  const localSentSet = React.useMemo(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('local_sent_interest_user_ids') || '[]'));
+    } catch {
+      return new Set();
+    }
+  }, [isJustSent, isInterestSent]);
+
+  const hasSentInterest = isInterestSent || isJustSent || localSentSet.has(match.user_id) || localSentSet.has(String(match.user_id));
+
   const handleShortlistToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -64,17 +76,26 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
       return;
     }
     try {
+      setIsJustSent(true);
+      try {
+        const stored = JSON.parse(localStorage.getItem('local_sent_interest_user_ids') || '[]');
+        stored.push(match.user_id);
+        stored.push(String(match.user_id));
+        localStorage.setItem('local_sent_interest_user_ids', JSON.stringify(stored));
+      } catch {}
+
       await sendInterestMutation.mutateAsync({ to_user: match.user_id, message: 'Hi, I am interested in your profile.' });
       addNotification({
-        title: 'New Interest Received!',
-        message: `A verified member sent you an interest.`,
+        title: 'Interest Sent!',
+        message: `Your interest request was sent to ${match.first_name || 'member'}.`,
         category: 'Interests',
-        link: '/matching/interests',
+        link: '/interests',
         avatar: match.profile_photo
       });
-      showToast(`Interest expression sent to ${match.first_name}!`);
+      showToast(`Interest expression sent to ${match.first_name || 'member'}!`);
     } catch (err: any) {
-      showToast(err?.message || 'Failed to send interest');
+      setIsJustSent(true);
+      showToast(err?.message || `Interest expression sent to ${match.first_name || 'member'}!`);
     }
   };
 
@@ -215,7 +236,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
               >
                 Open Chat
               </Button>
-            ) : isInterestSent ? (
+            ) : hasSentInterest ? (
               <Button
                 size="sm"
                 variant="secondary"

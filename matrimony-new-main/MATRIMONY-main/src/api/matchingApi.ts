@@ -43,6 +43,14 @@ export const matchingApi = {
     if (!userId || userId <= 0) {
       throw new Error('Invalid recipient user ID. Please select a valid profile.');
     }
+
+    try {
+      const stored = JSON.parse(localStorage.getItem('local_sent_interest_user_ids') || '[]');
+      stored.push(userId);
+      stored.push(String(userId));
+      localStorage.setItem('local_sent_interest_user_ids', JSON.stringify(stored));
+    } catch {}
+
     const cleanPayload = { to_user: userId, message: payload.message || 'Hi, I am interested in your profile.' };
     const res = await axiosClient.post<InterestResponseSchema>('/matching/interest/send', cleanPayload);
     

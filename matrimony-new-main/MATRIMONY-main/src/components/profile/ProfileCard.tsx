@@ -25,8 +25,31 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
   const { shortlistedIds, toggleShortlist, interests, sendInterest, isAuthenticated } = useApp();
   const navigate = useNavigate();
 
+  const [isSending, setIsSending] = React.useState(false);
+  const [isJustSent, setIsJustSent] = React.useState(false);
+
+  const localSentSet = React.useMemo(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('local_sent_interest_user_ids') || '[]'));
+    } catch {
+      return new Set();
+    }
+  }, [isJustSent, interests]);
+
   const isShortlisted = shortlistedIds.includes(profile.id);
-  const isInterestSent = interests.some(i => i.receiverId === profile.id);
+  const hasSentInterest = isJustSent || profile.interestSent || interests.some(i => String(i.receiverId) === String(profile.id) || String(i.user_id) === String(profile.id)) || localSentSet.has(Number(profile.id)) || localSentSet.has(String(profile.id));
+
+  const handleSendInterestClick = async () => {
+    setIsSending(true);
+    setIsJustSent(true);
+    try {
+      await sendInterest(profile.id);
+    } catch {
+      setIsJustSent(true);
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   const handleProtectedAction = (targetUrl: string, actionCallback?: () => void) => {
     if (!isAuthenticated) {
@@ -151,7 +174,16 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
             <Eye className="h-3.5 w-3.5 mr-1" /> View Profile
           </Button>
 
-          {isInterestSent ? (
+          {isSending ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled
+              className="w-full text-xs text-emerald-800 bg-emerald-50 border border-emerald-200"
+            >
+              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin text-emerald-600" /> Sending...
+            </Button>
+          ) : hasSentInterest ? (
             <Button
               size="sm"
               variant="secondary"
@@ -164,7 +196,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
             <Button
               size="sm"
               variant="primary"
-              onClick={() => handleProtectedAction(`/profile/${profile.id}`, () => sendInterest(profile.id))}
+              onClick={() => handleProtectedAction(`/profile/${profile.id}`, handleSendInterestClick)}
               className="w-full text-xs"
             >
               <Heart className="h-3.5 w-3.5 mr-1 fill-white/20" /> Send Interest

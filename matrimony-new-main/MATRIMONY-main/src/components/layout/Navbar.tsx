@@ -29,7 +29,8 @@ import {
   Check,
   Star,
   EyeOff,
-  Ban
+  Ban,
+  ShieldCheck
 } from 'lucide-react';
 export const Navbar: React.FC = () => {
   const { currentUser, verificationStatus, notifications, unreadCount, markNotificationRead, logout, isAuthenticated, shortlistedIds, onboardingStatus, getPendingRoute } = useApp();

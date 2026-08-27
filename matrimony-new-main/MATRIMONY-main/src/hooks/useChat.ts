@@ -106,8 +106,11 @@ export function useMarkConversationSeen() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (roomId: number | string) => chatApi.markConversationSeen(roomId),
-    onSuccess: () => {
+    onSuccess: (_, roomId) => {
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
+      if (roomId) {
+        queryClient.invalidateQueries({ queryKey: chatKeys.messages(roomId) });
+      }
     }
   });
 }
@@ -156,12 +159,13 @@ export function useChatHeartbeat(roomId?: number | string, enabled: boolean = tr
 // 8.5 Get User Online Status (GET /api/chat/UserOnlineStatus)
 export function useGetUserOnlineStatus(userId?: number | string, enabled: boolean = true) {
   const hasToken = !!localStorage.getItem('access_token');
+  const validUser = Boolean(userId && String(userId) !== '0');
   return useQuery({
     queryKey: [...chatKeys.all, 'onlineStatus', String(userId || 'me')],
     queryFn: () => chatApi.getUserOnlineStatus(userId),
-    enabled: hasToken && enabled,
-    staleTime: 15 * 1000, // Reuse cached status at conversation level for 15s (no per-message calls)
-    refetchInterval: 30000 // Background polling every 30s
+    enabled: hasToken && enabled && validUser,
+    staleTime: 5000,
+    refetchInterval: 10000 // Background polling every 10s
   });
 }
 

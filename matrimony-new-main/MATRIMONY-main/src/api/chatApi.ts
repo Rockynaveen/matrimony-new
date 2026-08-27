@@ -86,20 +86,42 @@ export const chatApi = {
     const apiMapped: ChatMessageOut[] = rawList
       .filter(item => {
         const text = String(item.message || item.content || item.text || '').trim();
-        return text && !isGenericStatusText(text);
+        const hasMedia = Boolean(item.attachment_url || item.url || item.image || item.image_url || item.file || item.media || item.audio || item.voice || item.video);
+        return (text && !isGenericStatusText(text)) || hasMedia;
       })
-      .map((item, idx) => ({
-        id: item.id || item.message_id || `msg_${Date.now()}_${idx}`,
-        room_id: Number(item.room_id || roomId),
-        sender_id: Number(item.sender_id || item.sender || item.from_user || 0),
-        receiver_id: Number(item.receiver_id || item.receiver || item.to_user || roomId),
-        message: item.message || item.content || item.text || '',
-        content: item.content || item.message || item.text || '',
-        created_at: item.created_at || item.timestamp || item.created_on || new Date().toISOString(),
-        timestamp: item.timestamp || item.created_at || item.created_on || new Date().toISOString(),
-        is_me: item.is_me ?? (item.sender_id === currentUserId || item.sender === currentUserId),
-        read: item.read ?? item.is_read ?? false
-      }));
+      .map((item, idx) => {
+        const attachmentUrl = item.attachment_url || item.image || item.image_url || item.url || item.file || item.file_url || item.media || item.audio || item.voice || item.video || undefined;
+        let detectedType = item.message_type || item.type;
+        if (!detectedType && attachmentUrl) {
+          const lowerUrl = String(attachmentUrl).toLowerCase();
+          if (lowerUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || lowerUrl.startsWith('data:image') || item.image || item.image_url) {
+            detectedType = 'image';
+          } else if (lowerUrl.match(/\.(mp4|webm|mov|ogg)/i) || item.video) {
+            detectedType = 'video';
+          } else if (lowerUrl.match(/\.(mp3|wav|ogg|webm)/i) || item.voice || item.audio) {
+            detectedType = 'voice';
+          } else {
+            detectedType = 'attachment';
+          }
+        }
+        const isRead = item.read ?? item.is_read ?? item.seen ?? (item.status === 'read' || item.status === 'seen');
+
+        return {
+          id: item.id || item.message_id || `msg_${Date.now()}_${idx}`,
+          room_id: Number(item.room_id || roomId),
+          sender_id: Number(item.sender_id || item.sender || item.from_user || 0),
+          receiver_id: Number(item.receiver_id || item.receiver || item.to_user || roomId),
+          message: item.message || item.content || item.text || '',
+          content: item.content || item.message || item.text || '',
+          message_type: detectedType || 'text',
+          attachment_url: attachmentUrl,
+          status: item.status || (isRead ? 'read' : 'delivered'),
+          created_at: item.created_at || item.timestamp || item.created_on || new Date().toISOString(),
+          timestamp: item.timestamp || item.created_at || item.created_on || new Date().toISOString(),
+          is_me: item.is_me ?? (item.sender_id === currentUserId || item.sender === currentUserId),
+          read: Boolean(isRead)
+        };
+      });
 
     try {
       const rawLocalStored: ChatMessageOut[] = JSON.parse(localStorage.getItem(`local_chat_messages_${roomId}`) || '[]');
@@ -349,8 +371,11 @@ export const chatApi = {
     const currentUserId = Number(localStorage.getItem('user_id') || 0);
     const targetId = userId ? Number(userId) : currentUserId;
 
+    if (!targetId) return { is_online: false, status: 'offline' };
+
     const candidateUrls: Array<{ method: 'get' | 'post'; url: string }> = [
       { method: 'get', url: `/chat/UserOnlineStatus?user_id=${targetId}` },
+      { method: 'get', url: `/chat/UserOnlineStatus` },
       { method: 'get', url: `/chat/UserOnlineStatus/` },
       { method: 'get', url: `/chat/useronlinestatus` },
       { method: 'post', url: `/chat/UserOnlineStatus` }
@@ -363,16 +388,18 @@ export const chatApi = {
           : await axiosClient.get(item.url, { params: { user_id: targetId } });
 
         if (res.status >= 200 && res.status < 300 && res.data) {
-          const isOnline = res.data.is_online ?? res.data.online ?? (res.data.status === 'online');
-          return { is_online: Boolean(isOnline), status: isOnline ? 'online' : 'offline' };
+          const rawData = res.data;
+          const isOnline = rawData.is_online ?? rawData.online ?? rawData.isOnline ?? (rawData.status === 'online');
+          if (isOnline !== undefined && isOnline !== null) {
+            return { is_online: Boolean(isOnline), status: isOnline ? 'online' : 'offline' };
+          }
         }
       } catch {
         continue;
       }
     }
 
-    const isOnline = targetId ? targetId % 2 === 1 : false;
-    return { is_online: isOnline, status: isOnline ? 'online' : 'offline' };
+    return { is_online: false, status: 'offline' };
   },
 
   // 9. POST /api/chat/send-voice

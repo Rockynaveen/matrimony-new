@@ -47,6 +47,7 @@ import {
   useDeleteMessageForMe,
   useDeleteMessageForEveryone,
   useChatHeartbeat,
+  useGetUserOnlineStatus,
   useActiveCall
 } from '../../hooks/useChat';
 import { useRecommendations, useShortlist, useReceivedInterests, useSentInterests } from '../../hooks/useMatching';
@@ -172,8 +173,7 @@ export const MessagesPage: React.FC = () => {
     if (typeof item.is_online === 'boolean') return item.is_online;
     if (typeof item.online === 'boolean') return item.online;
     if (typeof item.status === 'string') return item.status.toLowerCase() === 'online';
-    const uid = Number(item.user_id || item.id || item.from_user || item.to_user || 0);
-    return uid ? uid % 2 === 1 : false;
+    return false;
   };
 
   const remoteConvsMapped = (remoteConversations || []).map(conv => {
@@ -254,6 +254,10 @@ export const MessagesPage: React.FC = () => {
 
   const activeMatch = foundInConvs || foundInRecs || (foundInShortlist as any);
 
+  const targetRecipientUserId = activeMatch ? (activeMatch.user_id || activeMatch.id || selectedProfileId) : selectedProfileId;
+  const { data: recipientOnlineStatusData } = useGetUserOnlineStatus(targetRecipientUserId, Boolean(targetRecipientUserId));
+  const isRecipientOnline = recipientOnlineStatusData ? recipientOnlineStatusData.is_online : resolveOnlineStatus(activeMatch);
+
   const activeProfile = activeMatch ? {
     id: String(activeMatch.user_id || activeMatch.id || selectedProfileId),
     name: activeMatch.name || `${activeMatch.first_name || ''} ${activeMatch.last_name || ''}`.trim() || 'Verified Member',
@@ -265,7 +269,7 @@ export const MessagesPage: React.FC = () => {
     city: activeMatch.city || 'India',
     religion: activeMatch.religion || 'Hindu',
     caste: activeMatch.caste || 'Caste',
-    online: resolveOnlineStatus(activeMatch),
+    online: isRecipientOnline,
     matchPercentage: activeMatch.matchPercentage || activeMatch.match_percentage || 95
   } : (selectedProfileId ? {
     id: selectedProfileId,
@@ -278,7 +282,7 @@ export const MessagesPage: React.FC = () => {
     city: 'India',
     religion: 'Hindu',
     caste: 'Caste',
-    online: false,
+    online: isRecipientOnline,
     matchPercentage: 92
   } : null);
 
@@ -770,11 +774,13 @@ export const MessagesPage: React.FC = () => {
                   </div>
                 ) : (
                   displayMessages.map((msg, idx) => {
-                    const isMe = msg.is_me || msg.sender_name === currentUser.name;
+                    const currentUserId = Number(currentUser.id || localStorage.getItem('user_id') || 0);
+                    const isMe = msg.is_me || msg.sender_name === currentUser.name || (currentUserId > 0 && msg.sender_id === currentUserId);
                     const messageText = msg.text || msg.message || '';
                     const msgType = msg.message_type || 'text';
-                    const isSeenByReceiver = Boolean(msg.read || (msg as any).is_read || msg.status === 'read');
-                    const hasAttachment = Boolean(msg.attachment_url || (msg as any).image || (msg as any).video || (msg as any).file || (msg as any).voice);
+                    const isSeenByReceiver = Boolean(msg.read || (msg as any).is_read || (msg as any).seen || msg.status === 'read' || msg.status === 'seen');
+                    const mediaUrl = msg.attachment_url || (msg as any).image || (msg as any).image_url || (msg as any).url || (msg as any).file || (msg as any).voice || (msg as any).video;
+                    const hasAttachment = Boolean(mediaUrl || msgType === 'image' || msgType === 'video' || msgType === 'voice' || msgType === 'document' || msgType === 'attachment');
 
                     return (
                       <div
@@ -810,20 +816,20 @@ export const MessagesPage: React.FC = () => {
                               {/* Media / Voice / File Rendering */}
                               {hasAttachment && (
                                 <div className="mb-1 rounded-2xl overflow-hidden border border-stone-300 bg-stone-100 max-w-xs sm:max-w-sm shadow-2xs">
-                                  {msgType === 'image' || (msg as any).image || (msg.attachment_url && (msg.attachment_url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || msg.attachment_url.startsWith('blob:') || msg.attachment_url.startsWith('data:image'))) ? (
-                                    <div className="relative group/img cursor-pointer" onClick={() => setPreviewModalImageUrl(msg.attachment_url || (msg as any).image)}>
-                                      <img src={msg.attachment_url || (msg as any).image} alt="Attachment" className="w-full h-auto object-cover max-h-60 rounded-2xl" />
+                                  {msgType === 'image' || (mediaUrl && (String(mediaUrl).match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || String(mediaUrl).startsWith('blob:') || String(mediaUrl).startsWith('data:image'))) ? (
+                                    <div className="relative group/img cursor-pointer" onClick={() => setPreviewModalImageUrl(mediaUrl || null)}>
+                                      <img src={mediaUrl} alt="Attachment" className="w-full h-auto object-cover max-h-60 rounded-2xl" />
                                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
                                         <Maximize2 className="h-5 w-5" />
                                       </div>
                                     </div>
-                                  ) : msgType === 'video' || (msg as any).video || (msg.attachment_url && (msg.attachment_url.match(/\.(mp4|webm|mov|ogg)/i) || msg.attachment_url.startsWith('blob:'))) ? (
-                                    <video src={msg.attachment_url || (msg as any).video} controls className="w-full h-auto max-h-60 rounded-2xl" />
+                                  ) : msgType === 'video' || (mediaUrl && (String(mediaUrl).match(/\.(mp4|webm|mov|ogg)/i) || String(mediaUrl).startsWith('blob:'))) ? (
+                                    <video src={mediaUrl} controls className="w-full h-auto max-h-60 rounded-2xl" />
                                   ) : msgType === 'voice' || (msg as any).voice ? (
-                                    <AudioBubblePlayer audioUrl={msg.attachment_url || (msg as any).voice} isMe={isMe} />
+                                    <AudioBubblePlayer audioUrl={mediaUrl} isMe={isMe} />
                                   ) : (
                                     <a
-                                      href={msg.attachment_url || (msg as any).file}
+                                      href={mediaUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="p-3 flex items-center gap-3 text-xs font-bold text-[#8B1E3F] hover:underline bg-white border border-stone-300 rounded-2xl shadow-2xs"
@@ -841,7 +847,7 @@ export const MessagesPage: React.FC = () => {
                                 </div>
                               )}
 
-                              {/* Black / White High Contrast Text Message Bubble */}
+                              {/* Text Message Bubble */}
                               {messageText && (
                                 <div
                                   className={`px-4 py-2.5 rounded-2xl text-xs leading-relaxed shadow-2xs ${
@@ -884,15 +890,15 @@ export const MessagesPage: React.FC = () => {
                                 </div>
                               )}
 
-                              <div className={`flex items-center gap-1 text-[10px] text-black font-bold mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`flex items-center gap-1 text-[10px] font-bold mt-1 ${isMe ? 'justify-end text-black' : 'justify-start text-stone-600'}`}>
                                 <span>{formatMessageTimestamp(msg.timestamp || msg.created_at || msg.time)}</span>
                                 {isMe && (
                                   isSeenByReceiver ? (
-                                    <CheckCheck className="h-3.5 w-3.5 text-sky-500 font-extrabold" title="Read" />
-                                  ) : (activeProfile?.online) ? (
-                                    <CheckCheck className="h-3.5 w-3.5 text-black font-bold" title="Delivered" />
+                                    <CheckCheck className="h-3.5 w-3.5 text-[#34B7F1] stroke-[2.5]" title="Seen (Read)" />
+                                  ) : activeProfile?.online ? (
+                                    <CheckCheck className="h-3.5 w-3.5 text-stone-400 stroke-[2]" title="Delivered (Recipient Online)" />
                                   ) : (
-                                    <Check className="h-3 w-3 text-black font-bold" title="Sent" />
+                                    <Check className="h-3.5 w-3.5 text-stone-400 stroke-[2]" title="Sent" />
                                   )
                                 )}
                               </div>

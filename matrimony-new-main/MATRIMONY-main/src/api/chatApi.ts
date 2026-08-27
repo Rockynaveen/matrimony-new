@@ -382,73 +382,103 @@ export const chatApi = {
     return res.data || { success: true };
   },
 
-  // 8. UserOnlineStatus (heartbeat) -> POST /api/chat/UserOnlineStatus
-  sendHeartbeat: async (roomId?: number | string): Promise<{ status: string }> => {
+  // 8. UserOnlineStatus (heartbeat -> POST /api/chat/UserOnlineStatus to update current authenticated user's activity)
+  sendHeartbeat: async (roomId?: number | string): Promise<{ success: boolean; user_id?: number; is_online: boolean; status: string; last_seen?: string }> => {
     const currentUserId = getAuthUserId();
-    if (!currentUserId) return { status: 'online' };
+    if (!currentUserId) return { success: false, is_online: false, status: 'offline' };
 
-    try {
-      const res = await axiosClient.post('/chat/UserOnlineStatus', {
-        user_id: currentUserId,
-        is_online: true,
-        status: 'online',
-        room_id: roomId ? Number(roomId) : undefined
-      });
-      if (res.status >= 200 && res.status < 300) {
-        return res.data || { status: 'online' };
+    const candidateUrls = [
+      '/chat/UserOnlineStatus',
+      '/chat/UserOnlineStatus/',
+      '/chat/user-online-status',
+      '/chat/user-online-status/'
+    ];
+
+    for (const url of candidateUrls) {
+      try {
+        const res = await axiosClient.post(url, {
+          user_id: currentUserId,
+          room_id: roomId ? Number(roomId) : undefined
+        });
+        if (res.status >= 200 && res.status < 300 && res.data) {
+          const rawData = res.data;
+          const isOnline = rawData.is_online ?? (rawData.status === 'online') ?? true;
+          return {
+            success: rawData.success ?? true,
+            user_id: rawData.user_id || currentUserId,
+            status: isOnline ? 'online' : 'offline',
+            is_online: isOnline,
+            last_seen: rawData.last_seen
+          };
+        }
+      } catch {
+        continue;
       }
-    } catch {
-      return { status: 'online' };
     }
-    return { status: 'online' };
+    return { success: true, user_id: currentUserId, is_online: true, status: 'online' };
   },
 
-  // 8.5 UserOnlineStatus Query -> POST /api/chat/UserOnlineStatus
-  getUserOnlineStatus: async (userId?: number | string): Promise<{ is_online: boolean; status: string }> => {
+  // 8.5 UserOnlineStatus Query (GET -> /api/chat/UserOnlineStatus?user_id=167 to read/check status without mutating last_active)
+  getUserOnlineStatus: async (userId?: number | string): Promise<{ success: boolean; user_id: number; is_online: boolean; status: string; last_seen?: string }> => {
     const currentUserId = getAuthUserId();
-    const targetUserId = Number(userId || 0);
+    const targetUserId = Number(userId || currentUserId || 0);
 
-    if (!targetUserId) return { is_online: true, status: 'online' };
-    if (currentUserId && targetUserId === currentUserId) return { is_online: true, status: 'online' };
+    if (!targetUserId) return { success: true, user_id: 0, is_online: false, status: 'offline' };
 
-    try {
-      const res = await axiosClient.post('/chat/UserOnlineStatus', {
-        user_id: currentUserId,
-        target_user_id: targetUserId
-      });
+    const candidateUrls = [
+      `/chat/UserOnlineStatus?user_id=${targetUserId}`,
+      `/chat/UserOnlineStatus/?user_id=${targetUserId}`,
+      `/chat/UserOnlineStatus?userId=${targetUserId}`,
+      `/chat/UserOnlineStatus/?userId=${targetUserId}`,
+      `/chat/user-online-status?user_id=${targetUserId}`,
+      `/chat/user-online-status/?user_id=${targetUserId}`
+    ];
 
-      if (res.status >= 200 && res.status < 300 && res.data) {
-        const rawData = res.data;
-        let isOnline = false;
+    for (const url of candidateUrls) {
+      try {
+        const res = await axiosClient.get(url);
+        if (res.status >= 200 && res.status < 300 && res.data) {
+          const rawData = res.data;
+          let isOnline = false;
 
-        if (typeof rawData.is_online === 'boolean') {
-          isOnline = rawData.is_online;
-        } else if (typeof rawData.online === 'boolean') {
-          isOnline = rawData.online;
-        } else if (typeof rawData.isOnline === 'boolean') {
-          isOnline = rawData.isOnline;
-        } else if (rawData.data && typeof rawData.data.is_online === 'boolean') {
-          isOnline = rawData.data.is_online;
-        } else if (rawData.data && typeof rawData.data.online === 'boolean') {
-          isOnline = rawData.data.online;
-        } else if (
-          rawData.success === true ||
-          rawData.status === 'online' ||
-          (typeof rawData.message === 'string' &&
-            (rawData.message.toLowerCase().includes('registered') ||
-             rawData.message.toLowerCase().includes('online') ||
-             rawData.message.toLowerCase().includes('success')))
-        ) {
-          isOnline = true;
+          if (typeof rawData.is_online === 'boolean') {
+            isOnline = rawData.is_online;
+          } else if (typeof rawData.online === 'boolean') {
+            isOnline = rawData.online;
+          } else if (rawData.status === 'online') {
+            isOnline = true;
+          }
+
+          // If last_seen is present, enforce 90-second online timeout check
+          if (rawData.last_seen) {
+            const lastSeenDate = new Date(rawData.last_seen);
+            if (!isNaN(lastSeenDate.getTime())) {
+              const diffSec = (Date.now() - lastSeenDate.getTime()) / 1000;
+              if (diffSec > 90) {
+                isOnline = false;
+              }
+            }
+          }
+
+          return {
+            success: rawData.success ?? true,
+            user_id: rawData.user_id || targetUserId,
+            status: isOnline ? 'online' : 'offline',
+            is_online: isOnline,
+            last_seen: rawData.last_seen
+          };
         }
-
-        return { is_online: isOnline, status: isOnline ? 'online' : 'offline' };
+      } catch {
+        continue;
       }
-    } catch {
-      // Fallback on network or endpoint error
     }
 
-    return { is_online: true, status: 'online' };
+    // Fallback: If user is current logged in user and no response from endpoint
+    if (currentUserId && targetUserId === currentUserId) {
+      return { success: true, user_id: currentUserId, is_online: true, status: 'online' };
+    }
+
+    return { success: true, user_id: targetUserId, is_online: false, status: 'offline' };
   },
 
   // 9. POST /api/chat/send-voice

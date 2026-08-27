@@ -83,6 +83,14 @@ export const chatApi = {
         lower === 'ok';
     };
 
+    const parseUserId = (val: any): number => {
+      if (!val) return 0;
+      if (typeof val === 'number') return val;
+      if (typeof val === 'object') return Number(val.id || val.user_id || val.pk || 0) || 0;
+      const n = Number(val);
+      return isNaN(n) ? 0 : n;
+    };
+
     const apiMapped: ChatMessageOut[] = rawList
       .filter(item => {
         const text = String(item.message || item.content || item.text || '').trim();
@@ -105,12 +113,14 @@ export const chatApi = {
           }
         }
         const isRead = item.read ?? item.is_read ?? item.seen ?? (item.status === 'read' || item.status === 'seen');
+        const senderId = parseUserId(item.sender_id || item.sender || item.from_user || item.user_id || item.from_user_id || 0);
+        const receiverId = parseUserId(item.receiver_id || item.receiver || item.to_user || item.recipient_id || item.to_user_id || roomId);
 
         return {
           id: item.id || item.message_id || `msg_${Date.now()}_${idx}`,
           room_id: Number(item.room_id || roomId),
-          sender_id: Number(item.sender_id || item.sender || item.from_user || 0),
-          receiver_id: Number(item.receiver_id || item.receiver || item.to_user || roomId),
+          sender_id: senderId,
+          receiver_id: receiverId,
           message: item.message || item.content || item.text || '',
           content: item.content || item.message || item.text || '',
           message_type: detectedType || 'text',
@@ -118,7 +128,7 @@ export const chatApi = {
           status: item.status || (isRead ? 'read' : 'delivered'),
           created_at: item.created_at || item.timestamp || item.created_on || new Date().toISOString(),
           timestamp: item.timestamp || item.created_at || item.created_on || new Date().toISOString(),
-          is_me: item.is_me ?? (item.sender_id === currentUserId || item.sender === currentUserId),
+          is_me: item.is_me ?? (senderId > 0 && senderId === currentUserId),
           read: Boolean(isRead)
         };
       });
@@ -201,7 +211,9 @@ export const chatApi = {
 
     for (const item of candidateUrls) {
       try {
-        const res = await axiosClient.post<any>(item.url, body);
+        const res = await axiosClient.post<any>(item.url, body, {
+          params: { room_id: roomIdNum, receiver_id: roomIdNum, recipient_id: roomIdNum, to_user: roomIdNum }
+        });
         if (res.status >= 200 && res.status < 300) {
           const resData = res.data;
           // Check for "Room not found." or false success

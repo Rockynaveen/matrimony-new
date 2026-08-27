@@ -234,16 +234,11 @@ export const MessagesPage: React.FC = () => {
     }))
   ];
 
-  const acceptedUserIds = new Set(acceptedInterestsList.map(a => String(a.user_id)));
-  const remoteAcceptedConvs = remoteConvsMapped.filter(c => 
-    acceptedUserIds.has(String(c.user_id)) || acceptedUserIds.has(String(c.id))
-  );
-
-  const existingIds = new Set(remoteAcceptedConvs.map(c => String(c.id)));
-  const existingUserIds = new Set(remoteAcceptedConvs.map(c => String(c.user_id)));
+  const existingIds = new Set(remoteConvsMapped.map(c => String(c.id)));
+  const existingUserIds = new Set(remoteConvsMapped.map(c => String(c.user_id)));
   const additionalAccepted = acceptedInterestsList.filter(a => !existingIds.has(String(a.id)) && !existingUserIds.has(String(a.user_id)));
 
-  const conversationsList = [...remoteAcceptedConvs, ...additionalAccepted];
+  const conversationsList = [...remoteConvsMapped, ...additionalAccepted];
 
   const selectedProfileId = id || conversationsList[0]?.id || '';
   const numericRoomId = Number(selectedProfileId) || 0;

@@ -208,238 +208,26 @@ export const Navbar: React.FC = () => {
                 )}
               </div>
 
-              {/* User Account / Navigation Button */}
-              <div className="relative" ref={userDropdownRef}>
-                  <button
-                    onClick={() => {
-                      setIsUserDropdownOpen(!isUserDropdownOpen);
-                      setIsNotifDropdownOpen(false);
-                    }}
-                    className="flex items-center gap-2 p-1.5 pr-3 rounded-full border border-border/80 bg-white hover:border-[#8B1E3F]/40 transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer"
-                  >
-                    {currentUser.avatar ? (
-                      <img
-                        src={currentUser.avatar}
-                        alt={displayName}
-                        className="h-9 w-9 rounded-full object-cover ring-2 ring-[#8B1E3F]/30"
-                      />
-                    ) : (
-                      <div className="h-9 w-9 rounded-full bg-[#8B1E3F] text-white flex items-center justify-center font-bold text-xs shrink-0 ring-2 ring-[#8B1E3F]/30">
-                        {displayName ? displayName.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
-                      </div>
-                    )}
-                    <span className="hidden sm:inline-block text-xs font-bold text-foreground">
-                      {displayName ? displayName.split(' ')[0] : 'Account'}
-                    </span>
-                    <Badge variant="gold" className="text-[9px] px-2 py-0.5 font-bold uppercase tracking-wider">
-                      {currentUser.membershipTier}
-                    </Badge>
-                    <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {isUserDropdownOpen && (
-                    <div className="absolute right-0 mt-3 w-72 rounded-3xl border border-stone-200 bg-white shadow-2xl z-50 overflow-hidden divide-y divide-stone-100 animate-in fade-in slide-in-from-top-2 duration-200">
-                      {/* Top Header Card - Theme Color Gradient */}
-                      <div className="bg-gradient-to-b from-[#8B1E3F] via-[#A0284C] to-[#721733] p-5 text-center flex flex-col items-center relative border-b border-[#D4AF37]/30">
-                        <div className="relative mb-2">
-                          {currentUser.avatar ? (
-                            <img
-                              src={currentUser.avatar}
-                              alt={displayName}
-                              className="h-16 w-16 rounded-full object-cover ring-4 ring-white/90 shadow-md"
-                            />
-                          ) : (
-                            <img
-                              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300"
-                              alt="Profile Avatar"
-                              className="h-16 w-16 rounded-full object-cover ring-4 ring-white/90 shadow-md"
-                            />
-                          )}
-                        </div>
-                        <h4 className="font-extrabold text-sm tracking-wide text-white drop-shadow-xs line-clamp-1">
-                          {displayName ? displayName.toUpperCase() : 'NAVEEN GANDHAM'}
-                        </h4>
-                        <p className="text-[11px] text-[#F5ECE5]/90 font-medium truncate max-w-full mt-0.5">
-                          {currentUser.email || 'naveengandham970@gmail.com'}
-                        </p>
-                        {(verificationStatus === 'VERIFIED' || currentUser.verified) && (
-                          <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-200 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-400/40">
-                            <ShieldCheck className="h-3 w-3 text-emerald-400" /> Approved Member
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Menu Navigation Links */}
-                      <div className="p-2 space-y-0.5 max-h-[380px] overflow-y-auto">
-                        {(!onboardingStatus.partner_preferences_completed || (onboardingStatus.verification_status !== 'PENDING' && onboardingStatus.verification_status !== 'VERIFIED')) && (
-                          <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200/80 mb-2 space-y-2">
-                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-900">
-                              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-                              <span>Profile Setup in Progress</span>
-                            </div>
-                            <p className="text-[10px] text-amber-700 font-medium">
-                              Complete required profile & verification steps to unlock matches.
-                            </p>
-                            <Link
-                              to={getPendingRoute()}
-                              onClick={() => setIsUserDropdownOpen(false)}
-                              className="block text-center py-1.5 px-3 bg-[#8B1E3F] text-white text-xs font-bold rounded-xl hover:bg-[#721733] transition-colors"
-                            >
-                              Resume Setup →
-                            </Link>
-                          </div>
-                        )}
-                        <Link
-                          to="/profile"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
-                        >
-                          <User className="h-4 w-4 text-stone-400" />
-                          <span>My Profile</span>
-                        </Link>
-
-                        <Link
-                          to="/profile/edit"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
-                        >
-                          <Edit3 className="h-4 w-4 text-stone-400" />
-                          <span>Edit Profile</span>
-                        </Link>
-
-                        <Link
-                          to="/dashboard"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-3 px-3 py-2 text-xs font-bold text-[#8B1E3F] bg-[#8B1E3F]/10 border-l-4 border-l-[#8B1E3F] rounded-xl transition-colors"
-                        >
-                          <LayoutDashboard className="h-4 w-4 text-[#8B1E3F]" />
-                          <span>User Dashboard</span>
-                        </Link>
-
-                        <Link
-                          to="/search"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
-                        >
-                          <Search className="h-4 w-4 text-stone-400" />
-                          <span>Search Matches</span>
-                        </Link>
-
-                        <Link
-                          to="/interests"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Heart className="h-4 w-4 text-stone-400" />
-                            <span>My Interests</span>
-                          </div>
-                          {totalInterestsCount > 0 && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#8B1E3F]/10 text-[#8B1E3F]">
-                              {totalInterestsCount}
-                            </span>
-                          )}
-                        </Link>
-
-                        <Link
-                          to="/messages"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <MessageSquare className="h-4 w-4 text-stone-400" />
-                            <span>Chat Messages</span>
-                          </div>
-                          {unreadNotifs > 0 && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#8B1E3F]/10 text-[#8B1E3F]">
-                              {unreadNotifs}
-                            </span>
-                          )}
-                        </Link>
-
-                        <Link
-                          to="/preferences"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
-                        >
-                          <Sliders className="h-4 w-4 text-stone-400" />
-                          <span>Partner Preferences</span>
-                        </Link>
-
-                        <Link
-                          to="/matching/shortlist"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Star className="h-4 w-4 text-stone-400" />
-                            <span>Shortlisted Profiles</span>
-                          </div>
-                          {shortlistCount > 0 && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#8B1E3F]/10 text-[#8B1E3F]">
-                              {shortlistCount}
-                            </span>
-                          )}
-                        </Link>
-
-                        <Link
-                          to="/matching/ignored"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <EyeOff className="h-4 w-4 text-stone-400" />
-                            <span>Ignored Profiles</span>
-                          </div>
-                          {ignoredCount > 0 && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#8B1E3F]/10 text-[#8B1E3F]">
-                              {ignoredCount}
-                            </span>
-                          )}
-                        </Link>
-
-                        <Link
-                          to="/matching/blocked"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Ban className="h-4 w-4 text-stone-400" />
-                            <span>Blocked Profiles</span>
-                          </div>
-                          {blockedCount > 0 && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#8B1E3F]/10 text-[#8B1E3F]">
-                              {blockedCount}
-                            </span>
-                          )}
-                        </Link>
-
-                        <Link
-                          to="/privacy-settings"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-[#F5ECE5]/60 hover:text-[#8B1E3F] rounded-xl transition-colors"
-                        >
-                          <Lock className="h-4 w-4 text-stone-400" />
-                          <span>Privacy Settings</span>
-                        </Link>
-                      </div>
-
-                      {/* Bottom Logout Button */}
-                      <div className="p-2 bg-stone-50/80">
-                        <Link
-                          to="/login"
-                          onClick={() => {
-                            logout();
-                            setIsUserDropdownOpen(false);
-                          }}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                        >
-                          <LogOut className="h-4 w-4 text-red-500" /> Sign Out
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-                </div>
+              {/* User Account Link to Dashboard */}
+              <Link
+                to="/dashboard"
+                className="flex items-center gap-2 p-1.5 pr-3 rounded-full border border-border/80 bg-white hover:border-[#8B1E3F]/50 transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer"
+              >
+                {currentUser.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt={displayName}
+                    className="h-9 w-9 rounded-full object-cover ring-2 ring-[#8B1E3F]/30"
+                  />
+                ) : (
+                  <div className="h-9 w-9 rounded-full bg-[#8B1E3F] text-white flex items-center justify-center font-bold text-xs shrink-0 ring-2 ring-[#8B1E3F]/30">
+                    {displayName ? displayName.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
+                  </div>
+                )}
+                <span className="hidden sm:inline-block text-xs font-bold text-foreground">
+                  {displayName ? displayName.split(' ')[0] : 'Profile'}
+                </span>
+              </Link>
             </>
           )}
 

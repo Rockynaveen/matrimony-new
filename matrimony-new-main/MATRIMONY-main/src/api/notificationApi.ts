@@ -145,10 +145,23 @@ export const notificationApi = {
           continue;
         }
       }
-      return 0;
-    } catch {
-      return 0;
-    }
+
+      // Fallback: Calculate unread count dynamically from notifications list
+      const notificationsList = await notificationApi.getNotifications();
+      if (Array.isArray(notificationsList) && notificationsList.length > 0) {
+        return notificationsList.filter(n => !n.read).length;
+      }
+    } catch {}
+
+    try {
+      const saved = localStorage.getItem('local_user_notifications');
+      if (saved) {
+        const list: NotificationItem[] = JSON.parse(saved);
+        return list.filter(n => !n.read).length;
+      }
+    } catch {}
+
+    return 0;
   },
 
   // 3. POST/PATCH /api/notifications/mark-all-read

@@ -230,6 +230,9 @@ export const MessagesPage: React.FC = () => {
   const remoteConvsMapped = (remoteConversations || []).map(conv => {
     const other = conv.other_user || {};
     const recipientId = extractRecipientUserId(conv, currentUserIdNum);
+    const convStatus = String(conv.status || (conv as any).connection_status || '').toLowerCase();
+    const isAccepted = (conv as any).is_accepted === true || convStatus === 'accepted' || convStatus === 'connected';
+
     return {
       id: String(conv.room_id || conv.id),
       room_id: Number(conv.room_id || conv.id),
@@ -246,61 +249,89 @@ export const MessagesPage: React.FC = () => {
       online: resolveOnlineStatus(other) || resolveOnlineStatus(conv),
       matchPercentage: other.match_percentage || 95,
       last_message: conv.last_message || '',
-      last_message_time: conv.last_message_time || ''
+      last_message_time: conv.last_message_time || '',
+      is_accepted: isAccepted
     };
   });
 
   const acceptedInterestsList = [
-    ...(receivedInterests || []).filter(i => (i.status || '').toLowerCase() === 'accepted').map(i => ({
-      id: String(i.from_user || i.id),
-      user_id: i.from_user,
-      name: `${i.first_name || ''} ${i.last_name || ''}`.trim() || `Member #${i.from_user}`,
-      profileImage: i.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
-      verified: true,
-      age: i.age || 26,
-      height: "5'6\"",
-      profession: i.occupation || 'Professional',
-      city: i.city || 'India',
-      religion: i.religion || 'Hindu',
-      caste: i.caste || 'Caste',
-      online: resolveOnlineStatus(i),
-      matchPercentage: 95,
-      last_message: 'Interest Accepted - Connected',
-      last_message_time: 'Just now'
-    })),
-    ...(sentInterests || []).filter(i => (i.status || '').toLowerCase() === 'accepted').map(i => ({
-      id: String(i.to_user || i.id),
-      user_id: i.to_user,
-      name: `${i.first_name || ''} ${i.last_name || ''}`.trim() || `Member #${i.to_user}`,
-      profileImage: i.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
-      verified: true,
-      age: i.age || 26,
-      height: "5'6\"",
-      profession: i.occupation || 'Professional',
-      city: i.city || 'India',
-      religion: i.religion || 'Hindu',
-      caste: i.caste || 'Caste',
-      online: resolveOnlineStatus(i),
-      matchPercentage: 95,
-      last_message: 'Interest Accepted - Connected',
-      last_message_time: 'Just now'
-    }))
+    ...(receivedInterests || [])
+      .filter(i => String(i.status || (i as any).interest_status || '').toLowerCase() === 'accepted')
+      .map(i => ({
+        id: String(i.from_user || i.id),
+        user_id: Number(i.from_user || i.id),
+        name: `${i.first_name || ''} ${i.last_name || ''}`.trim() || `Member #${i.from_user || i.id}`,
+        profileImage: i.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+        verified: true,
+        age: i.age || 26,
+        height: "5'6\"",
+        profession: i.occupation || 'Professional',
+        city: i.city || 'India',
+        religion: i.religion || 'Hindu',
+        caste: i.caste || 'Caste',
+        online: resolveOnlineStatus(i),
+        matchPercentage: 95,
+        last_message: 'Interest Accepted - Connected',
+        last_message_time: 'Just now',
+        is_accepted: true
+      })),
+    ...(sentInterests || [])
+      .filter(i => String(i.status || (i as any).interest_status || '').toLowerCase() === 'accepted')
+      .map(i => ({
+        id: String(i.to_user || i.id),
+        user_id: Number(i.to_user || i.id),
+        name: `${i.first_name || ''} ${i.last_name || ''}`.trim() || `Member #${i.to_user || i.id}`,
+        profileImage: i.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+        verified: true,
+        age: i.age || 26,
+        height: "5'6\"",
+        profession: i.occupation || 'Professional',
+        city: i.city || 'India',
+        religion: i.religion || 'Hindu',
+        caste: i.caste || 'Caste',
+        online: resolveOnlineStatus(i),
+        matchPercentage: 95,
+        last_message: 'Interest Accepted - Connected',
+        last_message_time: 'Just now',
+        is_accepted: true
+      }))
   ];
 
-  const existingIds = new Set(remoteConvsMapped.map(c => String(c.id)));
-  const existingUserIds = new Set(remoteConvsMapped.map(c => String(c.user_id)));
+  // Local storage accepted user IDs set
+  const localAcceptedUserIds = new Set<string>();
+  try {
+    const stored = JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]');
+    stored.forEach((item: any) => localAcceptedUserIds.add(String(item)));
+  } catch {}
+
+  const acceptedUserIds = new Set<string>([
+    ...acceptedInterestsList.map(a => String(a.user_id)),
+    ...acceptedInterestsList.map(a => String(a.id)),
+    ...Array.from(localAcceptedUserIds)
+  ]);
+
+  // Filter remote conversations to only keep accepted members
+  const acceptedRemoteConvs = remoteConvsMapped.filter(conv => {
+    if (conv.is_accepted === false) return false;
+    if (acceptedUserIds.size > 0) {
+      const isUserAccepted = acceptedUserIds.has(String(conv.user_id)) || acceptedUserIds.has(String(conv.id));
+      const isConvAccepted = conv.is_accepted === true || Boolean(conv.last_message);
+      return isUserAccepted || isConvAccepted;
+    }
+    return true;
+  });
+
+  const existingIds = new Set(acceptedRemoteConvs.map(c => String(c.id)));
+  const existingUserIds = new Set(acceptedRemoteConvs.map(c => String(c.user_id)));
   const additionalAccepted = acceptedInterestsList.filter(a => !existingIds.has(String(a.id)) && !existingUserIds.has(String(a.user_id)));
 
-  const conversationsList = [...remoteConvsMapped, ...additionalAccepted];
+  const conversationsList = [...acceptedRemoteConvs, ...additionalAccepted];
 
   const selectedProfileId = id || conversationsList[0]?.id || '';
   const numericRoomId = Number(selectedProfileId) || 0;
 
-  const foundInConvs = conversationsList.find(c => String(c.id) === String(selectedProfileId) || String(c.user_id) === String(selectedProfileId));
-  const foundInRecs = recommendations?.find(r => String(r.user_id) === String(selectedProfileId));
-  const foundInShortlist = shortlist?.find(s => String(s.user_id) === String(selectedProfileId));
-
-  const activeMatch = foundInConvs || foundInRecs || (foundInShortlist as any);
+  // Only select active match from accepted conversationsList
+  const activeMatch = conversationsList.find(c => String(c.id) === String(selectedProfileId) || String(c.user_id) === String(selectedProfileId));
 
   const targetRecipientUserId = activeMatch && activeMatch.user_id ? Number(activeMatch.user_id) : undefined;
   const { data: recipientOnlineStatusData } = useGetUserOnlineStatus(targetRecipientUserId, Boolean(targetRecipientUserId));
@@ -308,31 +339,18 @@ export const MessagesPage: React.FC = () => {
 
   const activeProfile = activeMatch ? {
     id: String(activeMatch.user_id || activeMatch.id || selectedProfileId),
-    name: activeMatch.name || `${activeMatch.first_name || ''} ${activeMatch.last_name || ''}`.trim() || 'Verified Member',
-    profileImage: activeMatch.profileImage || activeMatch.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+    name: activeMatch.name || `${(activeMatch as any).first_name || ''} ${(activeMatch as any).last_name || ''}`.trim() || 'Verified Member',
+    profileImage: activeMatch.profileImage || (activeMatch as any).profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
     verified: activeMatch.verified ?? true,
     age: activeMatch.age || 26,
     height: activeMatch.height || "5'6\"",
-    profession: activeMatch.profession || activeMatch.occupation || 'Professional',
+    profession: activeMatch.profession || (activeMatch as any).occupation || 'Professional',
     city: activeMatch.city || 'India',
     religion: activeMatch.religion || 'Hindu',
     caste: activeMatch.caste || 'Caste',
     online: isRecipientOnline,
-    matchPercentage: activeMatch.matchPercentage || activeMatch.match_percentage || 95
-  } : (selectedProfileId ? {
-    id: selectedProfileId,
-    name: `Member #${selectedProfileId}`,
-    profileImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
-    verified: true,
-    age: 26,
-    height: "5'6\"",
-    profession: 'Professional',
-    city: 'India',
-    religion: 'Hindu',
-    caste: 'Caste',
-    online: isRecipientOnline,
-    matchPercentage: 92
-  } : null);
+    matchPercentage: activeMatch.matchPercentage || (activeMatch as any).match_percentage || 95
+  } : null;
 
   // Room Messages & Mutations
   const { data: remoteMessages, isLoading: isLoadingMessages } = useRoomMessages(numericRoomId);
@@ -662,7 +680,8 @@ export const MessagesPage: React.FC = () => {
             ) : filteredConversations.length === 0 ? (
               <div className="p-8 text-center space-y-2 text-black text-xs font-bold">
                 <MessageSquare className="h-8 w-8 text-stone-400 mx-auto" />
-                <p>No active conversations.</p>
+                <p>No accepted member chats.</p>
+                <p className="text-[11px] text-stone-500 font-semibold">Accept an interest connection to start chatting.</p>
               </div>
             ) : (
               filteredConversations.map(p => {

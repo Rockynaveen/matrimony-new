@@ -403,10 +403,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (remoteData && remoteData.length > 0) {
         setNotifications(remoteData);
         saveNotificationsToStorage(remoteData);
+        const dynamicCount = typeof apiCount === 'number' && apiCount > 0
+          ? apiCount
+          : remoteData.filter(n => !n.read).length;
+        setUnreadCount(dynamicCount);
+      } else {
+        setNotifications(prev => {
+          const currentList = prev || [];
+          setUnreadCount(currentList.filter(n => !n.read).length);
+          return currentList;
+        });
       }
-      setUnreadCount(typeof apiCount === 'number' ? apiCount : (remoteData || []).filter(n => !n.read).length);
     } catch {
-      // Keep existing local notifications intact
+      setNotifications(prev => {
+        const currentList = prev || [];
+        setUnreadCount(currentList.filter(n => !n.read).length);
+        return currentList;
+      });
     }
   };
 
@@ -419,6 +432,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('device_token', deviceToken);
       }
       notificationApi.registerDeviceToken(deviceToken, 'web').catch(() => {});
+
+      // Background timer to poll and keep notification count dynamic
+      const intervalId = setInterval(() => {
+        fetchNotifications();
+      }, 15000);
+
+      return () => clearInterval(intervalId);
     } else {
       setNotifications([]);
       setUnreadCount(0);

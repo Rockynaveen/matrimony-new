@@ -358,20 +358,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
     try {
-      const [remoteData, apiCount] = await Promise.all([
-        notificationApi.getNotifications(),
-        notificationApi.getUnreadCount()
-      ]);
+      const payload = await notificationApi.getNotificationsPayload();
 
-      const validNotifications = (remoteData || []).filter(n =>
+      const validNotifications = payload.notifications.filter(n =>
         !n.title?.includes('Interest Sent!') &&
         !n.message?.includes('Your interest request was sent') &&
         !n.title?.includes('Interest Request Sent')
       );
 
       setNotifications(validNotifications);
-      const dynamicCount = validNotifications.filter(n => !n.read).length;
-      setUnreadCount(dynamicCount);
+      setUnreadCount(payload.unread_count);
     } catch {
       setNotifications([]);
       setUnreadCount(0);

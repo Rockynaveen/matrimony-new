@@ -40,9 +40,14 @@ export interface DeviceTokenPayload {
   [key: string]: any;
 }
 
+export interface GetNotificationsPayloadResponse {
+  notifications: NotificationItem[];
+  unread_count: number;
+}
+
 export const notificationApi = {
-  // 1. GET /api/notifications/
-  getNotifications: async (): Promise<NotificationItem[]> => {
+  // 1. GET /api/notifications/ (Returns full payload with notifications array and unread_count)
+  getNotificationsPayload: async (): Promise<GetNotificationsPayloadResponse> => {
     try {
       const candidateUrls = [
         '/notifications/',
@@ -50,18 +55,28 @@ export const notificationApi = {
       ];
 
       let rawList: NotificationResponseSchema[] = [];
+      let backendUnreadCount: number | null = null;
 
       for (const url of candidateUrls) {
         try {
           const res = await axiosClient.get(url);
-          if (Array.isArray(res.data) && res.data.length > 0) {
-            rawList = res.data;
+          if (!res.data) continue;
+
+          if (typeof res.data.unread_count === 'number') {
+            backendUnreadCount = res.data.unread_count;
+          }
+
+          if (Array.isArray(res.data.notifications)) {
+            rawList = res.data.notifications;
             break;
-          } else if (res.data && Array.isArray(res.data.results) && res.data.results.length > 0) {
+          } else if (Array.isArray(res.data.results)) {
             rawList = res.data.results;
             break;
-          } else if (res.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+          } else if (Array.isArray(res.data.data)) {
             rawList = res.data.data;
+            break;
+          } else if (Array.isArray(res.data)) {
+            rawList = res.data;
             break;
           }
         } catch {
@@ -69,53 +84,75 @@ export const notificationApi = {
         }
       }
 
-      if (rawList.length > 0) {
-        return rawList.map((item, index): NotificationItem => {
-          const catRaw = item.category || item.notification_type || item.type || 'All';
-          let category: NotificationItem['category'] = 'All';
+      const mappedList: NotificationItem[] = rawList.map((item, index): NotificationItem => {
+        const catRaw = item.category || item.notification_type || item.type || 'All';
+        let category: NotificationItem['category'] = 'All';
 
-          const catLower = String(catRaw).toLowerCase();
-          if (catLower.includes('interest')) category = 'Interests';
-          else if (catLower.includes('match')) category = 'Matches';
-          else if (catLower.includes('message') || catLower.includes('chat')) category = 'Messages';
-          else if (catLower.includes('profile')) category = 'Profile';
-          else if (catLower.includes('member') || catLower.includes('plan')) category = 'Membership';
+        const catLower = String(catRaw).toLowerCase();
+        if (catLower.includes('interest')) category = 'Interests';
+        else if (catLower.includes('match')) category = 'Matches';
+        else if (catLower.includes('message') || catLower.includes('chat')) category = 'Messages';
+        else if (catLower.includes('profile')) category = 'Profile';
+        else if (catLower.includes('member') || catLower.includes('plan')) category = 'Membership';
 
-          const formattedTimestamp = item.timestamp || item.created_at
-            ? new Date(item.timestamp || item.created_at || '').toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })
-            : 'Just now';
-
-          let messageText = item.message || item.text || item.content || '';
-          const senderName = item.sender_name || item.from_user_name || item.sender_first_name || item.first_name;
-
-          if (senderName && (messageText.toLowerCase().includes('a verified member sent you') || messageText.toLowerCase().includes('sent you an interest'))) {
-            messageText = `${senderName} sent you an interest request.`;
-          } else if (messageText.toLowerCase().includes('a verified member sent you an interest')) {
-            messageText = `A verified member sent you an interest request.`;
+        let formattedTimestamp = 'Just now';
+        const rawDate = item.created_at || item.timestamp;
+        if (rawDate) {
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) {
+            formattedTimestamp = d.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
           }
+        }
 
-          return {
-            id: String(item.id || `notif-${index}`),
-            category,
-            title: item.title || 'Notification',
-            message: messageText,
-            timestamp: formattedTimestamp,
-            read: Boolean(item.is_read ?? item.read ?? false),
-            link: item.link || item.url || undefined,
-            avatar: item.avatar || undefined
-          };
-        });
-      }
+        let messageText = item.message || item.text || item.content || '';
+        const senderName = item.sender_name || item.from_user_name || item.sender_first_name || item.first_name;
 
-      return [];
+        if (senderName && (messageText.toLowerCase().includes('a verified member sent you') || messageText.toLowerCase().includes('sent you an interest'))) {
+          messageText = `${senderName} sent you an interest request.`;
+        } else if (messageText.toLowerCase().includes('a verified member sent you an interest')) {
+          messageText = `A verified member sent you an interest request.`;
+        }
+
+        const imageVal = (item.image && typeof item.image === 'string' && item.image.trim())
+          ? item.image
+          : ((item.avatar && typeof item.avatar === 'string' && item.avatar.trim()) ? item.avatar : undefined);
+
+        const redirectUrl = item.redirect_url || item.link || item.url || undefined;
+        const isReadBool = Boolean(item.is_read ?? item.read ?? (item.status === 'read') ?? false);
+
+        return {
+          id: String(item.id || `notif-${index}`),
+          category,
+          title: item.title || 'Notification',
+          message: messageText,
+          timestamp: formattedTimestamp,
+          read: isReadBool,
+          link: redirectUrl,
+          avatar: imageVal
+        };
+      });
+
+      const unreadCount = backendUnreadCount !== null
+        ? backendUnreadCount
+        : mappedList.filter(n => !n.read).length;
+
+      return {
+        notifications: mappedList,
+        unread_count: unreadCount
+      };
     } catch {
-      return [];
+      return { notifications: [], unread_count: 0 };
     }
+  },
+
+  getNotifications: async (): Promise<NotificationItem[]> => {
+    const payload = await notificationApi.getNotificationsPayload();
+    return payload.notifications;
   },
 
   // 2. GET /api/notifications/unread-count

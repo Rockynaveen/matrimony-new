@@ -51,6 +51,7 @@ import {
   useActiveCall
 } from '../../hooks/useChat';
 import { useRecommendations, useShortlist, useReceivedInterests, useSentInterests } from '../../hooks/useMatching';
+import { formatMediaUrl } from '../../api/chatApi';
 import type { ChatMessageOut } from '../../types/chat.types';
 
 const formatMessageTimestamp = (rawTs?: string | number): string => {
@@ -416,8 +417,9 @@ export const MessagesPage: React.FC = () => {
   };
 
   const handleSendImageFile = async (file: File) => {
+    const recipientUserId = activeProfile ? Number(activeProfile.id) : numericRoomId;
     try {
-      await sendImageMutation.mutateAsync({ roomId: numericRoomId, imageFile: file });
+      await sendImageMutation.mutateAsync({ roomId: numericRoomId, receiverId: recipientUserId, imageFile: file });
       showToast('Image sent successfully!');
     } catch (err: any) {
       showToast(err?.message || 'Image upload complete!');
@@ -774,7 +776,8 @@ export const MessagesPage: React.FC = () => {
                     const messageText = msg.text || msg.message || '';
                     const msgType = msg.message_type || 'text';
                     const isSeenByReceiver = Boolean(msg.read || (msg as any).is_read || (msg as any).seen || msg.status === 'read' || msg.status === 'seen');
-                    const mediaUrl = msg.attachment_url || (msg as any).image || (msg as any).image_url || (msg as any).url || (msg as any).file || (msg as any).voice || (msg as any).video;
+                    const rawMediaUrl = msg.attachment_url || (msg as any).image || (msg as any).image_url || (msg as any).url || (msg as any).file || (msg as any).voice || (msg as any).video || (msg as any).attachment;
+                    const mediaUrl = formatMediaUrl(rawMediaUrl);
                     const hasAttachment = Boolean(mediaUrl || msgType === 'image' || msgType === 'video' || msgType === 'voice' || msgType === 'document' || msgType === 'attachment');
 
                     return (

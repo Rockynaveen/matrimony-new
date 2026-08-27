@@ -9,6 +9,17 @@ import type {
   CallSignalPayload
 } from '../types/chat.types';
 
+export const formatMediaUrl = (url?: string): string | undefined => {
+  if (!url || typeof url !== 'string') return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `https://matrimony-production-e116.up.railway.app${cleanPath}`;
+};
+
 const extractErrorMsg = (data: any, status: number): string => {
   if (!data) return `HTTP error (${status})`;
   if (typeof data === 'string') return data;
@@ -94,11 +105,12 @@ export const chatApi = {
     const apiMapped: ChatMessageOut[] = rawList
       .filter(item => {
         const text = String(item.message || item.content || item.text || '').trim();
-        const hasMedia = Boolean(item.attachment_url || item.url || item.image || item.image_url || item.file || item.media || item.audio || item.voice || item.video);
+        const hasMedia = Boolean(item.attachment_url || item.url || item.image || item.image_url || item.file || item.media || item.audio || item.voice || item.video || item.attachment);
         return (text && !isGenericStatusText(text)) || hasMedia;
       })
       .map((item, idx) => {
-        const attachmentUrl = item.attachment_url || item.image || item.image_url || item.url || item.file || item.file_url || item.media || item.audio || item.voice || item.video || undefined;
+        const rawUrl = item.attachment_url || item.image || item.image_url || item.url || item.file || item.file_url || item.media || item.audio || item.voice || item.video || (item.attachment && (typeof item.attachment === 'string' ? item.attachment : item.attachment?.url || item.attachment?.file || item.attachment?.image)) || undefined;
+        const attachmentUrl = formatMediaUrl(rawUrl);
         let detectedType = item.message_type || item.type;
         if (!detectedType && attachmentUrl) {
           const lowerUrl = String(attachmentUrl).toLowerCase();
@@ -486,26 +498,31 @@ export const chatApi = {
   },
 
   // 10. POST /api/chat/send-image
-  sendImageMessage: async (roomId: number | string, imageFile: File): Promise<ChatMessageOut> => {
+  sendImageMessage: async (roomId: number | string, imageFile: File, receiverId?: number | string): Promise<ChatMessageOut> => {
     const roomIdNum = Number(roomId);
+    const receiverIdNum = Number(receiverId || roomIdNum);
     const currentUserId = Number(localStorage.getItem('user_id') || 0);
     const objectUrl = URL.createObjectURL(imageFile);
 
     const formData = new FormData();
     formData.append('room_id', String(roomIdNum));
-    formData.append('receiver_id', String(roomIdNum));
-    formData.append('recipient_id', String(roomIdNum));
-    formData.append('to_user', String(roomIdNum));
+    formData.append('receiver_id', String(receiverIdNum));
+    formData.append('recipient_id', String(receiverIdNum));
+    formData.append('to_user', String(receiverIdNum));
+    formData.append('user_id', String(receiverIdNum));
     formData.append('file', imageFile);
     formData.append('image', imageFile);
+    formData.append('photo', imageFile);
+    formData.append('attachment', imageFile);
+    formData.append('attachment_file', imageFile);
     formData.append('media', imageFile);
 
     const candidateUrls = [
       '/chat/send-image',
       '/chat/send-image/',
+      '/chat/send-with-attachment',
       '/chat/upload-image',
-      `/chat/conversations/${roomIdNum}/send-image`,
-      '/chat/send-with-attachment'
+      `/chat/conversations/${roomIdNum}/send-image`
     ];
 
     let createdMsg: ChatMessageOut | null = null;
@@ -513,16 +530,25 @@ export const chatApi = {
     for (const url of candidateUrls) {
       try {
         const res = await axiosClient.post<any>(url, formData, {
-          params: { room_id: roomIdNum, receiver_id: roomIdNum, recipient_id: roomIdNum }
+          params: { room_id: roomIdNum, receiver_id: receiverIdNum, recipient_id: receiverIdNum, to_user: receiverIdNum }
         });
         if (res.status >= 200 && res.status < 300 && res.data) {
+          const dataStr = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+          if (dataStr.includes('CSRF check Failed') || res.data.success === false) {
+            continue;
+          }
+
+          const rawUrl = res.data.attachment_url || res.data.image || res.data.image_url || res.data.url || res.data.file || res.data.file_url || res.data.attachment || (res.data.data && (res.data.data.attachment_url || res.data.data.image || res.data.data.url || res.data.data.file)) || objectUrl;
+          const finalAttachmentUrl = formatMediaUrl(rawUrl) || objectUrl;
+
           createdMsg = {
             ...res.data,
             id: res.data.id || Date.now(),
             room_id: roomIdNum,
             sender_id: currentUserId,
+            receiver_id: receiverIdNum,
             message_type: 'image',
-            attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+            attachment_url: finalAttachmentUrl,
             created_at: res.data.created_at || new Date().toISOString(),
             timestamp: res.data.timestamp || new Date().toISOString(),
             is_me: true
@@ -539,6 +565,7 @@ export const chatApi = {
         id: Date.now(),
         room_id: roomIdNum,
         sender_id: currentUserId,
+        receiver_id: receiverIdNum,
         message_type: 'image',
         attachment_url: objectUrl,
         created_at: new Date().toISOString(),

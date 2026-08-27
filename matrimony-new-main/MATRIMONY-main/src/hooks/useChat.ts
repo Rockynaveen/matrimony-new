@@ -191,8 +191,8 @@ export function useSendVoiceMessage() {
 export function useSendImageMessage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ roomId, imageFile }: { roomId: number | string; imageFile: File }) =>
-      chatApi.sendImageMessage(roomId, imageFile),
+    mutationFn: ({ roomId, imageFile, receiverId }: { roomId: number | string; imageFile: File; receiverId?: number | string }) =>
+      chatApi.sendImageMessage(roomId, imageFile, receiverId),
     onSuccess: (data, variables) => {
       const roomIdStr = String(variables.roomId);
       queryClient.setQueryData<import('../types/chat.types').ChatMessageOut[]>(chatKeys.messages(roomIdStr), (old = []) => {

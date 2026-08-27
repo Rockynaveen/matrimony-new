@@ -11,6 +11,12 @@ interface AxiosResponse<T> {
   statusText: string;
 }
 
+function getCsrfToken(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|; )csrftoken=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 class AxiosClient {
   private baseURL: string;
   private isRefreshing = false;
@@ -21,11 +27,15 @@ class AxiosClient {
 
   private getAuthHeaders(): Record<string, string> {
     const token = localStorage.getItem('access_token');
+    const csrfToken = getCsrfToken();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (csrfToken) {
+      headers['X-CSRFToken'] = csrfToken;
     }
     return headers;
   }
@@ -140,9 +150,9 @@ class AxiosClient {
   ): Promise<AxiosResponse<T>> {
     const response = await fetchFn();
     const data = await this.parseResponseBody(response);
+    const dataStr = typeof data === 'string' ? data : JSON.stringify(data);
 
     if (response.status === 401 && !isRetry) {
-      const dataStr = typeof data === 'string' ? data : JSON.stringify(data);
       const isTokenInvalid =
         dataStr.includes('token_not_valid') ||
         dataStr.includes('invalid') ||
@@ -160,7 +170,12 @@ class AxiosClient {
       }
     }
 
-    return { data, status: response.status, statusText: response.statusText };
+    let effectiveStatus = response.status;
+    if (dataStr.includes('CSRF check Failed') || dataStr.includes('CSRF token missing')) {
+      effectiveStatus = 403;
+    }
+
+    return { data, status: effectiveStatus, statusText: response.statusText };
   }
 
   private buildUrl(url: string, params?: Record<string, any>): string {
@@ -238,14 +253,19 @@ class AxiosClient {
     const targetUrl = this.buildUrl(url, config?.params);
     return this.handleResponse(() => {
       const token = localStorage.getItem('access_token');
+      const csrfToken = getCsrfToken();
       const headers: Record<string, string> = { ...(config?.headers || {}) };
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
+      if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken;
+      }
       return fetch(targetUrl, {
         method: 'POST',
         headers,
-        body: formData
+        body: formData,
+        credentials: 'same-origin'
       });
     });
   }

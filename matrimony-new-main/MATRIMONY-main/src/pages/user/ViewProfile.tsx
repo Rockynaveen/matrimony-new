@@ -35,6 +35,7 @@ import {
   useRecommendations
 } from '../../hooks/useMatching';
 import { useCreatePrivacyReport, useCreatePhotoRequest, usePhotoRequests } from '../../hooks/usePrivacyReports';
+import { MatchAvatar } from '../../components/ui/MatchAvatar';
 
 export const ViewProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -58,13 +59,16 @@ export const ViewProfile: React.FC = () => {
   const queryClient = useQueryClient();
   const [isLockedModalOpen, setIsLockedModalOpen] = useState(false);
   const [lockErrorMessage, setLockErrorMessage] = useState<string | null>(null);
+  const [apiFetchedProfile, setApiFetchedProfile] = useState<any | null>(null);
 
   useEffect(() => {
     if (!numericUserId || numericUserId <= 0) return;
 
     profileService.getProfileByUserId(numericUserId)
-      .then(() => {
-        // Success unlock: invalidate membership query to update remaining credits counter
+      .then((data) => {
+        if (data) {
+          setApiFetchedProfile(data);
+        }
         queryClient.invalidateQueries({ queryKey: ['membership'] });
       })
       .catch((err: any) => {
@@ -90,18 +94,19 @@ export const ViewProfile: React.FC = () => {
 
   const isInterestDeclined = (receivedMatch?.status?.toLowerCase() === 'rejected' || receivedMatch?.status?.toLowerCase() === 'declined') || (sentMatch?.status?.toLowerCase() === 'rejected' || sentMatch?.status?.toLowerCase() === 'declined');
 
-  // Resolve profile from AppContext profiles array or backend API recommendations/shortlist
+  // Resolve profile from fetched API data, AppContext profiles, or recommendations/shortlist
   const foundInProfiles = profiles.find(p => p.id === id || String(p.id) === String(id) || String(p.id) === String(numericUserId));
   const foundInRecommendations = recommendations?.find(r => r.user_id === numericUserId || String(r.user_id) === String(id));
   const foundInShortlist = shortlist?.find(s => s.user_id === numericUserId || String(s.user_id) === String(id));
 
   const apiMatch = foundInRecommendations || (foundInShortlist as any);
-
   const isProfile92 = numericUserId === 92 || String(id) === '92';
 
   const profile92 = {
     id: '92',
     name: 'Ananya Sharma',
+    firstName: 'Ananya',
+    lastName: 'Sharma',
     age: 27,
     gender: 'Female',
     height: "5'6\"",
@@ -118,12 +123,8 @@ export const ViewProfile: React.FC = () => {
     profession: 'Senior Product Manager',
     education: 'M.Tech / B.Tech - IIT Bombay',
     annualIncome: '₹25 - 30 Lakhs',
-    profileImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800',
-    gallery: [
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=800'
-    ],
+    profileImage: null,
+    gallery: [],
     about: 'Namaste! I am a passionate Senior Product Manager currently working at a top-tier tech organization in Mumbai. Graduated from IIT Bombay, I value traditional family roots while holding a progressive modern outlook. In my leisure time, I enjoy Hindustani classical music, weekend yoga, reading philosophy, and exploring cultural heritage sites.',
     verified: true,
     compatibilityScore: 96,
@@ -136,65 +137,73 @@ export const ViewProfile: React.FC = () => {
     hobbies: ['Hindustani Classical Music', 'International Travel', 'Yoga & Meditation', 'Philosophy']
   };
 
-  const profile = isProfile92 ? profile92 : (foundInProfiles || (apiMatch ? {
-    id: String(apiMatch.user_id),
-    name: `${apiMatch.first_name || ''} ${apiMatch.last_name || ''}`.trim() || 'Verified Member',
-    age: apiMatch.age || 26,
-    gender: apiMatch.gender || 'Female',
-    height: apiMatch.height || "5'5\"",
-    religion: apiMatch.religion || 'Hindu',
-    caste: apiMatch.caste || 'Brahmin',
-    subcaste: apiMatch.subcaste || '',
-    motherTongue: apiMatch.mother_tongue || 'Hindi',
-    maritalStatus: apiMatch.marital_status || 'Never Married',
+  const activeSource = apiFetchedProfile || apiMatch || foundInProfiles;
+
+  const profile = isProfile92 ? profile92 : (activeSource ? {
+    id: String(activeSource.user_id || activeSource.id || numericUserId),
+    name: (activeSource.first_name || activeSource.last_name)
+      ? `${activeSource.first_name || ''} ${activeSource.last_name || ''}`.trim()
+      : (activeSource.name || `Member #${numericUserId}`),
+    firstName: activeSource.first_name || (activeSource.name ? activeSource.name.split(' ')[0] : ''),
+    lastName: activeSource.last_name || (activeSource.name ? activeSource.name.split(' ').slice(1).join(' ') : ''),
+    age: activeSource.age || 26,
+    gender: activeSource.gender || 'Female',
+    height: activeSource.height ? (typeof activeSource.height === 'number' ? `${activeSource.height} cm` : activeSource.height) : "5'5\"",
+    religion: activeSource.religion || 'Hindu',
+    caste: activeSource.caste || 'Member',
+    subcaste: activeSource.subcaste || '',
+    motherTongue: activeSource.languages_known || activeSource.mother_tongue || activeSource.motherTongue || 'Hindi',
+    maritalStatus: activeSource.marital_status || activeSource.maritalStatus || 'Never Married',
     location: {
-      city: apiMatch.city || 'Mumbai',
-      state: apiMatch.state || 'Maharashtra',
-      country: apiMatch.country || 'India'
+      city: activeSource.city || (activeSource.location?.city) || 'City',
+      state: activeSource.state || (activeSource.location?.state) || 'State',
+      country: activeSource.country || (activeSource.location?.country) || 'India'
     },
-    profession: apiMatch.occupation || apiMatch.profession || 'Professional',
-    education: apiMatch.education || 'Graduate',
-    annualIncome: apiMatch.annual_income || '₹10-15 Lakhs',
-    profileImage: apiMatch.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
-    gallery: apiMatch.profile_photo ? [apiMatch.profile_photo] : ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600'],
-    about: apiMatch.bio || apiMatch.about || `Namaste! I am ${apiMatch.first_name || 'a member'}, working as a ${apiMatch.occupation || 'professional'} in ${apiMatch.city || 'India'}. Looking for a compatible partner who values traditions, family, and mutual respect.`,
-    verified: apiMatch.is_verified ?? true,
-    compatibilityScore: apiMatch.match_percentage || 90,
-    physicalAttributes: { height: apiMatch.height || "5'5\"", weight: '58 kg' },
-    lifestyle: { diet: apiMatch.diet || 'Vegetarian' },
-    horoscope: { rashi: apiMatch.rashi || 'Mesh', nakshatra: apiMatch.nakshatra || 'Rohini', dosha: apiMatch.dosha || 'No Dosha' },
-    family: { type: 'Nuclear Family', values: 'Traditional', status: 'Upper Middle Class', fatherOccupation: 'Business', motherOccupation: 'Homemaker' },
-    partnerPreferences: { ageMin: 22, ageMax: 32, heightMin: "5'2\"", heightMax: "6'0\"", religions: ['Hindu'], educations: ['Graduate'] },
-    languages: ['Hindi', 'English'],
-    hobbies: ['Reading', 'Travel', 'Music']
+    profession: activeSource.occupation || activeSource.profession || 'Professional',
+    education: activeSource.highest_education || activeSource.education || 'Graduate',
+    annualIncome: activeSource.annual_income ? (typeof activeSource.annual_income === 'number' ? `₹${activeSource.annual_income} Lakhs` : String(activeSource.annual_income)) : 'Not specified',
+    profileImage: activeSource.profile_photo || activeSource.profileImage || null,
+    gallery: activeSource.profile_photo ? [activeSource.profile_photo] : (activeSource.gallery || []),
+    about: activeSource.about_me || activeSource.bio || activeSource.about || `Namaste! I am ${activeSource.first_name || 'a member'}, working as a ${activeSource.occupation || activeSource.profession || 'professional'}. Looking for a compatible partner who values family and traditions.`,
+    verified: activeSource.is_verified ?? true,
+    compatibilityScore: activeSource.match_percentage || activeSource.compatibilityScore || 90,
+    physicalAttributes: { height: activeSource.height ? `${activeSource.height}` : "5'5\"", weight: activeSource.weight ? `${activeSource.weight} kg` : 'N/A' },
+    lifestyle: { diet: activeSource.diet || 'Vegetarian' },
+    horoscope: { rashi: activeSource.rashi || 'Not specified', nakshatra: activeSource.nakshatra || 'Not specified', dosha: activeSource.dosha || 'No Dosha' },
+    family: { type: 'Nuclear Family', values: 'Traditional', status: 'Upper Middle Class', fatherOccupation: 'N/A', motherOccupation: 'N/A' },
+    partnerPreferences: { ageMin: 22, ageMax: 35, heightMin: "5'2\"", heightMax: "6'2\"", religions: [activeSource.religion || 'Hindu'], educations: ['Graduate'] },
+    languages: activeSource.languages_known ? activeSource.languages_known.split(',').map((l: string) => l.trim()) : (activeSource.languages || ['Hindi', 'English']),
+    hobbies: activeSource.hobbies_interests ? activeSource.hobbies_interests.split(',').map((h: string) => h.trim()) : (activeSource.hobbies || ['Reading', 'Travel'])
   } : (numericUserId > 0 ? {
     id: String(numericUserId),
-    name: `Verified Member #${numericUserId}`,
+    name: `Member #${numericUserId}`,
+    firstName: `Member`,
+    lastName: `#${numericUserId}`,
     age: 26,
     gender: 'Female',
     height: "5'5\"",
     religion: 'Hindu',
-    caste: 'Brahmin',
+    caste: 'Member',
     subcaste: '',
     motherTongue: 'Hindi',
     maritalStatus: 'Never Married',
     location: { city: 'Mumbai', state: 'Maharashtra', country: 'India' },
-    profession: 'Software Engineer',
+    profession: 'Professional',
     education: 'Graduate',
-    annualIncome: '₹10-15 Lakhs',
-    profileImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
-    gallery: ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600'],
+    annualIncome: 'Not specified',
+    profileImage: null,
+    gallery: [],
     about: 'Namaste! I am a verified Vivah member. Looking for a compatible partner who values traditions, family, and mutual respect.',
     verified: true,
-    compatibilityScore: 92,
-    physicalAttributes: { height: "5'5\"", weight: '58 kg' },
+    compatibilityScore: 90,
+    physicalAttributes: { height: "5'5\"", weight: 'N/A' },
     lifestyle: { diet: 'Vegetarian' },
-    horoscope: { rashi: 'Mesh', nakshatra: 'Rohini', dosha: 'No Dosha' },
-    family: { type: 'Nuclear Family', values: 'Traditional', status: 'Upper Middle Class', fatherOccupation: 'Business', motherOccupation: 'Homemaker' },
-    partnerPreferences: { ageMin: 22, ageMax: 32, heightMin: "5'2\"", heightMax: "6'0\"", religions: ['Hindu'], educations: ['Graduate'] },
+    horoscope: { rashi: 'Not specified', nakshatra: 'Not specified', dosha: 'No Dosha' },
+    family: { type: 'Nuclear Family', values: 'Traditional', status: 'Upper Middle Class', fatherOccupation: 'N/A', motherOccupation: 'N/A' },
+    partnerPreferences: { ageMin: 22, ageMax: 35, heightMin: "5'2\"", heightMax: "6'2\"", religions: ['Hindu'], educations: ['Graduate'] },
     languages: ['Hindi', 'English'],
-    hobbies: ['Reading', 'Travel', 'Music']
-  } : null)));
+    hobbies: ['Reading', 'Travel']
+  } : null));
 
   if (!profile) {
     return (
@@ -218,15 +227,7 @@ export const ViewProfile: React.FC = () => {
 
   const [isJustSent, setIsJustSent] = useState(false);
 
-  const localSentSet = React.useMemo(() => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem('local_sent_interest_user_ids') || '[]'));
-    } catch {
-      return new Set();
-    }
-  }, [isJustSent, sentInterests]);
-
-  const hasSentInterest = isJustSent || (sentInterests?.some(i => Number(i.to_user || i.user_id) === numericUserId) || false) || localSentSet.has(numericUserId) || localSentSet.has(String(numericUserId));
+  const hasSentInterest = isJustSent || (sentInterests?.some(i => Number(i.to_user || (i as any).user_id) === numericUserId) || false);
 
   const handleExpressInterest = async () => {
     try {
@@ -380,10 +381,12 @@ export const ViewProfile: React.FC = () => {
             
             {/* Main Photo Display */}
             <div className="relative aspect-4/5 w-full bg-muted">
-              <img
-                src={activePhoto}
-                alt={profile.name}
-                className="w-full h-full object-cover"
+              <MatchAvatar
+                photo={activePhoto || profile.profileImage}
+                firstName={profile.firstName || profile.name}
+                lastName={profile.lastName}
+                variant="card"
+                imgClassName="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 

@@ -30,16 +30,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
   const [isSending, setIsSending] = React.useState(false);
   const [isJustSent, setIsJustSent] = React.useState(false);
 
-  const localSentSet = React.useMemo(() => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem('local_sent_interest_user_ids') || '[]'));
-    } catch {
-      return new Set();
-    }
-  }, [isJustSent, interests]);
-
   const isShortlisted = shortlistedIds.includes(profile.id);
-  const hasSentInterest = isJustSent || profile.interestSent || interests.some(i => String(i.receiverId) === String(profile.id) || String(i.user_id) === String(profile.id)) || localSentSet.has(Number(profile.id)) || localSentSet.has(String(profile.id));
+  const hasSentInterest = isJustSent || profile.interestSent || interests.some(i => String(i.receiverId) === String(profile.id) || String(i.user_id) === String(profile.id) || String(i.to_user) === String(profile.id));
 
   const handleSendInterestClick = async () => {
     setIsSending(true);

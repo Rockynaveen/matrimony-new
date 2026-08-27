@@ -47,15 +47,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 
   const [isJustSent, setIsJustSent] = React.useState(false);
 
-  const localSentSet = React.useMemo(() => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem('local_sent_interest_user_ids') || '[]'));
-    } catch {
-      return new Set();
-    }
-  }, [isJustSent, isInterestSent]);
-
-  const hasSentInterest = isInterestSent || isJustSent || localSentSet.has(match.user_id) || localSentSet.has(String(match.user_id));
+  const hasSentInterest = isInterestSent || isJustSent;
 
   const handleShortlistToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();

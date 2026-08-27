@@ -838,6 +838,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       queryClient.clear();
     } catch {}
     localStorage.removeItem('local_user_notifications');
+    localStorage.removeItem('local_sent_interest_user_ids');
+    localStorage.removeItem('local_accepted_interest_ids');
+    localStorage.removeItem('local_rejected_interest_ids');
+    localStorage.removeItem('local_deleted_interest_ids');
+    localStorage.removeItem('local_ignored_user_ids');
+    localStorage.removeItem('local_photo_requested_user_ids');
     setNotifications([]);
     setUnreadCount(0);
   };

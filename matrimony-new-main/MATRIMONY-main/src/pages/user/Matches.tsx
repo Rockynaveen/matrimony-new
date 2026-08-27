@@ -29,17 +29,12 @@ export const MatchesPage: React.FC = () => {
   })();
 
   const shortlistedIds = shortlist?.map(s => s.user_id) || [];
-  const sentInterestUserIds = [
-    ...(sentInterests?.map(i => Number(i.to_user || (i as any).user_id)) || []),
-    ...localSentList.map(val => Number(val))
-  ];
+  const sentInterestUserIds = (sentInterests || []).map(i => Number(i.to_user || (i as any).user_id));
   const ignoredUserIds = ignoredList?.map(i => i.user_id) || [];
 
-  const localAcceptedSet = new Set(JSON.parse(localStorage.getItem('local_accepted_interest_ids') || '[]'));
   const acceptedUserIds = new Set([
     ...(receivedInterests || []).filter(i => i.status?.toLowerCase() === 'accepted').map(i => i.from_user),
-    ...(sentInterests || []).filter(i => i.status?.toLowerCase() === 'accepted').map(i => i.to_user),
-    ...Array.from(localAcceptedSet).map(val => Number(val))
+    ...(sentInterests || []).filter(i => i.status?.toLowerCase() === 'accepted').map(i => i.to_user)
   ]);
 
   const userGender = (currentUser.gender || localStorage.getItem('logged_in_gender') || '').toLowerCase();

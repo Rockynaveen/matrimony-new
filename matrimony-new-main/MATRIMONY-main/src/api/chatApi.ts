@@ -192,20 +192,30 @@ export const chatApi = {
   // 3. POST /api/chat/send
   sendTextMessage: async (payload: SendTextMessagePayload): Promise<ChatMessageOut> => {
     const roomIdNum = Number(payload.room_id);
-    const receiverIdNum = Number(payload.receiver_id || payload.room_id);
+    const receiverIdNum = Number(payload.receiver_id || 0);
     const msgText = payload.message.trim();
     const currentUserId = Number(localStorage.getItem('user_id') || 0);
 
-    const body = {
+    const body: Record<string, any> = {
       room_id: roomIdNum,
-      receiver_id: receiverIdNum,
-      recipient_id: receiverIdNum,
-      to_user: receiverIdNum,
       user_id: currentUserId,
       message: msgText,
       content: msgText,
       text: msgText
     };
+
+    const queryParams: Record<string, any> = {
+      room_id: roomIdNum
+    };
+
+    if (receiverIdNum && receiverIdNum !== currentUserId) {
+      body.receiver_id = receiverIdNum;
+      body.recipient_id = receiverIdNum;
+      body.to_user = receiverIdNum;
+      queryParams.receiver_id = receiverIdNum;
+      queryParams.recipient_id = receiverIdNum;
+      queryParams.to_user = receiverIdNum;
+    }
 
     const candidateUrls: Array<{ method: 'post' | 'put'; url: string }> = [
       { method: 'post', url: '/chat/send' },
@@ -225,7 +235,7 @@ export const chatApi = {
     for (const item of candidateUrls) {
       try {
         const res = await axiosClient.post<any>(item.url, body, {
-          params: { room_id: roomIdNum, receiver_id: receiverIdNum, recipient_id: receiverIdNum, to_user: receiverIdNum }
+          params: queryParams
         });
         if (res.status >= 200 && res.status < 300) {
           const resData = res.data;

@@ -157,10 +157,56 @@ const AudioBubblePlayer: React.FC<{ audioUrl: string; isMe: boolean }> = ({ audi
   );
 };
 
+export const extractRecipientUserId = (conv: any, currentUserId: number): number => {
+  if (!conv || typeof conv !== 'object') return 0;
+
+  const parseId = (val: any): number => {
+    if (!val) return 0;
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') {
+      const n = Number(val);
+      return isNaN(n) ? 0 : n;
+    }
+    if (typeof val === 'object') {
+      return Number(val.id || val.user_id || val.pk || val.userId || 0) || 0;
+    }
+    return 0;
+  };
+
+  // 1. Check explicit other_user / partner / recipient object
+  const otherObjId = parseId(conv.other_user || conv.other_participant || conv.partner || conv.recipient || conv.receiver || conv.target_user);
+  if (otherObjId && otherObjId !== currentUserId) {
+    return otherObjId;
+  }
+
+  // 2. Check explicit other ID fields
+  const explicitOtherId = parseId(conv.other_user_id || conv.receiver_id || conv.recipient_id || conv.to_user || conv.to_user_id);
+  if (explicitOtherId && explicitOtherId !== currentUserId) {
+    return explicitOtherId;
+  }
+
+  // 3. User1 vs User2 participant resolution
+  const u1 = parseId(conv.user1_id ?? conv.user1 ?? conv.participant1 ?? conv.user_1 ?? conv.sender_id ?? conv.sender);
+  const u2 = parseId(conv.user2_id ?? conv.user2 ?? conv.participant2 ?? conv.user_2 ?? conv.receiver_id ?? conv.receiver);
+
+  if (u1 && u1 !== currentUserId) return u1;
+  if (u2 && u2 !== currentUserId) return u2;
+
+  // 4. Participants array
+  if (Array.isArray(conv.participants || conv.users || conv.members)) {
+    const list = (conv.participants || conv.users || conv.members).map(parseId);
+    const other = list.find((uid: number) => uid > 0 && uid !== currentUserId);
+    if (other) return other;
+  }
+
+  return 0;
+};
+
 export const MessagesPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { currentUser, showToast } = useApp();
   const navigate = useNavigate();
+  const currentUserIdNum = Number(currentUser?.id || localStorage.getItem('user_id') || 0);
 
   // Conversations List & Interests
   const { data: remoteConversations, isLoading: isLoadingConversations } = useConversations();
@@ -179,10 +225,10 @@ export const MessagesPage: React.FC = () => {
 
   const remoteConvsMapped = (remoteConversations || []).map(conv => {
     const other = conv.other_user || {};
-    const currentUserIdNum = Number(currentUser?.id || localStorage.getItem('user_id') || 0);
-    const recipientId = other.id || (Number(conv.user1_id) === currentUserIdNum ? conv.user2_id : (Number(conv.user2_id) === currentUserIdNum ? conv.user1_id : conv.user2_id)) || conv.id;
+    const recipientId = extractRecipientUserId(conv, currentUserIdNum);
     return {
       id: String(conv.room_id || conv.id),
+      room_id: Number(conv.room_id || conv.id),
       user_id: recipientId,
       name: other.name || `${other.first_name || 'Verified'} ${other.last_name || 'Member'}`.trim(),
       profileImage: other.profile_photo || other.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
@@ -395,7 +441,9 @@ export const MessagesPage: React.FC = () => {
     const textToSend = inputText.trim();
     if (!textToSend) return;
 
-    const recipientUserId = activeMatch ? Number(activeMatch.user_id) : numericRoomId;
+    const recipientUserId = activeMatch && activeMatch.user_id && Number(activeMatch.user_id) !== currentUserIdNum
+      ? Number(activeMatch.user_id)
+      : undefined;
 
     try {
       setInputText('');
@@ -411,6 +459,9 @@ export const MessagesPage: React.FC = () => {
   };
 
   const handleSendVoiceBlob = async (audioBlob: Blob) => {
+    const recipientUserId = activeMatch && activeMatch.user_id && Number(activeMatch.user_id) !== currentUserIdNum
+      ? Number(activeMatch.user_id)
+      : undefined;
     try {
       await sendVoiceMutation.mutateAsync({ roomId: numericRoomId, audioBlob });
       showToast('Voice note sent!');
@@ -422,7 +473,9 @@ export const MessagesPage: React.FC = () => {
   };
 
   const handleSendImageFile = async (file: File) => {
-    const recipientUserId = activeProfile ? Number(activeProfile.id) : numericRoomId;
+    const recipientUserId = activeMatch && activeMatch.user_id && Number(activeMatch.user_id) !== currentUserIdNum
+      ? Number(activeMatch.user_id)
+      : undefined;
     try {
       await sendImageMutation.mutateAsync({ roomId: numericRoomId, receiverId: recipientUserId, imageFile: file });
       showToast('Image sent successfully!');

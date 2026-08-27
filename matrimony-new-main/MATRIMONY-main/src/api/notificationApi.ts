@@ -120,6 +120,36 @@ export const notificationApi = {
 
   // 2. GET /api/notifications/unread-count
   getUnreadCount: async (): Promise<number> => {
+    const token = useAuthStore.getState().accessToken || localStorage.getItem('access_token');
+    if (!token) return 0;
+
+    const candidateUrls = [
+      '/notifications/unread-count',
+      '/notifications/unread-count/',
+      '/notifications/unread_count',
+      '/notifications/unread_count/'
+    ];
+
+    for (const url of candidateUrls) {
+      try {
+        const res = await axiosClient.get(url);
+        if (res.data) {
+          if (res.data.detail === 'Unauthorized' || res.status === 401) {
+            return 0;
+          }
+          if (typeof res.data === 'number') return res.data;
+          if (typeof res.data.unread_count === 'number') return res.data.unread_count;
+          if (typeof res.data.count === 'number') return res.data.count;
+          if (typeof res.data.unread === 'number') return res.data.unread;
+        }
+      } catch (err: any) {
+        if (err?.response?.status === 401 || err?.response?.data?.detail === 'Unauthorized') {
+          return 0;
+        }
+        continue;
+      }
+    }
+
     try {
       const notificationsList = await notificationApi.getNotifications();
       if (Array.isArray(notificationsList)) {

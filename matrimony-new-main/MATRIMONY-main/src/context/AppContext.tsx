@@ -370,9 +370,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
 
       setNotifications(validNotifications);
-      const dynamicCount = typeof apiCount === 'number' && apiCount >= 0
-        ? apiCount
-        : validNotifications.filter(n => !n.read).length;
+      const dynamicCount = validNotifications.filter(n => !n.read).length;
       setUnreadCount(dynamicCount);
     } catch {
       setNotifications([]);

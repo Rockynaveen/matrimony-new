@@ -121,34 +121,8 @@ export const notificationApi = {
   // 2. GET /api/notifications/unread-count
   getUnreadCount: async (): Promise<number> => {
     try {
-      const candidateUrls = [
-        '/notifications/unread-count',
-        '/notifications/unread-count/'
-      ];
-
-      for (const url of candidateUrls) {
-        try {
-          const res = await axiosClient.get(url);
-          if (typeof res.data === 'number') {
-            return res.data;
-          }
-          if (res.data && typeof res.data.count === 'number') {
-            return res.data.count;
-          }
-          if (res.data && typeof res.data.unread_count === 'number') {
-            return res.data.unread_count;
-          }
-          if (res.data && typeof res.data.unread === 'number') {
-            return res.data.unread;
-          }
-        } catch {
-          continue;
-        }
-      }
-
-      // Fallback: Calculate unread count dynamically from notifications list
       const notificationsList = await notificationApi.getNotifications();
-      if (Array.isArray(notificationsList) && notificationsList.length > 0) {
+      if (Array.isArray(notificationsList)) {
         return notificationsList.filter(n => !n.read).length;
       }
     } catch {}

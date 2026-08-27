@@ -34,8 +34,7 @@ class AxiosClient {
     };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-    }
-    if (csrfToken) {
+    } else if (csrfToken) {
       headers['X-CSRFToken'] = csrfToken;
     }
     return headers;

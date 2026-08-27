@@ -197,25 +197,31 @@ export const notificationApi = {
     return 0;
   },
 
-  // 3. POST/PATCH /api/notifications/mark-all-read
+  // 3. POST/PATCH /api/notifications/mark-all-read or /api/notifications/mark-read
   markAllAsRead: async (): Promise<void> => {
     const candidates = [
-      { method: 'post', url: '/notifications/mark-all-read' },
-      { method: 'patch', url: '/notifications/mark-all-read' },
-      { method: 'post', url: '/notifications/mark-all-read/' },
-      { method: 'patch', url: '/notifications/mark-all-read/' },
-      { method: 'post', url: '/notifications/mark-read' },
-      { method: 'post', url: '/notifications/read-all' }
+      { method: 'post', url: '/notifications/mark-read', body: { all: true, mark_all: true } },
+      { method: 'post', url: '/notifications/mark-read/', body: { all: true, mark_all: true } },
+      { method: 'post', url: '/notifications/mark-read', body: {} },
+      { method: 'post', url: '/notifications/mark-read/', body: {} },
+      { method: 'post', url: '/notifications/mark-all-read', body: {} },
+      { method: 'post', url: '/notifications/mark-all-read/', body: {} },
+      { method: 'patch', url: '/notifications/mark-all-read', body: {} },
+      { method: 'patch', url: '/notifications/mark-all-read/', body: {} },
+      { method: 'post', url: '/notifications/read-all', body: {} }
     ];
 
     for (const item of candidates) {
       try {
+        let res;
         if (item.method === 'patch') {
-          await axiosClient.patch(item.url, {});
+          res = await axiosClient.patch(item.url, item.body);
         } else {
-          await axiosClient.post(item.url, {});
+          res = await axiosClient.post(item.url, item.body);
         }
-        return;
+        if (res && res.status >= 200 && res.status < 300 && (!res.data?.detail || !res.data.detail.includes('CSRF'))) {
+          return;
+        }
       } catch {
         continue;
       }
@@ -240,7 +246,7 @@ export const notificationApi = {
     }
   },
 
-  // 5. PATCH/POST /api/notifications/{notification_id} (mark single read)
+  // 5. PATCH/POST /api/notifications/{notification_id} or /api/notifications/mark-read (mark single read)
   markAsRead: async (notificationId?: string | number): Promise<void> => {
     if (!notificationId) return;
     const cleanId = typeof notificationId === 'string' && !isNaN(Number(notificationId))
@@ -248,24 +254,28 @@ export const notificationApi = {
       : notificationId;
 
     const candidates = [
+      { method: 'post', url: '/notifications/mark-read', body: { notification_id: cleanId, id: cleanId } },
+      { method: 'post', url: '/notifications/mark-read/', body: { notification_id: cleanId, id: cleanId } },
       { method: 'patch', url: `/notifications/${cleanId}`, body: { is_read: true, read: true } },
       { method: 'patch', url: `/notifications/${cleanId}/`, body: { is_read: true, read: true } },
       { method: 'post', url: `/notifications/${cleanId}/read`, body: {} },
       { method: 'post', url: `/notifications/${cleanId}/read/`, body: {} },
-      { method: 'put', url: `/notifications/${cleanId}/read`, body: {} },
-      { method: 'post', url: '/notifications/mark-read', body: { id: cleanId, notification_id: cleanId } }
+      { method: 'put', url: `/notifications/${cleanId}/read`, body: {} }
     ];
 
     for (const c of candidates) {
       try {
+        let res;
         if (c.method === 'patch') {
-          await axiosClient.patch(c.url, c.body);
+          res = await axiosClient.patch(c.url, c.body);
         } else if (c.method === 'put') {
-          await axiosClient.put(c.url, c.body);
+          res = await axiosClient.put(c.url, c.body);
         } else {
-          await axiosClient.post(c.url, c.body);
+          res = await axiosClient.post(c.url, c.body);
         }
-        return;
+        if (res && res.status >= 200 && res.status < 300 && (!res.data?.detail || !res.data.detail.includes('CSRF'))) {
+          return;
+        }
       } catch {
         continue;
       }

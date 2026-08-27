@@ -12,7 +12,8 @@ import {
   UserX,
   Ban,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Lock
 } from 'lucide-react';
 import type { MatchResponseSchema } from '../../types/matching.types';
 import { Button } from '../ui/Button';
@@ -146,6 +147,11 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
             {/* Shortlist Heart Button & Top Badges */}
             <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10">
               <div className="flex items-center gap-1.5">
+                {match.is_unlocked === false && (
+                  <span className="inline-flex items-center gap-1 bg-stone-950/90 text-amber-300 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-amber-400/40 backdrop-blur-xs shadow-xs">
+                    <Lock className="h-2.5 w-2.5 text-amber-400" /> Locked
+                  </span>
+                )}
                 {match.is_mutual && (
                   <span className="inline-flex items-center gap-1 bg-[#8B1E3F]/90 text-white text-[9px] font-bold px-2 py-0.5 rounded-full backdrop-blur-xs">
                     <HeartHandshake className="h-2.5 w-2.5" /> Mutual

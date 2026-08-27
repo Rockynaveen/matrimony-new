@@ -413,5 +413,44 @@ export const profileService = {
   /** Legacy helper retained for backwards compatibility */
   async uploadVideo(input: File | Blob | string): Promise<{ success: boolean; video_url?: string; message?: string }> {
     return this.uploadProfileVideo(input);
+  },
+
+  /**
+   * GET /api/profile/{user_id}/
+   * Fetch details for another member profile.
+   * If locked and remaining credits = 0, backend throws 403 Forbidden with lock_reason: "NO_PROFILE_CREDITS".
+   */
+  async getProfileByUserId(userId: string | number): Promise<ProfileOutAPI | null> {
+    const numericId = Number(userId);
+    if (!numericId || numericId <= 0) return null;
+
+    const candidateUrls = [
+      `/profile/${numericId}/`,
+      `/profile/${numericId}`,
+      `/profile/get/${numericId}/`,
+      `/profile/get/${numericId}`
+    ];
+
+    for (const url of candidateUrls) {
+      try {
+        const res = await axiosClient.get<any>(url);
+        if (res.status >= 200 && res.status < 300 && res.data) {
+          return res.data.data || res.data;
+        }
+      } catch (err: any) {
+        if (err.response && err.response.status === 403) {
+          const resData = err.response.data || {};
+          const customError: any = new Error(
+            resData.message || 'Profile Locked. You have used all your matching profile credits. Take a membership to view more profiles.'
+          );
+          customError.status = 403;
+          customError.lock_reason = resData.lock_reason || 'NO_PROFILE_CREDITS';
+          throw customError;
+        }
+        continue;
+      }
+    }
+
+    return null;
   }
 };

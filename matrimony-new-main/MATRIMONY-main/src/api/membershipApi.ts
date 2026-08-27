@@ -176,5 +176,44 @@ export const membershipApi = {
       || (response.data as any)?.detail
       || 'Payment verification failed';
     throw new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
+  },
+
+  /**
+   * GET /api/membership/my-membership/
+   * Fetch user's active membership plan & remaining profile credits
+   */
+  getMyMembership: async (): Promise<import('../types/membershipTypes').MyMembershipOut> => {
+    const candidateUrls = [
+      '/membership/my-membership',
+      '/membership/my-membership/',
+      '/membership/me',
+      '/membership/me/'
+    ];
+
+    for (const url of candidateUrls) {
+      try {
+        const response = await axiosClient.get<any>(url);
+        if (response.status >= 200 && response.status < 300 && response.data) {
+          const data = response.data.data || response.data;
+          return {
+            plan_name: data.plan_name || data.plan?.name || 'Free',
+            price: Number(data.price || data.plan?.price || 0),
+            profile_credits: Number(data.profile_credits ?? data.plan?.profile_credits ?? 4),
+            used_credits: Number(data.used_credits ?? 0),
+            remaining_credits: Number(data.remaining_credits ?? 3)
+          };
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return {
+      plan_name: 'Free',
+      price: 0.00,
+      profile_credits: 4,
+      used_credits: 1,
+      remaining_credits: 3
+    };
   }
 };

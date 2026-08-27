@@ -28,6 +28,8 @@ import {
   ChevronDown
 } from 'lucide-react';
 
+import { ProfileCreditsBanner } from '../../components/membership/ProfileCreditsBanner';
+
 export const Dashboard: React.FC = () => {
   const { currentUser, verificationStatus, profiles, unreadCount, interests, profileStatus } = useApp();
   const navigate = useNavigate();
@@ -149,6 +151,9 @@ export const Dashboard: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Profile Credit Unlocks Banner */}
+          <ProfileCreditsBanner />
 
           {/* ================= 4 STAT CARDS GRID ================= */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

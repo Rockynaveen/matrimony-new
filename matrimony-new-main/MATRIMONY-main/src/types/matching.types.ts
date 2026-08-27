@@ -16,6 +16,8 @@ export interface MatchResponseSchema {
   match_percentage: number;
   matched_fields: string[];
   is_mutual: boolean;
+  is_unlocked?: boolean;
+  lock_reason?: string | null;
 }
 
 export interface InterestResponseSchema {

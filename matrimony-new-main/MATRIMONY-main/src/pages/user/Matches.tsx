@@ -8,6 +8,8 @@ import { Sparkles, Heart, Compass, Clock, Star, AlertCircle, RefreshCw } from 'l
 import { Button } from '../../components/ui/Button';
 import { LoadingScreen } from '../../components/ui/LoadingScreen';
 
+import { ProfileCreditsBanner } from '../../components/membership/ProfileCreditsBanner';
+
 export const MatchesPage: React.FC = () => {
   const { currentUser, profiles } = useApp();
   const [matchTab, setMatchTab] = useState<'recommended' | 'compatible' | 'new' | 'nearby' | 'horoscope'>('recommended');
@@ -79,6 +81,9 @@ export const MatchesPage: React.FC = () => {
   return (
     <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5">
       
+      {/* Profile Credit Unlocks Banner */}
+      <ProfileCreditsBanner />
+
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
         <div>

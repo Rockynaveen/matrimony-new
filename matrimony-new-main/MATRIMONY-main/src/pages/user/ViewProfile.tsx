@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '../../context/AppContext';
+import { profileService } from '../../services/profile.service';
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -18,7 +20,8 @@ import {
   CheckCircle2,
   ArrowLeft,
   Loader2,
-  XCircle
+  XCircle,
+  Crown
 } from 'lucide-react';
 import {
   useAddToShortlist,
@@ -51,6 +54,26 @@ export const ViewProfile: React.FC = () => {
   const sendInterestMutation = useSendInterest();
   const ignoreMutation = useAddToIgnore();
   const blockMutation = useBlockProfile();
+
+  const queryClient = useQueryClient();
+  const [isLockedModalOpen, setIsLockedModalOpen] = useState(false);
+  const [lockErrorMessage, setLockErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!numericUserId || numericUserId <= 0) return;
+
+    profileService.getProfileByUserId(numericUserId)
+      .then(() => {
+        // Success unlock: invalidate membership query to update remaining credits counter
+        queryClient.invalidateQueries({ queryKey: ['membership'] });
+      })
+      .catch((err: any) => {
+        if (err.status === 403 || err.lock_reason === 'NO_PROFILE_CREDITS') {
+          setLockErrorMessage(err.message || 'Profile Locked. You have used all your matching profile credits. Take a membership to view more profiles.');
+          setIsLockedModalOpen(true);
+        }
+      });
+  }, [numericUserId]);
 
   const isShortlisted = shortlist?.some(s => s.user_id === numericUserId) || false;
   const isInterestSent = sentInterests?.some(i => i.to_user === numericUserId) || false;
@@ -748,6 +771,57 @@ export const ViewProfile: React.FC = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Profile Locked / Out of Credits Modal */}
+      <Modal
+        isOpen={isLockedModalOpen}
+        onClose={() => {
+          setIsLockedModalOpen(false);
+          navigate('/membership');
+        }}
+        title="🔒 Profile Locked"
+      >
+        <div className="space-y-5 p-1 text-stone-900">
+          <div className="h-16 w-16 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center mx-auto text-amber-600 shadow-sm">
+            <Lock className="h-8 w-8 text-amber-600" />
+          </div>
+
+          <div className="text-center space-y-2">
+            <Badge variant="gold" className="bg-amber-100 text-amber-900 border-amber-300 font-extrabold px-3 py-1 text-xs">
+              0 Credits Remaining
+            </Badge>
+            <h3 className="font-serif font-extrabold text-xl text-stone-900">Profile Access Restricted</h3>
+            <p className="text-xs font-semibold text-stone-600 max-w-sm mx-auto leading-relaxed">
+              {lockErrorMessage || 'Profile Locked. You have used all your matching profile credits. Take a membership to view more profiles.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-3 border-t border-stone-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsLockedModalOpen(false);
+                navigate('/matches');
+              }}
+              className="w-full sm:w-1/2 font-bold text-xs border-stone-300"
+            >
+              Back to Matches
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => {
+                setIsLockedModalOpen(false);
+                navigate('/membership');
+              }}
+              className="w-full sm:w-1/2 font-extrabold text-xs bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 shadow-md hover:brightness-105"
+            >
+              <Crown className="h-4 w-4 mr-1 text-stone-950 fill-stone-950" /> Take Membership
+            </Button>
+          </div>
+        </div>
       </Modal>
 
     </div>

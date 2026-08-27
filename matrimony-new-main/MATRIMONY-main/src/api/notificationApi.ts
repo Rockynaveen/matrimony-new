@@ -5,14 +5,20 @@ export interface NotificationResponseSchema {
   id: number | string;
   title?: string;
   message?: string;
+  text?: string;
+  content?: string;
   notification_type?: string;
+  type?: string;
   category?: string;
   is_read?: boolean;
   read?: boolean;
   created_at?: string;
   timestamp?: string;
   link?: string;
+  url?: string;
   avatar?: string;
+  sender_name?: string;
+  from_user_name?: string;
   [key: string]: any;
 }
 
@@ -27,14 +33,20 @@ export interface NotificationPreferencesSchema {
   [key: string]: any;
 }
 
+export interface DeviceTokenPayload {
+  token: string;
+  device_type?: 'web' | 'ios' | 'android';
+  registration_id?: string;
+  [key: string]: any;
+}
+
 export const notificationApi = {
+  // 1. GET /api/notifications/
   getNotifications: async (): Promise<NotificationItem[]> => {
     try {
       const candidateUrls = [
         '/notifications/',
-        '/notifications',
-        '/privacy/notifications',
-        '/privacy/notifications/'
+        '/notifications'
       ];
 
       let rawList: NotificationResponseSchema[] = [];
@@ -106,57 +118,32 @@ export const notificationApi = {
     }
   },
 
-  markAsRead: async (notificationId?: string | number): Promise<void> => {
-    try {
-      const cleanId = typeof notificationId === 'string' && !isNaN(Number(notificationId))
-        ? Number(notificationId)
-        : notificationId;
-      await axiosClient.post('/notifications/mark-read', cleanId ? { id: cleanId, notification_id: cleanId } : {});
-    } catch {
-      if (notificationId) {
-        try {
-          await axiosClient.post(`/notifications/${notificationId}/read`);
-        } catch {
-          try {
-            await axiosClient.put(`/notifications/${notificationId}/read`);
-          } catch {
-            // Fallback
-          }
-        }
-      }
-    }
-  },
-
-  markAllAsRead: async (): Promise<void> => {
-    try {
-      await axiosClient.post('/notifications/mark-all-read');
-    } catch {
-      try {
-        await axiosClient.post('/notifications/mark-read', {});
-      } catch {
-        try {
-          await axiosClient.post('/notifications/read-all');
-        } catch {
-          // Fallback
-        }
-      }
-    }
-  },
-
+  // 2. GET /api/notifications/unread-count
   getUnreadCount: async (): Promise<number> => {
     try {
-      const res = await axiosClient.get('/notifications/unread-count');
-      if (typeof res.data === 'number') {
-        return res.data;
-      }
-      if (res.data && typeof res.data.count === 'number') {
-        return res.data.count;
-      }
-      if (res.data && typeof res.data.unread_count === 'number') {
-        return res.data.unread_count;
-      }
-      if (res.data && typeof res.data.unread === 'number') {
-        return res.data.unread;
+      const candidateUrls = [
+        '/notifications/unread-count',
+        '/notifications/unread-count/'
+      ];
+
+      for (const url of candidateUrls) {
+        try {
+          const res = await axiosClient.get(url);
+          if (typeof res.data === 'number') {
+            return res.data;
+          }
+          if (res.data && typeof res.data.count === 'number') {
+            return res.data.count;
+          }
+          if (res.data && typeof res.data.unread_count === 'number') {
+            return res.data.unread_count;
+          }
+          if (res.data && typeof res.data.unread === 'number') {
+            return res.data.unread;
+          }
+        } catch {
+          continue;
+        }
       }
       return 0;
     } catch {
@@ -164,6 +151,82 @@ export const notificationApi = {
     }
   },
 
+  // 3. POST/PATCH /api/notifications/mark-all-read
+  markAllAsRead: async (): Promise<void> => {
+    const candidates = [
+      { method: 'post', url: '/notifications/mark-all-read' },
+      { method: 'patch', url: '/notifications/mark-all-read' },
+      { method: 'post', url: '/notifications/mark-all-read/' },
+      { method: 'patch', url: '/notifications/mark-all-read/' },
+      { method: 'post', url: '/notifications/mark-read' },
+      { method: 'post', url: '/notifications/read-all' }
+    ];
+
+    for (const item of candidates) {
+      try {
+        if (item.method === 'patch') {
+          await axiosClient.patch(item.url, {});
+        } else {
+          await axiosClient.post(item.url, {});
+        }
+        return;
+      } catch {
+        continue;
+      }
+    }
+  },
+
+  // 4. GET /api/notifications/{notification_id}
+  getNotificationById: async (notificationId: string | number): Promise<NotificationResponseSchema | null> => {
+    const cleanId = typeof notificationId === 'string' && !isNaN(Number(notificationId))
+      ? Number(notificationId)
+      : notificationId;
+    try {
+      const res = await axiosClient.get(`/notifications/${cleanId}`);
+      return res.data || null;
+    } catch {
+      try {
+        const res = await axiosClient.get(`/notifications/${cleanId}/`);
+        return res.data || null;
+      } catch {
+        return null;
+      }
+    }
+  },
+
+  // 5. PATCH/POST /api/notifications/{notification_id} (mark single read)
+  markAsRead: async (notificationId?: string | number): Promise<void> => {
+    if (!notificationId) return;
+    const cleanId = typeof notificationId === 'string' && !isNaN(Number(notificationId))
+      ? Number(notificationId)
+      : notificationId;
+
+    const candidates = [
+      { method: 'patch', url: `/notifications/${cleanId}`, body: { is_read: true, read: true } },
+      { method: 'patch', url: `/notifications/${cleanId}/`, body: { is_read: true, read: true } },
+      { method: 'post', url: `/notifications/${cleanId}/read`, body: {} },
+      { method: 'post', url: `/notifications/${cleanId}/read/`, body: {} },
+      { method: 'put', url: `/notifications/${cleanId}/read`, body: {} },
+      { method: 'post', url: '/notifications/mark-read', body: { id: cleanId, notification_id: cleanId } }
+    ];
+
+    for (const c of candidates) {
+      try {
+        if (c.method === 'patch') {
+          await axiosClient.patch(c.url, c.body);
+        } else if (c.method === 'put') {
+          await axiosClient.put(c.url, c.body);
+        } else {
+          await axiosClient.post(c.url, c.body);
+        }
+        return;
+      } catch {
+        continue;
+      }
+    }
+  },
+
+  // 6. DELETE /api/notifications/{notification_id}
   deleteNotification: async (notificationId: string | number): Promise<void> => {
     const cleanId = typeof notificationId === 'string' && !isNaN(Number(notificationId))
       ? Number(notificationId)
@@ -179,53 +242,79 @@ export const notificationApi = {
     }
   },
 
+  // 7. GET /api/notifications/preferences
   getPreferences: async (): Promise<NotificationPreferencesSchema> => {
     try {
       const res = await axiosClient.get('/notifications/preferences');
       return res.data || {};
     } catch {
-      return {
-        email_notifications: true,
-        push_notifications: true,
-        sms_notifications: false,
-        interest_alerts: true,
-        match_alerts: true,
-        message_alerts: true,
-        marketing_emails: false
-      };
-    }
-  },
-
-  updatePreferences: async (payload: NotificationPreferencesSchema): Promise<NotificationPreferencesSchema> => {
-    try {
-      const res = await axiosClient.put('/notifications/preferences', payload);
-      return res.data || payload;
-    } catch {
       try {
-        const res = await axiosClient.post('/notifications/preferences', payload);
-        return res.data || payload;
+        const res = await axiosClient.get('/notifications/preferences/');
+        return res.data || {};
       } catch {
-        return payload;
+        return {
+          email_notifications: true,
+          push_notifications: true,
+          sms_notifications: false,
+          interest_alerts: true,
+          match_alerts: true,
+          message_alerts: true,
+          marketing_emails: false
+        };
       }
     }
   },
 
-  registerDeviceToken: async (token: string, deviceType = 'web'): Promise<any> => {
-    const payload = {
+  // 8. PATCH/PUT/POST /api/notifications/preferences
+  updatePreferences: async (payload: NotificationPreferencesSchema): Promise<NotificationPreferencesSchema> => {
+    const candidates = [
+      { method: 'patch', url: '/notifications/preferences' },
+      { method: 'patch', url: '/notifications/preferences/' },
+      { method: 'put', url: '/notifications/preferences' },
+      { method: 'put', url: '/notifications/preferences/' },
+      { method: 'post', url: '/notifications/preferences' }
+    ];
+
+    for (const c of candidates) {
+      try {
+        let res;
+        if (c.method === 'patch') {
+          res = await axiosClient.patch(c.url, payload);
+        } else if (c.method === 'put') {
+          res = await axiosClient.put(c.url, payload);
+        } else {
+          res = await axiosClient.post(c.url, payload);
+        }
+        return res.data || payload;
+      } catch {
+        continue;
+      }
+    }
+    return payload;
+  },
+
+  // 9. POST /api/notifications/device-token
+  registerDeviceToken: async (token: string, deviceType: 'web' | 'ios' | 'android' = 'web'): Promise<any> => {
+    if (!token) return null;
+    const payload: DeviceTokenPayload = {
       token,
       device_type: deviceType,
       registration_id: token
     };
-    try {
-      const res = await axiosClient.post('/notifications/device-token', payload);
-      return res.data;
-    } catch (err: any) {
+
+    const candidateUrls = [
+      '/notifications/device-token',
+      '/notifications/device-token/'
+    ];
+
+    for (const url of candidateUrls) {
       try {
-        const res = await axiosClient.post('/notifications/device-token/', payload);
+        const res = await axiosClient.post(url, payload);
         return res.data;
       } catch {
-        // Fallback
+        continue;
       }
     }
+    return null;
   }
 };

@@ -400,21 +400,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         notificationApi.getUnreadCount()
       ]);
 
-      setNotifications(prev => {
-        if (!remoteData || remoteData.length === 0) {
-          return prev;
-        }
-        const existingIds = new Set(prev.map(n => n.id));
-        const newRemoteItems = remoteData.filter(n => !existingIds.has(n.id));
-        const merged = [...newRemoteItems, ...prev];
-        saveNotificationsToStorage(merged);
-        return merged;
-      });
-
-      setUnreadCount(prev => {
-        const calculated = notifications.filter(n => !n.read).length;
-        return apiCount > 0 ? apiCount : calculated;
-      });
+      if (remoteData && remoteData.length > 0) {
+        setNotifications(remoteData);
+        saveNotificationsToStorage(remoteData);
+      }
+      setUnreadCount(typeof apiCount === 'number' ? apiCount : (remoteData || []).filter(n => !n.read).length);
     } catch {
       // Keep existing local notifications intact
     }
@@ -1238,6 +1228,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setUnreadCount(prev => Math.max(0, prev - 1));
     notificationApi.markAsRead(id).catch(() => {});
+    try {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    } catch {}
   };
 
   const markAllNotificationsRead = async () => {
@@ -1249,6 +1242,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUnreadCount(0);
     try {
       await notificationApi.markAllAsRead();
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     } catch {}
   };
 
@@ -1263,6 +1257,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUnreadCount(prev => Math.max(0, prev - 1));
     }
     notificationApi.deleteNotification(id).catch(() => {});
+    try {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    } catch {}
   };
 
   const addNotification = (item: {

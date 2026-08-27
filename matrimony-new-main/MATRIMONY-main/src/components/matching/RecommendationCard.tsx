@@ -80,13 +80,6 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
       } catch {}
 
       await sendInterestMutation.mutateAsync({ to_user: match.user_id, message: 'Hi, I am interested in your profile.' });
-      addNotification({
-        title: 'Interest Sent!',
-        message: `Your interest request was sent to ${match.first_name || 'member'}.`,
-        category: 'Interests',
-        link: '/interests',
-        avatar: match.profile_photo || undefined
-      });
       showToast(`Interest expression sent to ${match.first_name || 'member'}!`);
     } catch (err: any) {
       setIsJustSent(true);

@@ -400,26 +400,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         notificationApi.getUnreadCount()
       ]);
 
-      if (remoteData && remoteData.length > 0) {
-        setNotifications(remoteData);
-        saveNotificationsToStorage(remoteData);
-        const dynamicCount = typeof apiCount === 'number' && apiCount > 0
-          ? apiCount
-          : remoteData.filter(n => !n.read).length;
-        setUnreadCount(dynamicCount);
-      } else {
-        setNotifications(prev => {
-          const currentList = prev || [];
-          setUnreadCount(currentList.filter(n => !n.read).length);
-          return currentList;
-        });
-      }
+      const validNotifications = (remoteData || []).filter(n =>
+        !n.title?.includes('Interest Sent!') &&
+        !n.message?.includes('Your interest request was sent') &&
+        !n.title?.includes('Interest Request Sent')
+      );
+
+      setNotifications(validNotifications);
+      const dynamicCount = typeof apiCount === 'number' && apiCount >= 0
+        ? apiCount
+        : validNotifications.filter(n => !n.read).length;
+      setUnreadCount(dynamicCount);
     } catch {
-      setNotifications(prev => {
-        const currentList = prev || [];
-        setUnreadCount(currentList.filter(n => !n.read).length);
-        return currentList;
-      });
+      setNotifications([]);
+      setUnreadCount(0);
     }
   };
 
@@ -1236,14 +1230,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setInterests(prev => [newInterest, ...prev]);
     setProfiles(prev => prev.map(p => p.id === profileId ? { ...p, interestSent: true } : p));
     showToast(`Interest sent successfully to ${target.name} 💕`);
-    
-    addNotification({
-      title: 'Interest Request Sent 💌',
-      message: `Your interest expression was sent to ${target.name}. You will be notified when they respond.`,
-      category: 'Interests',
-      link: '/interests',
-      avatar: target.profileImage
-    });
   };
 
   const markNotificationRead = (id: string) => {

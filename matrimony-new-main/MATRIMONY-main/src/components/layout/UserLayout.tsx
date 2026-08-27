@@ -7,6 +7,18 @@ export const UserLayout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
+  const isChatPage = location.pathname.startsWith('/messages');
+
+  if (isChatPage) {
+    return (
+      <div className="mx-auto max-w-7xl px-2 sm:px-4 py-2 select-none">
+        <div className="w-full min-w-0">
+          <Outlet />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-6 select-none">
       

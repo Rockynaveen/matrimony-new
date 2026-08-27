@@ -191,7 +191,6 @@ export const VerificationPage: React.FC = () => {
         photoPreview: photoPreview || 'Live Selfie Photo'
       });
 
-      // Flow rule: Verification Submitted -> Matches (/matches)
       setTimeout(() => {
         navigate('/matches');
       }, 1000);
@@ -224,111 +223,105 @@ export const VerificationPage: React.FC = () => {
     navigate('/login');
   };
 
-  // Rejection details if any
   const rejectionReason = onboardingStatus.rejection_reason || 'Document or photo did not meet quality/clarity requirements.';
 
   return (
-    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Dynamic Header Banner */}
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      
+      {/* Sleek High-Contrast Header Banner */}
       <motion.div
-        initial={{ opacity: 0, y: -15 }}
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#5B1028] via-[#8B1E3F] to-[#2C0A15] p-6 sm:p-8 text-white shadow-2xl border border-[#D4AF37]/30"
+        className="relative overflow-hidden rounded-3xl bg-white border-2 border-[#8B1E3F]/20 p-5 sm:p-7 text-stone-900 shadow-md"
       >
-        <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-[#D4AF37]/20 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-[#C44569]/30 blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-80 h-full bg-gradient-to-l from-[#8B1E3F]/5 to-transparent pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="gold" className="bg-[#D4AF37] text-stone-950 font-extrabold text-[11px] uppercase tracking-wider px-3 py-0.5">
-                <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Trust & Verification
-              </Badge>
+              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-extrabold bg-[#8B1E3F]/10 text-[#8B1E3F] border border-[#8B1E3F]/20 uppercase tracking-wider">
+                <ShieldCheck className="h-3.5 w-3.5 text-[#8B1E3F]" /> Official Profile Verification
+              </span>
 
               {verificationStatus === 'VERIFIED' && (
-                <span className="text-xs text-emerald-300 font-bold flex items-center gap-1 bg-emerald-950/70 px-3 py-0.5 rounded-full border border-emerald-400/40">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Approved Member
+                <span className="text-[11px] text-emerald-800 font-extrabold flex items-center gap-1 bg-emerald-100 px-3 py-0.5 rounded-full border border-emerald-300">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Approved Member
                 </span>
               )}
 
               {verificationStatus === 'PENDING' && (
-                <span className="text-xs text-amber-300 font-bold flex items-center gap-1 bg-amber-950/70 px-3 py-0.5 rounded-full border border-amber-400/40">
-                  <Clock className="h-3.5 w-3.5 animate-spin" /> Pending Admin Review
+                <span className="text-[11px] text-amber-900 font-extrabold flex items-center gap-1 bg-amber-100 px-3 py-0.5 rounded-full border border-amber-300">
+                  <Clock className="h-3.5 w-3.5 text-amber-700 animate-spin" /> Pending Admin Review
                 </span>
               )}
 
               {verificationStatus === 'REJECTED' && (
-                <span className="text-xs text-rose-300 font-bold flex items-center gap-1 bg-rose-950/70 px-3 py-0.5 rounded-full border border-rose-400/40">
-                  <AlertCircle className="h-3.5 w-3.5" /> Action Required
+                <span className="text-[11px] text-rose-900 font-extrabold flex items-center gap-1 bg-rose-100 px-3 py-0.5 rounded-full border border-rose-300">
+                  <AlertCircle className="h-3.5 w-3.5 text-rose-600" /> Action Required
                 </span>
               )}
             </div>
 
-            <h1 className="font-serif text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+            <h1 className="font-bold text-xl sm:text-3xl text-stone-900 tracking-tight">
               Member Identity Verification
             </h1>
-            <p className="text-xs sm:text-sm text-stone-200 max-w-2xl leading-relaxed">
-              Upload your Government ID and Live Selfie Photo to unlock your verified green badge and build trust with prospective matches.
+            <p className="text-xs sm:text-sm text-stone-600 max-w-2xl font-medium leading-relaxed">
+              Upload your Government ID and Live Selfie Photo to earn your verified green badge and build trust with prospective matches.
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
-            <Button
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <button
               type="button"
-              variant="outline"
-              size="sm"
               onClick={handleSkipVerification}
-              className="bg-white/10 hover:bg-white/20 text-white border-white/30 text-xs shadow-sm font-semibold"
+              className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 transition-all cursor-pointer"
             >
-              Skip for now <ArrowRight className="h-3.5 w-3.5 ml-1" />
-            </Button>
-            <Button
+              Skip for now <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+            <button
               type="button"
-              variant="outline"
-              size="sm"
               onClick={handleLogoutAndResumeLater}
-              className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-[#8B1E3F] hover:bg-[#721733] text-white transition-all cursor-pointer shadow-xs"
             >
-              <LogOut className="h-3.5 w-3.5 mr-1.5" /> Save & Log Out
-            </Button>
+              <LogOut className="h-3.5 w-3.5" /> Save & Log Out
+            </button>
           </div>
         </div>
       </motion.div>
 
       {/* State View 1: VERIFIED / APPROVED */}
       {verificationStatus === 'VERIFIED' && (
-        <Card className="p-8 text-center space-y-6 border-2 border-emerald-500/40 bg-emerald-50/30 shadow-lg">
+        <Card className="p-8 text-center space-y-6 border-2 border-emerald-500/40 bg-emerald-50/40 shadow-md rounded-3xl">
           <div className="mx-auto h-20 w-20 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-inner">
             <ShieldCheck className="h-10 w-10 text-emerald-600 fill-emerald-100" />
           </div>
 
           <div className="space-y-2 max-w-lg mx-auto">
-            <Badge variant="verified" className="text-sm px-4 py-1.5 bg-emerald-600 text-white font-extrabold shadow-sm">
+            <span className="inline-block text-xs px-4 py-1.5 bg-emerald-600 text-white font-extrabold rounded-full shadow-xs">
               ✓ Verification Status: APPROVED & VERIFIED
-            </Badge>
-            <h2 className="font-serif text-2xl font-bold text-foreground">
+            </span>
+            <h2 className="font-bold text-2xl text-stone-900">
               Your Profile is Officially Approved!
             </h2>
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-xs text-stone-600 leading-relaxed font-medium">
               Congratulations! Your Government ID document and Live Selfie Photo have been reviewed and approved by the backend admin. The official green <strong>Approved Member Badge</strong> is now prominently displayed across your profile.
             </p>
           </div>
 
-          <div className="flex justify-center gap-4 pt-4">
-            <Button
-              variant="primary"
+          <div className="flex justify-center gap-4 pt-2">
+            <button
               onClick={() => navigate('/matches')}
-              className="px-8 bg-[#8B1E3F] hover:bg-[#721733] text-white shadow-lg font-bold"
+              className="px-8 py-3 rounded-2xl bg-[#8B1E3F] hover:bg-[#721733] text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
             >
-              Explore Matching Profiles <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
+              Explore Matching Profiles <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         </Card>
       )}
 
       {/* State View 2: PENDING ADMIN REVIEW */}
       {verificationStatus === 'PENDING' && (
-        <Card className="p-8 space-y-6 border-2 border-amber-500/30 bg-amber-50/20 shadow-lg">
+        <Card className="p-8 space-y-6 border-2 border-amber-400/50 bg-amber-50/30 shadow-md rounded-3xl">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
             <div className="h-16 w-16 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 shadow-sm">
               <Clock className="h-8 w-8 animate-pulse text-amber-700" />
@@ -341,11 +334,11 @@ export const VerificationPage: React.FC = () => {
                 </span>
               </div>
 
-              <h2 className="font-serif text-2xl font-bold text-foreground">
+              <h2 className="font-bold text-2xl text-stone-900">
                 Documents Submitted Successfully
               </h2>
 
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-stone-600 leading-relaxed font-medium">
                 Your Government ID document and Live Photo have been securely uploaded and are waiting in the admin moderation queue. You can continue to browse matches while our team verifies your credentials (typically 2–6 hours).
               </p>
 
@@ -353,50 +346,47 @@ export const VerificationPage: React.FC = () => {
                 <div className="p-3 bg-white rounded-xl border border-amber-200/80 text-xs flex items-center gap-3">
                   <FileText className="h-5 w-5 text-[#8B1E3F]" />
                   <div>
-                    <span className="font-semibold text-foreground block">Government ID Document</span>
-                    <span className="text-[11px] text-emerald-600 font-bold">✓ Submitted</span>
+                    <span className="font-bold text-stone-900 block">Government ID Document</span>
+                    <span className="text-[11px] text-emerald-700 font-extrabold">✓ Submitted</span>
                   </div>
                 </div>
 
                 <div className="p-3 bg-white rounded-xl border border-amber-200/80 text-xs flex items-center gap-3">
                   <Camera className="h-5 w-5 text-purple-700" />
                   <div>
-                    <span className="font-semibold text-foreground block">Live Selfie Photo</span>
-                    <span className="text-[11px] text-emerald-600 font-bold">✓ Submitted</span>
+                    <span className="font-bold text-stone-900 block">Live Selfie Photo</span>
+                    <span className="text-[11px] text-emerald-700 font-extrabold">✓ Submitted</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-amber-200/60">
-            <Button
-              variant="outline"
-              size="sm"
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-amber-200">
+            <button
               onClick={handleRefreshStatus}
               disabled={isRefreshing}
-              className="text-xs"
+              className="inline-flex items-center gap-1.5 text-xs font-extrabold px-4 py-2 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-800 transition-all cursor-pointer"
             >
-              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
               Refresh Verification Status
-            </Button>
+            </button>
 
-            <Button
-              variant="primary"
+            <button
               onClick={() => navigate('/matches')}
-              className="bg-[#8B1E3F] hover:bg-[#721733] text-white shadow-md px-6 text-xs sm:text-sm"
+              className="px-6 py-2.5 rounded-xl bg-[#8B1E3F] hover:bg-[#721733] text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
             >
-              Proceed to Matches <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
+              Proceed to Matches <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         </Card>
       )}
 
-      {/* State View 3: REJECTED (Show Reason + Re-upload Form) or NOT_SUBMITTED */}
+      {/* State View 3: REJECTED or NOT_SUBMITTED */}
       {(verificationStatus === 'NOT_SUBMITTED' || verificationStatus === 'REJECTED') && (
         <form onSubmit={handleFormSubmit} className="space-y-6">
           {verificationStatus === 'REJECTED' && (
-            <Card className="p-5 border-l-4 border-l-rose-600 bg-rose-50/50 space-y-2">
+            <Card className="p-5 border-l-4 border-l-rose-600 bg-rose-50/50 space-y-2 rounded-2xl">
               <div className="flex items-center gap-2 text-rose-800 font-bold text-sm">
                 <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" />
                 <span>Verification Rejected by Admin</span>
@@ -404,31 +394,31 @@ export const VerificationPage: React.FC = () => {
               <p className="text-xs text-rose-900 leading-relaxed pl-7">
                 <strong>Reason:</strong> {rejectionReason}
               </p>
-              <p className="text-[11px] text-rose-700 pl-7">
+              <p className="text-[11px] text-rose-700 pl-7 font-medium">
                 Please re-upload a clear government identity document and take a fresh live selfie photo below to submit for review.
               </p>
             </Card>
           )}
 
           {/* Step 1: Government ID Document Upload */}
-          <Card className="p-6 sm:p-8 space-y-6">
-            <div className="flex items-start justify-between gap-4 pb-4 border-b border-border/60">
+          <Card className="p-6 sm:p-8 space-y-6 rounded-3xl border border-stone-200 shadow-sm">
+            <div className="flex items-start justify-between gap-4 pb-4 border-b border-stone-200">
               <div className="flex items-center gap-3.5">
                 <div className="h-11 w-11 rounded-2xl bg-[#8B1E3F]/10 text-[#8B1E3F] flex items-center justify-center shrink-0">
                   <FileText className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-lg font-bold text-foreground">
+                  <h3 className="font-bold text-lg text-stone-900">
                     1. Government ID Document <span className="text-rose-500">*</span>
                   </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-stone-500 font-medium mt-0.5">
                     Upload a valid government identity card for proof of age and identity.
                   </p>
                 </div>
               </div>
 
               {idFile && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Attached
                 </span>
               )}
@@ -436,11 +426,11 @@ export const VerificationPage: React.FC = () => {
 
             {/* ID Type Dropdown */}
             <div className="space-y-1.5 max-w-xs">
-              <label className="text-xs font-semibold text-foreground">Select ID Document Type</label>
+              <label className="text-xs font-extrabold text-stone-900">Select ID Document Type</label>
               <select
                 value={idType}
                 onChange={e => setIdType(e.target.value)}
-                className="w-full bg-white border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]"
+                className="w-full bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]"
               >
                 {GOVT_ID_TYPES.map(type => (
                   <option key={type} value={type}>{type}</option>
@@ -450,15 +440,15 @@ export const VerificationPage: React.FC = () => {
 
             {/* File Upload Box */}
             {!idFile ? (
-              <label className="border-2 border-dashed border-border/80 hover:border-[#8B1E3F] bg-stone-50/50 hover:bg-stone-50 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-colors space-y-3 text-center">
+              <label className="border-2 border-dashed border-stone-300 hover:border-[#8B1E3F] bg-stone-50/50 hover:bg-stone-50 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-colors space-y-3 text-center">
                 <div className="h-12 w-12 rounded-2xl bg-[#8B1E3F]/10 text-[#8B1E3F] flex items-center justify-center">
-                  <Upload className="h-6 w-6" />
+                  <Upload className="h-6 w-6 text-[#8B1E3F]" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-foreground block">
+                  <span className="text-xs font-extrabold text-stone-900 block">
                     Click to upload {idType} (PNG, JPG, PDF)
                   </span>
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-[11px] text-stone-500 font-medium">
                     Max file size: 10MB • Clear front & back photo
                   </span>
                 </div>
@@ -470,55 +460,53 @@ export const VerificationPage: React.FC = () => {
                 />
               </label>
             ) : (
-              <div className="p-4 bg-stone-50 rounded-2xl border border-border flex items-center justify-between gap-4">
+              <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
                   {idPreview ? (
-                    <img src={idPreview} alt="ID Preview" className="h-14 w-14 rounded-xl object-cover border border-border shrink-0" />
+                    <img src={idPreview} alt="ID Preview" className="h-14 w-14 rounded-xl object-cover border border-stone-300 shrink-0" />
                   ) : (
                     <div className="h-14 w-14 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
                       <FileText className="h-7 w-7" />
                     </div>
                   )}
                   <div className="min-w-0">
-                    <h5 className="font-bold text-xs text-foreground truncate">{idFile.name}</h5>
-                    <span className="text-[11px] text-muted-foreground">
+                    <h5 className="font-extrabold text-xs text-stone-900 truncate">{idFile.name}</h5>
+                    <span className="text-[11px] text-stone-500 font-medium">
                       {idType} • {(idFile.size / (1024 * 1024)).toFixed(2)} MB
                     </span>
                   </div>
                 </div>
 
-                <Button
+                <button
                   type="button"
-                  size="sm"
-                  variant="outline"
                   onClick={() => { setIdFile(null); setIdPreview(null); }}
-                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 text-xs shrink-0"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl border border-rose-200 transition-all cursor-pointer shrink-0"
                 >
-                  <Trash2 className="h-3.5 w-3.5 mr-1" /> Replace
-                </Button>
+                  <Trash2 className="h-3.5 w-3.5" /> Replace
+                </button>
               </div>
             )}
           </Card>
 
           {/* Step 2: Live Photo Capture / Upload */}
-          <Card className="p-6 sm:p-8 space-y-6">
-            <div className="flex items-start justify-between gap-4 pb-4 border-b border-border/60">
+          <Card className="p-6 sm:p-8 space-y-6 rounded-3xl border border-stone-200 shadow-sm">
+            <div className="flex items-start justify-between gap-4 pb-4 border-b border-stone-200">
               <div className="flex items-center gap-3.5">
-                <div className="h-11 w-11 rounded-2xl bg-purple-500/10 text-purple-700 flex items-center justify-center shrink-0">
-                  <Camera className="h-6 w-6" />
+                <div className="h-11 w-11 rounded-2xl bg-purple-100 text-purple-800 flex items-center justify-center shrink-0">
+                  <Camera className="h-6 w-6 text-purple-700" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-lg font-bold text-foreground">
+                  <h3 className="font-bold text-lg text-stone-900">
                     2. Live Selfie Photo <span className="text-rose-500">*</span>
                   </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-stone-500 font-medium mt-0.5">
                     Take a live selfie matching your profile photos to prevent fraudulent impersonation.
                   </p>
                 </div>
               </div>
 
               {photoFile && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Captured
                 </span>
               )}
@@ -536,31 +524,29 @@ export const VerificationPage: React.FC = () => {
                     className="w-full h-full object-cover scale-x-[-1]"
                   />
                   <div className="absolute inset-0 border-2 border-dashed border-white/50 rounded-2xl pointer-events-none m-4 flex items-center justify-center">
-                    <span className="text-[11px] text-white/80 bg-black/40 px-3 py-1 rounded-full backdrop-blur-xs">
+                    <span className="text-[11px] font-extrabold text-white bg-black/60 px-3 py-1 rounded-full backdrop-blur-xs">
                       Position your face inside the frame
                     </span>
                   </div>
                   <div className="absolute bottom-4 inset-x-0 flex justify-center gap-3 z-10">
-                    <Button
+                    <button
                       type="button"
-                      variant="primary"
                       onClick={capturePhoto}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-lg"
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
                     >
-                      <Camera className="h-4 w-4 mr-1.5" /> Capture Selfie
-                    </Button>
-                    <Button
+                      <Camera className="h-4 w-4" /> Capture Selfie
+                    </button>
+                    <button
                       type="button"
-                      variant="outline"
                       onClick={stopCamera}
-                      className="bg-white/20 hover:bg-white/30 text-white border-white/40 text-xs"
+                      className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white border border-white/40 font-bold text-xs rounded-xl cursor-pointer"
                     >
                       Cancel
-                    </Button>
+                    </button>
                   </div>
                 </div>
               ) : photoPreview ? (
-                <div className="p-4 bg-stone-50 rounded-2xl border border-border flex items-center justify-between gap-4 max-w-md mx-auto">
+                <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 flex items-center justify-between gap-4 max-w-md mx-auto">
                   <div className="flex items-center gap-3">
                     <img
                       src={photoPreview}
@@ -568,57 +554,52 @@ export const VerificationPage: React.FC = () => {
                       className="h-20 w-20 rounded-2xl object-cover border-2 border-purple-400 shadow-md shrink-0"
                     />
                     <div>
-                      <h5 className="font-bold text-xs text-foreground">Live Photo Ready</h5>
-                      <span className="text-[11px] text-emerald-600 font-bold block">✓ Quality Verified</span>
-                      <span className="text-[10px] text-muted-foreground">Ready for submission</span>
+                      <h5 className="font-extrabold text-xs text-stone-900">Live Photo Ready</h5>
+                      <span className="text-[11px] text-emerald-700 font-extrabold block">✓ Quality Verified</span>
+                      <span className="text-[10px] text-stone-500 font-medium">Ready for submission</span>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <Button
+                    <button
                       type="button"
-                      size="sm"
-                      variant="outline"
                       onClick={startCamera}
-                      className="text-xs"
+                      className="inline-flex items-center gap-1 text-xs font-extrabold px-3 py-1 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-800 transition-all cursor-pointer"
                     >
-                      <RefreshCw className="h-3 w-3 mr-1" /> Retake
-                    </Button>
-                    <Button
+                      <RefreshCw className="h-3 w-3" /> Retake
+                    </button>
+                    <button
                       type="button"
-                      size="sm"
-                      variant="outline"
                       onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
-                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 text-xs"
+                      className="inline-flex items-center gap-1 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1 rounded-xl border border-rose-200 transition-all cursor-pointer"
                     >
-                      <Trash2 className="h-3 w-3 mr-1" /> Remove
-                    </Button>
+                      <Trash2 className="h-3 w-3" /> Remove
+                    </button>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-4 max-w-md mx-auto text-center">
                   {cameraError && (
-                    <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2 text-left">
+                    <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2 text-left font-medium">
                       <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
                       <span>{cameraError}</span>
                     </div>
                   )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <Button
+                    <button
                       type="button"
-                      variant="primary"
                       onClick={startCamera}
-                      className="bg-purple-700 hover:bg-purple-800 text-white font-bold py-5 rounded-2xl text-xs flex flex-col items-center justify-center gap-1.5 shadow-md"
+                      className="bg-purple-700 hover:bg-purple-800 text-white font-extrabold py-5 rounded-2xl text-xs flex flex-col items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
                     >
                       <Camera className="h-5 w-5" />
                       <span>Open Live Camera</span>
-                    </Button>
+                    </button>
 
-                    <label className="border-2 border-dashed border-border/80 hover:border-purple-600 bg-stone-50/50 hover:bg-stone-50 rounded-2xl p-3 flex flex-col items-center justify-center cursor-pointer transition-colors text-center space-y-1">
+                    <label className="border-2 border-dashed border-stone-300 hover:border-purple-600 bg-stone-50/50 hover:bg-stone-50 rounded-2xl p-3 flex flex-col items-center justify-center cursor-pointer transition-colors text-center space-y-1">
                       <Upload className="h-5 w-5 text-purple-700" />
-                      <span className="text-xs font-bold text-foreground">Upload Selfie</span>
-                      <span className="text-[10px] text-muted-foreground">If camera not available</span>
+                      <span className="text-xs font-extrabold text-stone-900">Upload Selfie</span>
+                      <span className="text-[10px] text-stone-500 font-medium">If camera not available</span>
                       <input
                         type="file"
                         accept="image/*"
@@ -633,8 +614,8 @@ export const VerificationPage: React.FC = () => {
           </Card>
 
           {/* Submission Bar */}
-          <div className="p-5 bg-white rounded-3xl border border-border shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="p-5 bg-white rounded-3xl border border-stone-200 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-xs text-stone-600 font-medium">
               <Lock className="h-4 w-4 text-emerald-600 shrink-0" />
               <span>
                 All documents are encrypted with 256-bit SSL and reviewed strictly by authorized moderators.
@@ -642,29 +623,28 @@ export const VerificationPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
-              <Button
+              <button
                 type="button"
-                variant="outline"
                 onClick={handleSkipVerification}
-                className="w-full sm:w-auto px-5 py-2 text-stone-600 hover:bg-stone-100 border-stone-300 text-xs font-semibold rounded-2xl"
+                className="w-full sm:w-auto px-5 py-2.5 text-stone-700 hover:bg-stone-100 border border-stone-300 text-xs font-extrabold rounded-2xl cursor-pointer transition-all"
               >
                 Skip for now
-              </Button>
-              <Button
+              </button>
+              <button
                 type="submit"
                 disabled={!idFile || !photoFile || isSubmitting}
-                className="w-full sm:w-auto px-8 bg-[#8B1E3F] hover:bg-[#721733] disabled:opacity-50 text-white font-bold shadow-lg"
+                className="w-full sm:w-auto px-8 py-2.5 bg-[#8B1E3F] hover:bg-[#721733] disabled:opacity-50 text-white font-extrabold text-xs shadow-md rounded-2xl cursor-pointer transition-all flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Submitting for Review...
+                    <RefreshCw className="h-4 w-4 animate-spin" /> Submitting for Review...
                   </>
                 ) : (
                   <>
-                    Submit Verification <ArrowRight className="h-4 w-4 ml-2" />
+                    Submit Verification <ArrowRight className="h-4 w-4" />
                   </>
                 )}
-              </Button>
+              </button>
             </div>
           </div>
         </form>

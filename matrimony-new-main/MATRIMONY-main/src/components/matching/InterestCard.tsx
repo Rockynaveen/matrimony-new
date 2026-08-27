@@ -88,21 +88,8 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
 
       if (status === 'Accepted') {
         showToast(`Accepted interest from ${partnerName}! Chat is now enabled.`);
-        addNotification({
-          title: 'Interest Accepted! 🎉',
-          message: `You accepted interest from ${partnerName}. Direct chat messaging is now enabled.`,
-          category: 'Interests',
-          link: '/messages',
-          avatar: interest.profile_photo || undefined
-        });
       } else {
         showToast(`Ignored interest expression from ${partnerName}.`);
-        addNotification({
-          title: 'Interest Request Declined',
-          message: `Interest expression from ${partnerName} was declined.`,
-          category: 'Interests',
-          link: '/interests'
-        });
       }
     } catch (err: any) {
       setLocalStatus(interest.status || 'Pending');

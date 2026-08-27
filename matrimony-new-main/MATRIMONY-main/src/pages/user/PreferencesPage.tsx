@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../../context/AppContext';
+import { usePreferencesStore } from '../../store/usePreferencesStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -132,7 +133,7 @@ export const PreferencesPage: React.FC = () => {
   }, [navigate, onboardingStatus]);
 
   const handleLogoutAndResumeLater = () => {
-    localStorage.setItem('user_partner_preferences', JSON.stringify(prefs));
+    usePreferencesStore.getState().setPreferences(prefs as any);
     logout();
     showToast('Preferences progress saved! You can log in anytime to resume.');
     navigate('/login');

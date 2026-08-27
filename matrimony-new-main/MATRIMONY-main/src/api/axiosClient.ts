@@ -1,4 +1,5 @@
 // Lightweight, type-safe Axios API client adapter
+import { useAuthStore } from '../store/useAuthStore';
 
 interface AxiosRequestConfig {
   headers?: Record<string, string>;
@@ -26,7 +27,7 @@ class AxiosClient {
   }
 
   private getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('access_token');
+    const token = useAuthStore.getState().accessToken || localStorage.getItem('access_token');
     const csrfToken = getCsrfToken();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'

@@ -7,6 +7,7 @@ import { DotsLoader } from '../../components/ui/LoadingScreen';
 import { VoiceRecorder } from '../../components/chat/VoiceRecorder';
 import { AttachmentPicker } from '../../components/chat/AttachmentPicker';
 import { CallModal } from '../../components/chat/CallModal';
+import { MatchAvatar, isDummyImage } from '../../components/ui/MatchAvatar';
 import {
   Send,
   Mic,
@@ -238,7 +239,7 @@ export const MessagesPage: React.FC = () => {
       room_id: Number(conv.room_id || conv.id),
       user_id: recipientId,
       name: other.name || `${other.first_name || 'Verified'} ${other.last_name || 'Member'}`.trim(),
-      profileImage: other.profile_photo || other.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+      profileImage: other.profile_photo || other.avatar || null,
       verified: true,
       age: other.age || 26,
       height: "5'6\"",
@@ -261,7 +262,7 @@ export const MessagesPage: React.FC = () => {
         id: String(i.from_user || i.id),
         user_id: Number(i.from_user || i.id),
         name: `${i.first_name || ''} ${i.last_name || ''}`.trim() || `Member #${i.from_user || i.id}`,
-        profileImage: i.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+        profileImage: i.profile_photo || null,
         verified: true,
         age: i.age || 26,
         height: "5'6\"",
@@ -281,7 +282,7 @@ export const MessagesPage: React.FC = () => {
         id: String(i.to_user || i.id),
         user_id: Number(i.to_user || i.id),
         name: `${i.first_name || ''} ${i.last_name || ''}`.trim() || `Member #${i.to_user || i.id}`,
-        profileImage: i.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+        profileImage: i.profile_photo || null,
         verified: true,
         age: i.age || 26,
         height: "5'6\"",
@@ -340,7 +341,7 @@ export const MessagesPage: React.FC = () => {
   const activeProfile = activeMatch ? {
     id: String(activeMatch.user_id || activeMatch.id || selectedProfileId),
     name: activeMatch.name || `${(activeMatch as any).first_name || ''} ${(activeMatch as any).last_name || ''}`.trim() || 'Verified Member',
-    profileImage: activeMatch.profileImage || (activeMatch as any).profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+    profileImage: activeMatch.profileImage || (activeMatch as any).profile_photo || null,
     verified: activeMatch.verified ?? true,
     age: activeMatch.age || 26,
     height: activeMatch.height || "5'6\"",
@@ -371,7 +372,6 @@ export const MessagesPage: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'verified'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showRightDrawer, setShowRightDrawer] = useState(false);
   const [isVoiceRecording, setIsVoiceRecording] = useState(false);
   const [isAttachmentPickerOpen, setIsAttachmentPickerOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<{
@@ -605,10 +605,10 @@ export const MessagesPage: React.FC = () => {
     <div className="mx-auto max-w-7xl px-2 sm:px-4 py-3 h-[calc(100vh-5.5rem)] flex flex-col overflow-hidden text-black">
       
       {/* Outer Container Card */}
-      <div className="flex-1 rounded-2xl border border-stone-300 bg-white shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-12 select-none">
+      <div className="flex-1 rounded-3xl border border-stone-200/90 bg-white shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-12 select-none">
         
-        {/* ================= LEFT CONVERSATION SIDEBAR (COL 4) ================= */}
-        <div className="md:col-span-4 border-r border-stone-300 bg-stone-50 flex flex-col h-full overflow-hidden">
+        {/* ================= LEFT CONVERSATION SIDEBAR (COL 3) ================= */}
+        <div className="md:col-span-4 lg:col-span-3 border-r border-stone-200 bg-[#FFF9F5]/40 flex flex-col h-full overflow-hidden">
           
           {/* Sidebar Header */}
           <div className="p-4 border-b border-stone-300 bg-white space-y-3">
@@ -698,10 +698,11 @@ export const MessagesPage: React.FC = () => {
                   >
                     {/* Candidate Avatar */}
                     <div className="relative shrink-0">
-                      <img
-                        src={p.profileImage}
-                        alt={p.name}
-                        className="h-11 w-11 rounded-full object-cover ring-2 ring-stone-300"
+                      <MatchAvatar
+                        photo={p.profileImage}
+                        name={p.name}
+                        variant="circle"
+                        className="h-11 w-11 ring-2 ring-stone-300"
                       />
                       {p.online && (
                         <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-600 ring-2 ring-white" />
@@ -753,8 +754,8 @@ export const MessagesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ================= RIGHT ACTIVE CHAT VIEWPORT ================= */}
-        <div className={`flex flex-col h-full bg-white overflow-hidden ${showRightDrawer ? 'md:col-span-8 lg:col-span-5' : 'md:col-span-8'}`}>
+        {/* ================= RIGHT ACTIVE CHAT VIEWPORT (COL 9 FULL WIDTH) ================= */}
+        <div className="md:col-span-8 lg:col-span-9 flex flex-col h-full bg-stone-50/30 overflow-hidden">
           
           {!activeProfile ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3 bg-stone-50">
@@ -772,10 +773,11 @@ export const MessagesPage: React.FC = () => {
               <div className="p-3.5 sm:p-4 border-b border-stone-300 flex items-center justify-between bg-white z-10">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="relative shrink-0">
-                    <img
-                      src={activeProfile.profileImage}
-                      alt={activeProfile.name}
-                      className="h-10 w-10 rounded-full object-cover ring-2 ring-stone-300"
+                    <MatchAvatar
+                      photo={activeProfile.profileImage}
+                      name={activeProfile.name}
+                      variant="circle"
+                      className="h-10 w-10 ring-2 ring-stone-300"
                     />
                     {activeProfile.online && (
                       <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-600 ring-2 ring-white" />
@@ -802,31 +804,29 @@ export const MessagesPage: React.FC = () => {
                 </div>
 
                 {/* Header Action Tools */}
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={() => handleStartCall('video')}
-                    className="p-2 hover:bg-stone-200 rounded-xl text-black transition-colors"
+                    className="p-2 hover:bg-[#8B1E3F]/10 rounded-xl text-[#8B1E3F] transition-colors cursor-pointer"
                     title="Start Video Call"
                   >
-                    <Video className="h-4 w-4 text-black" />
+                    <Video className="h-4 w-4 text-[#8B1E3F]" />
                   </button>
 
                   <button
                     onClick={() => handleStartCall('audio')}
-                    className="p-2 hover:bg-stone-200 rounded-xl text-black transition-colors"
+                    className="p-2 hover:bg-[#8B1E3F]/10 rounded-xl text-[#8B1E3F] transition-colors cursor-pointer"
                     title="Start Audio Call"
                   >
-                    <PhoneCall className="h-4 w-4 text-black" />
+                    <PhoneCall className="h-4 w-4 text-[#8B1E3F]" />
                   </button>
 
                   <button
-                    onClick={() => setShowRightDrawer(prev => !prev)}
-                    className={`p-2 rounded-xl transition-all ${
-                      showRightDrawer ? 'bg-[#8B1E3F] text-white' : 'hover:bg-stone-200 text-black'
-                    }`}
-                    title="Toggle Match Profile Summary"
+                    type="button"
+                    onClick={() => navigate(`/profile/${activeProfile.id}`)}
+                    className="hidden sm:inline-flex items-center gap-1 text-xs font-extrabold px-3 py-1.5 rounded-xl border border-[#8B1E3F] bg-[#8B1E3F] text-white hover:bg-[#721733] hover:text-white shadow-xs transition-all cursor-pointer"
                   >
-                    <Info className="h-4 w-4" />
+                    View Profile <ChevronRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
@@ -1120,77 +1120,7 @@ export const MessagesPage: React.FC = () => {
           )}
         </div>
 
-        {/* ================= FAR RIGHT MATCH PROFILE SUMMARY DRAWER ================= */}
-        {showRightDrawer && activeProfile && (
-          <div className="hidden lg:flex lg:col-span-3 border-l border-stone-300 bg-stone-50 flex-col h-full overflow-y-auto p-4 space-y-5 scrollbar-thin text-black">
-            
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-stone-300">
-              <h3 className="font-extrabold text-sm text-black">Match Profile Summary</h3>
-              <button
-                onClick={() => setShowRightDrawer(false)}
-                className="text-black hover:text-stone-800 p-1"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
 
-            {/* Profile Avatar Card */}
-            <div className="text-center space-y-3 bg-white p-4 rounded-2xl border border-stone-300 shadow-2xs">
-              <div className="relative inline-block">
-                <img
-                  src={activeProfile.profileImage}
-                  alt={activeProfile.name}
-                  className="h-20 w-20 rounded-full object-cover mx-auto ring-2 ring-stone-300"
-                />
-                {activeProfile.verified && (
-                  <span className="absolute bottom-0 right-0 bg-emerald-700 text-white p-1 rounded-full ring-2 ring-white">
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                  </span>
-                )}
-              </div>
-
-              <div>
-                <h4 className="font-extrabold text-sm text-black">{activeProfile.name}</h4>
-                <p className="text-xs text-[#8B1E3F] font-extrabold mt-0.5">{activeProfile.religion} • {activeProfile.caste}</p>
-                <p className="text-[11px] text-black font-bold">{activeProfile.profession}</p>
-              </div>
-
-              <div className="p-2 rounded-xl bg-amber-100 border border-amber-300 text-xs font-extrabold text-black flex items-center justify-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-amber-700" />
-                <span>{activeProfile.matchPercentage}% Match Score</span>
-              </div>
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigate(`/profile/${activeProfile.id}`)}
-                className="w-full text-xs font-extrabold border-stone-300 text-black hover:bg-stone-100"
-              >
-                View Profile <ChevronRight className="h-3.5 w-3.5 ml-1" />
-              </Button>
-            </div>
-
-            {/* Quick Details */}
-            <div className="bg-white p-3.5 rounded-2xl border border-stone-300 space-y-2 text-xs">
-              <h5 className="font-extrabold text-black border-b border-stone-200 pb-1.5">Key Attributes</h5>
-              <div className="space-y-1.5 text-black font-bold">
-                <div className="flex justify-between">
-                  <span className="text-black">Age / Height:</span>
-                  <span className="font-extrabold text-black">{activeProfile.age} yrs, {activeProfile.height}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-black">Location:</span>
-                  <span className="font-extrabold text-black">{activeProfile.city}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-black">Occupation:</span>
-                  <span className="font-extrabold text-black">{activeProfile.profession}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
       </div>
 

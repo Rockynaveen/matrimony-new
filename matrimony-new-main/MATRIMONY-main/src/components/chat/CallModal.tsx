@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { PhoneCall, Video, PhoneOff, Mic, MicOff, VideoOff, ShieldCheck, Loader2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { chatApi } from '../../api/chatApi';
+import { MatchAvatar } from '../ui/MatchAvatar';
 
 interface CallModalProps {
   isOpen: boolean;
@@ -221,11 +221,12 @@ export const CallModal: React.FC<CallModalProps> = ({
         ) : (
           /* Audio Call Avatar Stage */
           <div className="relative my-4">
-            <div className="h-28 w-28 rounded-3xl overflow-hidden ring-4 ring-[#8B1E3F]/40 shadow-xl mx-auto bg-stone-800">
-              <img
-                src={recipientAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600'}
-                alt={recipientName}
-                className="w-full h-full object-cover"
+            <div className="h-28 w-28 rounded-3xl overflow-hidden ring-4 ring-[#8B1E3F]/40 shadow-xl mx-auto">
+              <MatchAvatar
+                photo={recipientAvatar}
+                name={recipientName}
+                variant="square"
+                className="w-full h-full text-3xl font-extrabold"
               />
             </div>
             {callState === 'active' && (

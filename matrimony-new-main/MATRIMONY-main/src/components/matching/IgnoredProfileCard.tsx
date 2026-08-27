@@ -7,6 +7,8 @@ import type { MatchResponseSchema } from '../../types/matching.types';
 import { useRemoveFromIgnore } from '../../hooks/useMatching';
 import { useApp } from '../../context/AppContext';
 
+import { MatchAvatar } from '../ui/MatchAvatar';
+
 interface IgnoredProfileCardProps {
   profile: MatchResponseSchema;
 }
@@ -25,16 +27,15 @@ export const IgnoredProfileCard: React.FC<IgnoredProfileCardProps> = ({ profile 
     }
   };
 
-  const defaultPhoto = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600';
-  const displayPhoto = profile.profile_photo || defaultPhoto;
-
   return (
     <Card className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-stone-200/80 bg-white rounded-3xl hover:shadow-md transition-all duration-300">
       <div className="flex items-center gap-4">
-        <img
-          src={displayPhoto}
-          alt={`${profile.first_name} ${profile.last_name}`}
-          className="h-14 w-14 sm:h-16 sm:w-16 rounded-full object-cover ring-2 ring-stone-100 shrink-0"
+        <MatchAvatar
+          photo={profile.profile_photo}
+          firstName={profile.first_name}
+          lastName={profile.last_name}
+          variant="circle"
+          className="h-14 w-14 sm:h-16 sm:w-16 text-xl sm:text-2xl ring-2 ring-stone-100 shrink-0"
         />
         <div className="space-y-0.5">
           <h4 className="font-serif text-base font-bold text-stone-900">

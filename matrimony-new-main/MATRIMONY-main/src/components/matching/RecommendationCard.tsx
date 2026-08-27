@@ -21,6 +21,8 @@ import { Card } from '../ui/Card';
 import { useAddToShortlist, useRemoveFromShortlist, useSendInterest, useAddToIgnore, useBlockProfile } from '../../hooks/useMatching';
 import { useApp } from '../../context/AppContext';
 
+import { MatchAvatar } from '../ui/MatchAvatar';
+
 interface RecommendationCardProps {
   match: MatchResponseSchema;
   isShortlisted?: boolean;
@@ -91,7 +93,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         message: `Your interest request was sent to ${match.first_name || 'member'}.`,
         category: 'Interests',
         link: '/interests',
-        avatar: match.profile_photo
+        avatar: match.profile_photo || undefined
       });
       showToast(`Interest expression sent to ${match.first_name || 'member'}!`);
     } catch (err: any) {
@@ -122,9 +124,6 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
     }
   };
 
-  const defaultPhoto = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600';
-  const displayPhoto = match.profile_photo || defaultPhoto;
-
   return (
     <motion.div
       whileHover={{ y: -3 }}
@@ -135,10 +134,12 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         <div>
           {/* Card Media Header */}
           <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-50">
-            <img
-              src={displayPhoto}
-              alt={`${match.first_name} ${match.last_name}`}
-              className="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+            <MatchAvatar
+              photo={match.profile_photo}
+              firstName={match.first_name}
+              lastName={match.last_name}
+              variant="card"
+              imgClassName="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
             />
             
             {/* Gradient Overlay */}

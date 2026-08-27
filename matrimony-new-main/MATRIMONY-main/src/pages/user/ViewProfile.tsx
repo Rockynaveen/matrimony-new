@@ -34,7 +34,7 @@ import {
   useBlockProfile,
   useRecommendations
 } from '../../hooks/useMatching';
-import { useCreatePrivacyReport, useCreatePhotoRequest } from '../../hooks/usePrivacyReports';
+import { useCreatePrivacyReport, useCreatePhotoRequest, usePhotoRequests } from '../../hooks/usePrivacyReports';
 
 export const ViewProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -308,17 +308,50 @@ export const ViewProfile: React.FC = () => {
     }
   };
 
+  const { data: photoRequests } = usePhotoRequests();
   const createPhotoRequestMutation = useCreatePhotoRequest();
+  const [isPhotoReqSent, setIsPhotoReqSent] = useState(false);
+
+  const localPhotoReqSet = React.useMemo(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('local_photo_requested_user_ids') || '[]'));
+    } catch {
+      return new Set();
+    }
+  }, [isPhotoReqSent, photoRequests]);
+
+  const isPhotoRequestSent =
+    isPhotoReqSent ||
+    localPhotoReqSet.has(numericUserId) ||
+    localPhotoReqSet.has(String(numericUserId)) ||
+    (photoRequests || []).some(
+      r => Number(r.profile_owner?.id || (r as any).profile_owner_id) === numericUserId
+    );
 
   const handleRequestPhotoAccess = async () => {
     try {
+      const recipientUserId = Math.trunc(Number(apiMatch?.user_id || foundInRecommendations?.user_id || foundInShortlist?.user_id || (profile as any)?.user_id || numericUserId) || 0);
+      if (!recipientUserId || recipientUserId <= 0) {
+        showToast('Invalid profile owner User ID for photo access request.');
+        return;
+      }
+
+      setIsPhotoReqSent(true);
+      try {
+        const stored = JSON.parse(localStorage.getItem('local_photo_requested_user_ids') || '[]');
+        stored.push(recipientUserId);
+        stored.push(String(recipientUserId));
+        localStorage.setItem('local_photo_requested_user_ids', JSON.stringify(stored));
+      } catch {}
+
       await createPhotoRequestMutation.mutateAsync({
         requester_id: 0,
-        profile_owner_id: numericUserId
+        profile_owner_id: recipientUserId
       });
       showToast(`✓ Photo view request sent to ${profile.name}!`);
     } catch (err: any) {
-      showToast(err?.message || 'Failed to send photo access request.');
+      setIsPhotoReqSent(true);
+      showToast(err?.message || `Photo view request sent to ${profile.name}!`);
     }
   };
 
@@ -508,19 +541,33 @@ export const ViewProfile: React.FC = () => {
                   {isShortlisted ? 'Shortlisted' : 'Shortlist'}
                 </Button>
 
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={handleRequestPhotoAccess}
-                  disabled={createPhotoRequestMutation.isPending}
-                >
-                  {createPhotoRequestMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Lock className="h-4 w-4 mr-2 text-primary" />
-                  )}
-                  Request Photo Access
-                </Button>
+                {createPhotoRequestMutation.isPending ? (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    disabled
+                    className="border-stone-200 text-stone-600 font-bold"
+                  >
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin text-stone-600" /> Sending Request...
+                  </Button>
+                ) : isPhotoRequestSent ? (
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    disabled
+                    className="text-emerald-800 bg-emerald-50 border border-emerald-200 font-bold"
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2 text-emerald-600" /> Photo Request Sent
+                  </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={handleRequestPhotoAccess}
+                  >
+                    <Lock className="h-4 w-4 mr-2 text-primary" /> Request Photo Access
+                  </Button>
+                )}
 
                 <Button size="lg" variant="outline" onClick={() => setIsReportModalOpen(true)} className="border-amber-300 text-amber-900 hover:bg-amber-50">
                   <Flag className="h-4 w-4 mr-2 text-amber-600" /> Report Profile

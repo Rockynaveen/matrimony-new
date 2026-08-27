@@ -16,6 +16,8 @@ import type { MatchResponseSchema } from '../../types/matching.types';
 import { useRemoveFromShortlist } from '../../hooks/useMatching';
 import { useApp } from '../../context/AppContext';
 
+import { MatchAvatar } from '../ui/MatchAvatar';
+
 interface ShortlistCardProps {
   profile: MatchResponseSchema;
 }
@@ -36,19 +38,18 @@ export const ShortlistCard: React.FC<ShortlistCardProps> = ({ profile }) => {
     }
   };
 
-  const defaultPhoto = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600';
-  const displayPhoto = profile.profile_photo || defaultPhoto;
-
   return (
     <>
       <Card className="flex flex-col justify-between border border-stone-200/80 bg-white hover:shadow-md transition-all duration-300 rounded-3xl overflow-hidden group">
         <div>
           {/* Media Head */}
           <div className="relative aspect-square w-full overflow-hidden bg-stone-50">
-            <img
-              src={displayPhoto}
-              alt={`${profile.first_name} ${profile.last_name}`}
-              className="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+            <MatchAvatar
+              photo={profile.profile_photo}
+              firstName={profile.first_name}
+              lastName={profile.last_name}
+              variant="card"
+              imgClassName="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute bottom-3 left-3 text-white">

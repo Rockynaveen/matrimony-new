@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { MatchAvatar } from '../ui/MatchAvatar';
+
 interface ProfileCardProps {
   profile: Profile;
 }
@@ -73,10 +75,11 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
         <div>
           {/* Card Media Header */}
           <div className="relative aspect-[4/4.2] w-full overflow-hidden bg-stone-100">
-            <img
-              src={profile.profileImage}
-              alt={profile.name}
-              className="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+            <MatchAvatar
+              photo={profile.profileImage}
+              name={profile.name}
+              variant="card"
+              imgClassName="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
             />
             
             {/* Dark Overlay Gradient */}

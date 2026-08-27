@@ -7,6 +7,8 @@ import type { MatchResponseSchema } from '../../types/matching.types';
 import { useUnblockProfile } from '../../hooks/useMatching';
 import { useApp } from '../../context/AppContext';
 
+import { MatchAvatar } from '../ui/MatchAvatar';
+
 interface BlockedProfileCardProps {
   profile: MatchResponseSchema;
 }
@@ -26,17 +28,16 @@ export const BlockedProfileCard: React.FC<BlockedProfileCardProps> = ({ profile 
     }
   };
 
-  const defaultPhoto = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600';
-  const displayPhoto = profile.profile_photo || defaultPhoto;
-
   return (
     <>
       <Card className="p-4 flex items-center justify-between gap-4 border border-stone-200/80 bg-white rounded-3xl hover:shadow-md transition-all duration-300">
         <div className="flex items-center gap-4">
-          <img
-            src={displayPhoto}
-            alt={`${profile.first_name} ${profile.last_name}`}
-            className="h-12 w-12 rounded-full object-cover grayscale opacity-70 shrink-0"
+          <MatchAvatar
+            photo={profile.profile_photo}
+            firstName={profile.first_name}
+            lastName={profile.last_name}
+            variant="circle"
+            className="h-12 w-12 text-lg shrink-0 grayscale opacity-70"
           />
           <div>
             <h4 className="font-serif text-sm sm:text-base font-bold text-stone-700">

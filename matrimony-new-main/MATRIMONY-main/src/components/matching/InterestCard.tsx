@@ -17,6 +17,7 @@ import {
 import type { InterestResponseSchema } from '../../types/matching.types';
 import { useUpdateInterest, useDeleteInterest, useAddToIgnore } from '../../hooks/useMatching';
 import { useApp } from '../../context/AppContext';
+import { MatchAvatar } from '../ui/MatchAvatar';
 
 interface InterestCardProps {
   interest: InterestResponseSchema;
@@ -136,9 +137,6 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
   const statusText = localStatus || interest.status || 'Pending';
   const displayStatusColor = statusColors[statusText] || 'bg-stone-50 text-stone-700';
 
-  const defaultPhoto = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600';
-  const displayPhoto = interest.profile_photo || defaultPhoto;
-
   const formattedDate = interest.created_at
     ? new Date(interest.created_at).toLocaleDateString(undefined, {
         year: 'numeric',
@@ -152,10 +150,12 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
   return (
     <Card className="p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-stone-200/80 bg-white hover:shadow-md transition-all duration-300 rounded-3xl">
       <div className="flex items-start sm:items-center gap-4 w-full">
-        <img
-          src={displayPhoto}
-          alt={`${interest.first_name} ${interest.last_name}`}
-          className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover ring-4 ring-stone-100 shrink-0"
+        <MatchAvatar
+          photo={interest.profile_photo}
+          firstName={interest.first_name}
+          lastName={interest.last_name}
+          variant="circle"
+          className="h-16 w-16 sm:h-20 sm:w-20 text-2xl sm:text-3xl ring-4 ring-stone-100 shrink-0"
         />
         <div className="space-y-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">

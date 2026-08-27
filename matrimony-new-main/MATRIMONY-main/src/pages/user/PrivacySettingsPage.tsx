@@ -102,7 +102,14 @@ export const PrivacySettingsPage: React.FC = () => {
     e.preventDefault();
     try {
       setIsSubmittingPhotoReq(true);
-      const targetUserId = parseInt(selectedPhotoOwnerId, 10) || 101;
+      const selectedProf = profiles.find(p => p.id === selectedPhotoOwnerId || String(p.id) === String(selectedPhotoOwnerId));
+      const targetUserId = Math.trunc(Number((selectedProf as any)?.user_id || String(selectedPhotoOwnerId).replace(/\D/g, '')) || 0);
+
+      if (!targetUserId || targetUserId <= 0) {
+        showToast('Invalid recipient User ID selected.');
+        return;
+      }
+
       await createPhotoReqMutation.mutateAsync({
         requester_id: 0,
         profile_owner_id: targetUserId

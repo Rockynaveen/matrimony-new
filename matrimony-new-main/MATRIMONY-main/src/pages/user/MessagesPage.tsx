@@ -271,8 +271,8 @@ export const MessagesPage: React.FC = () => {
         caste: i.caste || 'Caste',
         online: resolveOnlineStatus(i),
         matchPercentage: 95,
-        last_message: 'Interest Accepted - Connected',
-        last_message_time: 'Just now',
+        last_message: (i as any).last_message || (i as any).message || '',
+        last_message_time: (i as any).last_message_time || 'Just now',
         is_accepted: true
       })),
     ...(sentInterests || [])
@@ -291,8 +291,8 @@ export const MessagesPage: React.FC = () => {
         caste: i.caste || 'Caste',
         online: resolveOnlineStatus(i),
         matchPercentage: 95,
-        last_message: 'Interest Accepted - Connected',
-        last_message_time: 'Just now',
+        last_message: (i as any).last_message || (i as any).message || '',
+        last_message_time: (i as any).last_message_time || 'Just now',
         is_accepted: true
       }))
   ];
@@ -718,13 +718,17 @@ export const MessagesPage: React.FC = () => {
                         <span className="text-[10px] text-black font-bold">{formatSidebarTimestamp((p as any).lastMessageTime || (p as any).timestamp || (p as any).created_at)}</span>
                       </div>
                       
-                      <div className="flex items-center justify-between text-[11px]">
-                        <p className="text-black truncate font-semibold max-w-[150px]">
-                          {p.profession} • {p.city}
+                      <div className="flex items-center justify-between text-[11px] mt-0.5">
+                        <p className="text-stone-600 truncate font-medium text-xs max-w-[210px]">
+                          {(() => {
+                            const isCurrentActive = String(p.id) === String(activeProfile?.id) || String(p.user_id) === String(activeProfile?.id);
+                            const latestInActive = isCurrentActive && displayMessages && displayMessages.length > 0
+                              ? (displayMessages[displayMessages.length - 1].message || displayMessages[displayMessages.length - 1].content || '')
+                              : '';
+                            const msgText = latestInActive || p.last_message || (p as any).lastMessage || (p as any).last_message_text || (p as any).message;
+                            return msgText && String(msgText).trim() ? String(msgText).trim() : 'Tap to start conversation...';
+                          })()}
                         </p>
-                        <span className="text-[10px] font-extrabold text-[#8B1E3F] shrink-0">
-                          {p.matchPercentage}%
-                        </span>
                       </div>
                     </div>
                   </div>
@@ -785,13 +789,13 @@ export const MessagesPage: React.FC = () => {
                         <ShieldCheck className="h-4 w-4 text-emerald-700 shrink-0" />
                       )}
                     </h3>
-                    <p className="text-[11px] text-black font-bold truncate flex items-center gap-2">
-                      <span>{activeProfile.age} yrs • {activeProfile.height}</span>
-                      <span>•</span>
+                    <p className="text-[11px] font-bold truncate">
                       {activeProfile.online ? (
-                        <span className="text-emerald-800 font-extrabold">Online</span>
+                        <span className="text-emerald-700 font-extrabold flex items-center gap-1">
+                          <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" /> online
+                        </span>
                       ) : (
-                        <span className="text-black font-bold">Offline</span>
+                        <span className="text-stone-500 font-semibold">offline</span>
                       )}
                     </p>
                   </div>

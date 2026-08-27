@@ -77,81 +77,46 @@ export const privacyApi = {
 
   /**
    * GET /api/privacy/photo-requests/
-   * Returns list of photo access requests with multi-route fallback.
+   * Returns list of photo access requests.
    */
   getPhotoRequests: async (): Promise<PhotoRequestOut[]> => {
-    const candidateEndpoints = [
-      '/privacy/photo-requests/',
-      '/privacy/photo-requests',
-      '/privacy/photo-request/',
-      '/privacy/photo-request',
-      '/photo-requests/',
-      '/photo-requests'
-    ];
-
-    for (const url of candidateEndpoints) {
-      try {
-        const response = await axiosClient.get<PhotoRequestOut[]>(url);
-        if (response.status >= 200 && response.status < 300 && Array.isArray(response.data)) {
-          return response.data;
-        }
-      } catch {
-        continue;
-      }
+    const response = await axiosClient.get<any>('/privacy/photo-requests/');
+    if (response.status >= 200 && response.status < 300) {
+      const data = response.data;
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.data)) return data.data;
+      if (Array.isArray(data?.results)) return data.results;
+      return [];
     }
-
     return [];
   },
 
   /**
    * POST /api/privacy/photo-requests/
-   * Submit a new photo access request with clean payload & candidate discovery.
+   * Submit a new photo access request.
+   * Body schema (PhotoAccessRequestCreateIn): { requester_id: int, profile_owner_id: int }
    */
   createPhotoRequest: async (payload: { requester_id?: number; profile_owner_id: number }): Promise<PhotoRequestOut> => {
-    const cleanPayload = {
-      profile_owner_id: payload.profile_owner_id,
-      target_user_id: payload.profile_owner_id
-    };
-
-    const candidateEndpoints = [
-      '/privacy/photo-requests',
-      '/privacy/photo-requests/',
-      '/privacy/photo-request',
-      '/privacy/photo-request/',
-      '/photo-requests',
-      '/photo-requests/'
-    ];
-
-    for (const url of candidateEndpoints) {
-      try {
-        const response = await axiosClient.post<PhotoRequestOut>(url, cleanPayload);
-        if (response.status >= 200 && response.status < 300) {
-          return response.data || {
-            id: Date.now(),
-            requester_id: payload.requester_id ?? 1,
-            profile_owner_id: payload.profile_owner_id,
-            status: 'pending',
-            created_at: new Date().toISOString()
-          };
-        }
-      } catch (err: any) {
-        const status = err?.response?.status || err?.status;
-        if (status === 404) {
-          continue;
-        }
-        // If the endpoint exists but returned an error (e.g. 500 or 400), stop scanning and return fallback
-        break;
-      }
+    const profileOwnerId = Math.trunc(Number(payload.profile_owner_id) || 0);
+    if (!profileOwnerId || profileOwnerId <= 0) {
+      throw new Error('Invalid recipient user ID for photo access request.');
     }
 
-    // Fallback response if endpoint throws 500 or is not fully mounted yet
-    return {
-      id: Date.now(),
-      requester_id: payload.requester_id ?? 1,
-      profile_owner_id: payload.profile_owner_id,
-      status: 'pending',
-      created_at: new Date().toISOString()
+    const storedUserStr = localStorage.getItem('logged_in_user_id') || localStorage.getItem('user_id');
+    const defaultRequesterId = storedUserStr ? parseInt(storedUserStr, 10) : 1;
+    const requesterId = payload.requester_id && payload.requester_id > 0 ? payload.requester_id : defaultRequesterId;
+
+    const cleanPayload = {
+      requester_id: requesterId,
+      profile_owner_id: profileOwnerId
     };
+
+    const response = await axiosClient.post<PhotoRequestOut>('/privacy/photo-requests/', cleanPayload);
+    if (response.status >= 200 && response.status < 300) {
+      return response.data;
+    }
+    const msg = (response.data as any)?.message || (response.data as any)?.detail || 'Failed to submit photo access request.';
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
   },
 
   /**
@@ -159,55 +124,26 @@ export const privacyApi = {
    * Approve a photo access request.
    */
   approvePhotoRequest: async (requestId: number | string): Promise<PhotoRequestOut> => {
-    const candidateEndpoints = [
-      `/privacy/photo-requests/${requestId}/approve`,
-      `/privacy/photo-requests/${requestId}/approve/`,
-      `/privacy/photo-request/${requestId}/approve`,
-      `/photo-requests/${requestId}/approve`
-    ];
-
-    for (const url of candidateEndpoints) {
-      try {
-        const response = await axiosClient.post<PhotoRequestOut>(url);
-        if (response.status >= 200 && response.status < 300 && response.data) {
-          return response.data;
-        }
-      } catch {
-        continue;
-      }
+    const numericReqId = Math.trunc(Number(requestId) || 0);
+    const response = await axiosClient.post<PhotoRequestOut>(`/privacy/photo-requests/${numericReqId}/approve`);
+    if (response.status >= 200 && response.status < 300) {
+      return response.data;
     }
-
-    return {
-      id: Number(requestId) || Date.now(),
-      requester_id: 1,
-      profile_owner_id: 2,
-      status: 'approved',
-      created_at: new Date().toISOString()
-    };
+    const msg = (response.data as any)?.message || (response.data as any)?.detail || 'Failed to approve photo access request.';
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
   },
 
   /**
    * POST /api/privacy/photo-requests/{request_id}/reject
+   * Reject a photo access request.
    */
   rejectPhotoRequest: async (requestId: number | string): Promise<any> => {
-    const candidateEndpoints = [
-      `/privacy/photo-requests/${requestId}/reject`,
-      `/privacy/photo-requests/${requestId}/reject/`,
-      `/privacy/photo-request/${requestId}/reject`,
-      `/photo-requests/${requestId}/reject`
-    ];
-
-    for (const url of candidateEndpoints) {
-      try {
-        const response = await axiosClient.post(url);
-        if (response.status >= 200 && response.status < 300) {
-          return response.data;
-        }
-      } catch {
-        continue;
-      }
+    const numericReqId = Math.trunc(Number(requestId) || 0);
+    const response = await axiosClient.post<any>(`/privacy/photo-requests/${numericReqId}/reject`);
+    if (response.status >= 200 && response.status < 300) {
+      return response.data;
     }
-
-    return { success: true };
+    const msg = (response.data as any)?.message || (response.data as any)?.detail || 'Failed to reject photo access request.';
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
   }
 };

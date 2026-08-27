@@ -25,10 +25,12 @@ import {
   User,
   Menu,
   X,
-  ChevronDown
+  ChevronDown,
+  ShieldCheck
 } from 'lucide-react';
 
 import { ProfileCreditsBanner } from '../../components/membership/ProfileCreditsBanner';
+import { MatchAvatar } from '../../components/ui/MatchAvatar';
 
 export const Dashboard: React.FC = () => {
   const { currentUser, verificationStatus, profiles, unreadCount, interests, profileStatus } = useApp();
@@ -318,10 +320,11 @@ export const Dashboard: React.FC = () => {
                   recentMatches.map((match) => (
                     <div key={match.id} className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={match.avatar}
-                          alt={match.name}
-                          className="h-12 w-12 rounded-full object-cover shrink-0 ring-2 ring-stone-100"
+                        <MatchAvatar
+                          photo={match.avatar}
+                          name={match.name}
+                          variant="circle"
+                          className="h-12 w-12 text-lg shrink-0 ring-2 ring-stone-100"
                         />
                         <div>
                           <h4 className="font-bold text-xs text-stone-900 flex items-center gap-1.5">

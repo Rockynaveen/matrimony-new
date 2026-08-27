@@ -17,6 +17,7 @@ import {
   LogOut,
   ShieldCheck
 } from 'lucide-react';
+import { MatchAvatar } from '../ui/MatchAvatar';
 
 import {
   useShortlist,
@@ -82,19 +83,13 @@ export const UserSidebar: React.FC<UserSidebarProps> = ({ onNavClick, className 
         <div className="bg-gradient-to-b from-[#8B1E3F] via-[#A0284C] to-[#721733] pt-8 pb-6 px-6 text-center relative flex flex-col items-center border-b border-[#D4AF37]/30">
           {/* Profile Picture */}
           <div className="relative mb-3">
-            {currentUser.avatar ? (
-              <img
-                src={currentUser.avatar}
-                alt={displayName}
-                className="h-24 w-24 rounded-full object-cover ring-4 ring-white/90 shadow-md"
-              />
-            ) : (
-              <img
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300"
-                alt="Profile Avatar"
-                className="h-24 w-24 rounded-full object-cover ring-4 ring-white/90 shadow-md"
-              />
-            )}
+            <MatchAvatar
+              photo={currentUser.avatar}
+              name={displayName}
+              email={userEmail}
+              variant="circle"
+              className="h-24 w-24 text-3xl font-extrabold ring-4 ring-white/90 shadow-md"
+            />
           </div>
 
           {/* User Name & Email */}

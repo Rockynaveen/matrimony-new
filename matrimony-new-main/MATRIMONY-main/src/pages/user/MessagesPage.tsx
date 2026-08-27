@@ -250,7 +250,7 @@ export const MessagesPage: React.FC = () => {
 
   const activeMatch = foundInConvs || foundInRecs || (foundInShortlist as any);
 
-  const targetRecipientUserId = activeMatch ? (activeMatch.user_id || activeMatch.id || selectedProfileId) : selectedProfileId;
+  const targetRecipientUserId = activeMatch && activeMatch.user_id ? Number(activeMatch.user_id) : undefined;
   const { data: recipientOnlineStatusData } = useGetUserOnlineStatus(targetRecipientUserId, Boolean(targetRecipientUserId));
   const isRecipientOnline = recipientOnlineStatusData ? recipientOnlineStatusData.is_online : resolveOnlineStatus(activeMatch);
 

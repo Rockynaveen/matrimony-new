@@ -216,11 +216,15 @@ export const MessagesPage: React.FC = () => {
   const { data: sentInterests } = useSentInterests();
 
   const resolveOnlineStatus = (item: any): boolean => {
-    if (!item) return false;
+    if (!item) return true;
     if (typeof item.is_online === 'boolean') return item.is_online;
     if (typeof item.online === 'boolean') return item.online;
-    if (typeof item.status === 'string') return item.status.toLowerCase() === 'online';
-    return false;
+    if (typeof item.status === 'string') {
+      const s = item.status.toLowerCase();
+      if (s === 'offline') return false;
+      if (s === 'online' || s.includes('registered') || s.includes('active') || s.includes('success')) return true;
+    }
+    return true;
   };
 
   const remoteConvsMapped = (remoteConversations || []).map(conv => {

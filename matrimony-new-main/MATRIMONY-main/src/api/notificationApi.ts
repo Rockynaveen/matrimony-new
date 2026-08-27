@@ -153,14 +153,6 @@ export const notificationApi = {
       }
     } catch {}
 
-    try {
-      const saved = localStorage.getItem('local_user_notifications');
-      if (saved) {
-        const list: NotificationItem[] = JSON.parse(saved);
-        return list.filter(n => !n.read).length;
-      }
-    } catch {}
-
     return 0;
   },
 

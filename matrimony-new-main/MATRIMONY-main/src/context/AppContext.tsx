@@ -342,12 +342,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
 
-  const saveNotificationsToStorage = (list: NotificationItem[]) => {
-    try {
-      localStorage.setItem('local_user_notifications', JSON.stringify(list));
-    } catch {}
-  };
-
   const [searchFilter, setSearchFilter] = useState<SearchFilterState>(initialSearchFilter);
   const [activeChatUserId, setActiveChatUserId] = useState<string | null>('MAT-1001');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -1202,11 +1196,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const markNotificationRead = (id: string) => {
-    setNotifications(prev => {
-      const updated = prev.map(n => n.id === id ? { ...n, read: true } : n);
-      saveNotificationsToStorage(updated);
-      return updated;
-    });
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     setUnreadCount(prev => Math.max(0, prev - 1));
     notificationApi.markAsRead(id).catch(() => {});
     try {
@@ -1215,11 +1205,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const markAllNotificationsRead = async () => {
-    setNotifications(prev => {
-      const updated = prev.map(n => ({ ...n, read: true }));
-      saveNotificationsToStorage(updated);
-      return updated;
-    });
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     setUnreadCount(0);
     try {
       await notificationApi.markAllAsRead();
@@ -1228,11 +1214,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteNotification = (id: string) => {
-    setNotifications(prev => {
-      const updated = prev.filter(n => n.id !== id);
-      saveNotificationsToStorage(updated);
-      return updated;
-    });
+    setNotifications(prev => prev.filter(n => n.id !== id));
     const target = notifications.find(n => n.id === id);
     if (target && !target.read) {
       setUnreadCount(prev => Math.max(0, prev - 1));

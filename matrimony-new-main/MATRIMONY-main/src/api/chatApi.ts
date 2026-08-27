@@ -354,77 +354,43 @@ export const chatApi = {
     const currentUserId = Number(localStorage.getItem('user_id') || 0);
     if (!currentUserId) return { status: 'online' };
 
-    const payload = {
-      user_id: currentUserId,
-      is_online: true,
-      status: 'online',
-      room_id: roomId ? Number(roomId) : undefined
-    };
-
-    const candidateUrls: Array<{ method: 'post' | 'get'; url: string }> = [
-      { method: 'post', url: '/chat/UserOnlineStatus' },
-      { method: 'post', url: '/chat/UserOnlineStatus/' },
-      { method: 'post', url: '/chat/useronlinestatus' },
-      { method: 'post', url: '/chat/heartbeat' }
-    ];
-
-    for (const item of candidateUrls) {
-      try {
-        let res;
-        if (item.method === 'post') {
-          res = await axiosClient.post(item.url, payload);
-        } else {
-          res = await axiosClient.get(item.url, { params: payload });
-        }
-        if (res.status >= 200 && res.status < 300) {
-          return res.data || { status: 'online' };
-        }
-      } catch (err: any) {
-        if (err?.response?.status === 404 || err?.response?.status === 405) continue;
-        return { status: 'online' };
+    try {
+      const res = await axiosClient.post('/chat/UserOnlineStatus', {
+        user_id: currentUserId,
+        is_online: true,
+        status: 'online',
+        room_id: roomId ? Number(roomId) : undefined
+      });
+      if (res.status >= 200 && res.status < 300) {
+        return res.data || { status: 'online' };
       }
+    } catch {
+      return { status: 'online' };
     }
-
     return { status: 'online' };
   },
 
-  // 8.5 GET/POST UserOnlineStatus -> POST /api/chat/UserOnlineStatus
+  // 8.5 UserOnlineStatus Query -> POST /api/chat/UserOnlineStatus
   getUserOnlineStatus: async (userId?: number | string): Promise<{ is_online: boolean; status: string }> => {
     const currentUserId = Number(localStorage.getItem('user_id') || 0);
     const targetId = userId ? Number(userId) : currentUserId;
 
     if (!targetId) return { is_online: false, status: 'offline' };
 
-    const payload = {
-      user_id: targetId,
-      target_user_id: targetId,
-      room_id: targetId
-    };
+    try {
+      const res = await axiosClient.post('/chat/UserOnlineStatus', {
+        user_id: targetId,
+        target_user_id: targetId
+      });
 
-    const candidateUrls: Array<{ method: 'post' | 'get'; url: string }> = [
-      { method: 'post', url: '/chat/UserOnlineStatus' },
-      { method: 'post', url: '/chat/UserOnlineStatus/' },
-      { method: 'post', url: '/chat/useronlinestatus' },
-      { method: 'get', url: `/chat/UserOnlineStatus?user_id=${targetId}` }
-    ];
-
-    for (const item of candidateUrls) {
-      try {
-        const res = item.method === 'post'
-          ? await axiosClient.post(item.url, payload)
-          : await axiosClient.get(item.url, { params: { user_id: targetId } });
-
-        if (res.status >= 200 && res.status < 300 && res.data) {
-          const rawData = res.data;
-          const isOnline = rawData.is_online ?? rawData.online ?? rawData.isOnline ?? (rawData.status === 'online');
-          if (isOnline !== undefined && isOnline !== null) {
-            return { is_online: Boolean(isOnline), status: isOnline ? 'online' : 'offline' };
-          }
+      if (res.status >= 200 && res.status < 300 && res.data) {
+        const rawData = res.data;
+        const isOnline = rawData.is_online ?? rawData.online ?? rawData.isOnline ?? (rawData.status === 'online');
+        if (isOnline !== undefined && isOnline !== null) {
+          return { is_online: Boolean(isOnline), status: isOnline ? 'online' : 'offline' };
         }
-      } catch {
-        continue;
       }
-    }
+    } catch {}
 
     return { is_online: false, status: 'offline' };
   },

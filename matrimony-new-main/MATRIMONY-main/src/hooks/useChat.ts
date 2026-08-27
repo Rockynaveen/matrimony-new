@@ -156,7 +156,7 @@ export function useChatHeartbeat(roomId?: number | string, enabled: boolean = tr
   }, [roomId, enabled]);
 }
 
-// 8.5 Get User Online Status (GET /api/chat/UserOnlineStatus)
+// 8.5 Get User Online Status (POST /api/chat/UserOnlineStatus)
 export function useGetUserOnlineStatus(userId?: number | string, enabled: boolean = true) {
   const hasToken = !!localStorage.getItem('access_token');
   const validUser = Boolean(userId && String(userId) !== '0');
@@ -164,8 +164,9 @@ export function useGetUserOnlineStatus(userId?: number | string, enabled: boolea
     queryKey: [...chatKeys.all, 'onlineStatus', String(userId || 'me')],
     queryFn: () => chatApi.getUserOnlineStatus(userId),
     enabled: hasToken && enabled && validUser,
-    staleTime: 5000,
-    refetchInterval: 10000 // Background polling every 10s
+    staleTime: 10000,
+    retry: false,
+    refetchInterval: 25000
   });
 }
 

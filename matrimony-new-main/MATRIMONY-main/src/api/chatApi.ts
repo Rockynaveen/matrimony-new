@@ -337,20 +337,22 @@ export const chatApi = {
     return res.data || { success: true };
   },
 
-  // 8. UserOnlineStatus (in place of heartbeat) -> GET /api/chat/UserOnlineStatus
+  // 8. UserOnlineStatus (heartbeat) -> POST /api/chat/UserOnlineStatus
   sendHeartbeat: async (roomId?: number | string): Promise<{ status: string }> => {
     const currentUserId = Number(localStorage.getItem('user_id') || 0);
-    const params = {
+    if (!currentUserId) return { status: 'online' };
+
+    const payload = {
+      user_id: currentUserId,
       is_online: true,
       status: 'online',
-      user_id: currentUserId,
       room_id: roomId ? Number(roomId) : undefined
     };
 
-    const candidateUrls: Array<{ method: 'get' | 'post'; url: string }> = [
-      { method: 'get', url: '/chat/UserOnlineStatus' },
-      { method: 'get', url: '/chat/UserOnlineStatus/' },
-      { method: 'get', url: '/chat/useronlinestatus' },
+    const candidateUrls: Array<{ method: 'post' | 'get'; url: string }> = [
+      { method: 'post', url: '/chat/UserOnlineStatus' },
+      { method: 'post', url: '/chat/UserOnlineStatus/' },
+      { method: 'post', url: '/chat/useronlinestatus' },
       { method: 'post', url: '/chat/heartbeat' }
     ];
 
@@ -358,37 +360,47 @@ export const chatApi = {
       try {
         let res;
         if (item.method === 'post') {
-          res = await axiosClient.post(item.url, params);
+          res = await axiosClient.post(item.url, payload);
         } else {
-          res = await axiosClient.get(item.url, { params });
+          res = await axiosClient.get(item.url, { params: payload });
         }
         if (res.status >= 200 && res.status < 300) {
           return res.data || { status: 'online' };
         }
-      } catch {
-        continue;
+      } catch (err: any) {
+        if (err?.response?.status === 404 || err?.response?.status === 405) continue;
+        return { status: 'online' };
       }
     }
 
     return { status: 'online' };
   },
 
-  // 8.5 GET /api/chat/UserOnlineStatus
+  // 8.5 GET/POST UserOnlineStatus -> POST /api/chat/UserOnlineStatus
   getUserOnlineStatus: async (userId?: number | string): Promise<{ is_online: boolean; status: string }> => {
     const currentUserId = Number(localStorage.getItem('user_id') || 0);
     const targetId = userId ? Number(userId) : currentUserId;
 
     if (!targetId) return { is_online: false, status: 'offline' };
 
-    const candidateUrls = [
-      `/chat/UserOnlineStatus`,
-      `/chat/UserOnlineStatus/`,
-      `/chat/useronlinestatus`
+    const payload = {
+      user_id: targetId,
+      target_user_id: targetId,
+      room_id: targetId
+    };
+
+    const candidateUrls: Array<{ method: 'post' | 'get'; url: string }> = [
+      { method: 'post', url: '/chat/UserOnlineStatus' },
+      { method: 'post', url: '/chat/UserOnlineStatus/' },
+      { method: 'post', url: '/chat/useronlinestatus' },
+      { method: 'get', url: `/chat/UserOnlineStatus?user_id=${targetId}` }
     ];
 
-    for (const url of candidateUrls) {
+    for (const item of candidateUrls) {
       try {
-        const res = await axiosClient.get(url, { params: { user_id: targetId } });
+        const res = item.method === 'post'
+          ? await axiosClient.post(item.url, payload)
+          : await axiosClient.get(item.url, { params: { user_id: targetId } });
 
         if (res.status >= 200 && res.status < 300 && res.data) {
           const rawData = res.data;

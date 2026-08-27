@@ -33,6 +33,28 @@ const extractErrorMsg = (data: any, status: number): string => {
   return `HTTP error (${status})`;
 };
 
+export const getAuthUserId = (): number => {
+  const localId = Number(localStorage.getItem('user_id') || 0);
+  if (localId > 0) return localId;
+
+  try {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      const parts = token.split('.');
+      if (parts.length >= 2) {
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        const uid = Number(payload.user_id || payload.id || payload.sub || payload.userId || 0);
+        if (uid > 0) {
+          localStorage.setItem('user_id', String(uid));
+          return uid;
+        }
+      }
+    }
+  } catch {}
+
+  return 0;
+};
+
 export const chatApi = {
   // 1. GET /api/chat/conversations
   getConversations: async (): Promise<ConversationOut[]> => {
@@ -194,7 +216,7 @@ export const chatApi = {
     const roomIdNum = Number(payload.room_id);
     const receiverIdNum = Number(payload.receiver_id || 0);
     const msgText = payload.message.trim();
-    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+    const currentUserId = getAuthUserId();
 
     const body: Record<string, any> = {
       room_id: roomIdNum,
@@ -362,7 +384,7 @@ export const chatApi = {
 
   // 8. UserOnlineStatus (heartbeat) -> POST /api/chat/UserOnlineStatus
   sendHeartbeat: async (roomId?: number | string): Promise<{ status: string }> => {
-    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+    const currentUserId = getAuthUserId();
     if (!currentUserId) return { status: 'online' };
 
     try {
@@ -383,7 +405,7 @@ export const chatApi = {
 
   // 8.5 UserOnlineStatus Query -> POST /api/chat/UserOnlineStatus
   getUserOnlineStatus: async (userId?: number | string): Promise<{ is_online: boolean; status: string }> => {
-    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+    const currentUserId = getAuthUserId();
     const targetUserId = Number(userId || 0);
 
     if (!targetUserId || targetUserId === currentUserId) return { is_online: false, status: 'offline' };

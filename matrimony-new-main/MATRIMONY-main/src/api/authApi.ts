@@ -32,14 +32,27 @@ export const authApi = {
 
       if (accessToken) {
         localStorage.setItem('access_token', accessToken);
+        try {
+          const parts = accessToken.split('.');
+          if (parts.length >= 2) {
+            const tokenPayload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+            const uid = tokenPayload.user_id || tokenPayload.id || tokenPayload.sub;
+            if (uid) localStorage.setItem('user_id', String(uid));
+          }
+        } catch {}
       }
       if (refreshToken) {
         localStorage.setItem('refresh_token', refreshToken);
       }
+      const rawUser = resData?.data || resData?.user;
+      const explicitUid = rawUser?.id || rawUser?.user_id || resData?.user_id;
+      if (explicitUid) {
+        localStorage.setItem('user_id', String(explicitUid));
+      }
       return {
         access_token: accessToken || '',
         refresh_token: refreshToken || '',
-        user: resData?.data || resData?.user
+        user: rawUser
       };
     }
 
@@ -65,14 +78,27 @@ export const authApi = {
 
       if (accessToken) {
         localStorage.setItem('access_token', accessToken);
+        try {
+          const parts = accessToken.split('.');
+          if (parts.length >= 2) {
+            const tokenPayload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+            const uid = tokenPayload.user_id || tokenPayload.id || tokenPayload.sub;
+            if (uid) localStorage.setItem('user_id', String(uid));
+          }
+        } catch {}
       }
       if (refreshToken) {
         localStorage.setItem('refresh_token', refreshToken);
       }
+      const rawUser = resData?.data || resData?.user;
+      const explicitUid = rawUser?.id || rawUser?.user_id || resData?.user_id;
+      if (explicitUid) {
+        localStorage.setItem('user_id', String(explicitUid));
+      }
       return {
         access_token: accessToken || '',
         refresh_token: refreshToken || '',
-        user: resData?.data || resData?.user
+        user: rawUser
       };
     }
 

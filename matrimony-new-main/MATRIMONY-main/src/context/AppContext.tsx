@@ -339,39 +339,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [profiles, setProfiles] = useState<Profile[]>(MOCK_PROFILES);
   const [shortlistedIds, setShortlistedIds] = useState<string[]>([]);
   const [interests, setInterests] = useState<Interest[]>([]);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('local_user_notifications');
-      if (saved) {
-        const parsed: NotificationItem[] = JSON.parse(saved);
-        const cleaned = parsed.filter(n =>
-          !n.message?.includes('A verified member sent you') &&
-          !n.title?.includes('Interest Sent!') &&
-          !n.message?.includes('You expressed interest in')
-        );
-        localStorage.setItem('local_user_notifications', JSON.stringify(cleaned));
-        return cleaned;
-      }
-      return [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [unreadCount, setUnreadCount] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem('local_user_notifications');
-      const list: NotificationItem[] = saved ? JSON.parse(saved) : [];
-      return list.filter(n =>
-        !n.message?.includes('A verified member sent you') &&
-        !n.title?.includes('Interest Sent!') &&
-        !n.message?.includes('You expressed interest in') &&
-        !n.read
-      ).length;
-    } catch {
-      return 0;
-    }
-  });
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   const saveNotificationsToStorage = (list: NotificationItem[]) => {
     try {

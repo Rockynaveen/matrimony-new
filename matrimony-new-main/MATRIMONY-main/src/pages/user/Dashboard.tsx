@@ -133,9 +133,11 @@ export const Dashboard: React.FC = () => {
                 className="relative p-2.5 rounded-full border border-stone-200 text-stone-600 hover:bg-stone-50 transition-colors"
               >
                 <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#8B1E3F] text-[10px] font-bold text-white">
-                  {unreadCount || 0}
-                </span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#8B1E3F] text-[10px] font-bold text-white">
+                    {unreadCount}
+                  </span>
+                )}
               </button>
 
               {/* Profile Avatar Quick Button */}
@@ -481,9 +483,11 @@ export const Dashboard: React.FC = () => {
                     <div className="h-8 w-8 rounded-xl bg-[#8B1E3F]/10 text-[#8B1E3F] flex items-center justify-center">
                       <MessageSquare className="h-4 w-4" />
                     </div>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#8B1E3F]/10 text-[#8B1E3F]">
-                      {unreadCount || 0}
-                    </span>
+                    {unreadCount > 0 && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#8B1E3F]/10 text-[#8B1E3F]">
+                        {unreadCount}
+                      </span>
+                    )}
                   </div>
                   <h4 className="font-bold text-xs text-stone-900">View Messages</h4>
                   <p className="text-[10px] text-stone-500 font-medium">Check your conversations</p>

@@ -192,15 +192,16 @@ export const chatApi = {
   // 3. POST /api/chat/send
   sendTextMessage: async (payload: SendTextMessagePayload): Promise<ChatMessageOut> => {
     const roomIdNum = Number(payload.room_id);
+    const receiverIdNum = Number(payload.receiver_id || payload.room_id);
     const msgText = payload.message.trim();
     const currentUserId = Number(localStorage.getItem('user_id') || 0);
 
     const body = {
       room_id: roomIdNum,
-      receiver_id: roomIdNum,
-      recipient_id: roomIdNum,
-      to_user: roomIdNum,
-      user_id: roomIdNum,
+      receiver_id: receiverIdNum,
+      recipient_id: receiverIdNum,
+      to_user: receiverIdNum,
+      user_id: currentUserId,
       message: msgText,
       content: msgText,
       text: msgText
@@ -224,7 +225,7 @@ export const chatApi = {
     for (const item of candidateUrls) {
       try {
         const res = await axiosClient.post<any>(item.url, body, {
-          params: { room_id: roomIdNum, receiver_id: roomIdNum, recipient_id: roomIdNum, to_user: roomIdNum }
+          params: { room_id: roomIdNum, receiver_id: receiverIdNum, recipient_id: receiverIdNum, to_user: receiverIdNum }
         });
         if (res.status >= 200 && res.status < 300) {
           const resData = res.data;
@@ -373,14 +374,14 @@ export const chatApi = {
   // 8.5 UserOnlineStatus Query -> POST /api/chat/UserOnlineStatus
   getUserOnlineStatus: async (userId?: number | string): Promise<{ is_online: boolean; status: string }> => {
     const currentUserId = Number(localStorage.getItem('user_id') || 0);
-    const targetId = userId ? Number(userId) : currentUserId;
+    const targetUserId = Number(userId || 0);
 
-    if (!targetId) return { is_online: false, status: 'offline' };
+    if (!targetUserId || targetUserId === currentUserId) return { is_online: false, status: 'offline' };
 
     try {
       const res = await axiosClient.post('/chat/UserOnlineStatus', {
-        user_id: targetId,
-        target_user_id: targetId
+        user_id: currentUserId,
+        target_user_id: targetUserId
       });
 
       if (res.status >= 200 && res.status < 300 && res.data) {

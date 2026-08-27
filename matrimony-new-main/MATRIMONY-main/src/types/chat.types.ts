@@ -50,6 +50,7 @@ export interface ChatMessageOut {
 
 export interface SendTextMessagePayload {
   room_id: number;
+  receiver_id?: number | string;
   message: string;
 }
 

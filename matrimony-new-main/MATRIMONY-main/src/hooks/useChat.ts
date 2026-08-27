@@ -22,7 +22,7 @@ export function useConversations() {
     queryKey: chatKeys.conversations(),
     queryFn: () => chatApi.getConversations(),
     enabled: hasToken,
-    refetchInterval: 4000 // Background polling for new conversations every 4s
+    refetchInterval: 12000
   });
 }
 
@@ -34,7 +34,7 @@ export function useRoomMessages(roomId: number | string) {
     queryKey: chatKeys.messages(roomId),
     queryFn: () => chatApi.getConversationMessages(roomId),
     enabled: hasToken && validId,
-    refetchInterval: 3000 // Poll messages every 3s when inside active chat room
+    refetchInterval: 6000
   });
 }
 

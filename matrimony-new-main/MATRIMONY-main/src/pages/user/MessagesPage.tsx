@@ -179,9 +179,11 @@ export const MessagesPage: React.FC = () => {
 
   const remoteConvsMapped = (remoteConversations || []).map(conv => {
     const other = conv.other_user || {};
+    const currentUserIdNum = Number(currentUser?.id || localStorage.getItem('user_id') || 0);
+    const recipientId = other.id || (Number(conv.user1_id) === currentUserIdNum ? conv.user2_id : (Number(conv.user2_id) === currentUserIdNum ? conv.user1_id : conv.user2_id)) || conv.id;
     return {
       id: String(conv.room_id || conv.id),
-      user_id: other.id || conv.user2_id || conv.id,
+      user_id: recipientId,
       name: other.name || `${other.first_name || 'Verified'} ${other.last_name || 'Member'}`.trim(),
       profileImage: other.profile_photo || other.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
       verified: true,
@@ -393,10 +395,13 @@ export const MessagesPage: React.FC = () => {
     const textToSend = inputText.trim();
     if (!textToSend) return;
 
+    const recipientUserId = activeMatch ? Number(activeMatch.user_id) : numericRoomId;
+
     try {
       setInputText('');
       await sendTextMessageMutation.mutateAsync({
         room_id: numericRoomId,
+        receiver_id: recipientUserId,
         message: textToSend
       });
       showToast('Message sent!');

@@ -348,7 +348,7 @@ export const Dashboard: React.FC = () => {
 
                       <button
                         onClick={() => navigate(`/profile/${match.id}`)}
-                        className="px-3 py-1.5 border border-[#8B1E3F]/40 text-[#8B1E3F] hover:bg-[#8B1E3F]/10 text-xs font-bold rounded-xl transition-colors shrink-0"
+                        className="px-3 py-1.5 border-2 border-[#8B1E3F] bg-white text-[#8B1E3F] hover:bg-[#8B1E3F] hover:text-white text-xs font-bold rounded-xl transition-all shrink-0 shadow-2xs"
                       >
                         View Profile
                       </button>

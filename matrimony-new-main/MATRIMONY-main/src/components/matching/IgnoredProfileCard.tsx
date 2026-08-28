@@ -62,7 +62,7 @@ export const IgnoredProfileCard: React.FC<IgnoredProfileCardProps> = ({ profile 
           size="sm"
           variant="outline"
           onClick={() => navigate(`/profile/${profile.user_id}`)}
-          className="text-xs border-stone-200 text-stone-700 hover:bg-stone-50 rounded-xl"
+          className="text-xs border-2 border-[#8B1E3F] bg-white text-[#8B1E3F] hover:bg-[#8B1E3F] hover:text-white transition-all font-bold"
         >
           <Eye className="h-3.5 w-3.5 mr-1" /> View Profile
         </Button>

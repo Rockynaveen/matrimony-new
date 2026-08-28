@@ -258,7 +258,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
               size="sm"
               variant="outline"
               onClick={() => navigate(`/profile/${match.user_id}`)}
-              className="w-full h-8 text-[11px] border-stone-200 text-stone-700 hover:bg-stone-50 rounded-xl"
+              className="w-full h-8 text-[11px] border-2 border-[#8B1E3F] bg-white text-[#8B1E3F] hover:bg-[#8B1E3F] hover:text-white transition-all font-bold shadow-2xs"
             >
               View Profile
             </Button>

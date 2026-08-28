@@ -135,7 +135,7 @@ export const Navbar: React.FC = () => {
           {!isAuthenticated ? (
             <div className="flex items-center gap-2">
               <Link to="/login">
-                <Button size="sm" variant="outline" className="font-bold text-xs border-[#8B1E3F] text-[#8B1E3F] hover:bg-[#8B1E3F]/5">
+                <Button size="sm" variant="outline" className="font-bold text-xs border-2 border-[#8B1E3F] text-[#8B1E3F] bg-white hover:bg-[#8B1E3F] hover:text-white transition-all shadow-xs">
                   Login
                 </Button>
               </Link>
@@ -272,7 +272,7 @@ export const Navbar: React.FC = () => {
           ) : (
             <div className="flex items-center gap-2 pb-3 border-b border-border">
               <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="flex-1">
-                <Button size="sm" variant="outline" className="w-full font-bold text-xs border-[#8B1E3F] text-[#8B1E3F]">
+                <Button size="sm" variant="outline" className="w-full font-bold text-xs border-2 border-[#8B1E3F] text-[#8B1E3F] bg-white hover:bg-[#8B1E3F] hover:text-white transition-all shadow-xs">
                   Login
                 </Button>
               </Link>

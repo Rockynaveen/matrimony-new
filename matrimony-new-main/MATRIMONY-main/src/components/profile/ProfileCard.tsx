@@ -167,7 +167,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) 
             size="sm"
             variant="outline"
             onClick={() => handleProtectedAction(`/profile/${profile.id}`)}
-            className="w-full text-xs"
+            className="w-full text-xs border-2 border-[#8B1E3F] text-[#8B1E3F] bg-white hover:bg-[#8B1E3F] hover:text-white transition-all font-bold shadow-2xs"
           >
             <Eye className="h-3.5 w-3.5 mr-1" /> View Profile
           </Button>

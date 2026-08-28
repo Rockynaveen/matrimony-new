@@ -293,7 +293,7 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
           size="sm"
           variant="outline"
           onClick={() => navigate(`/profile/${type === 'sent' ? interest.to_user : interest.from_user}`)}
-          className="text-xs border-stone-200 text-stone-700 hover:bg-stone-50 rounded-xl font-bold w-full md:w-auto justify-center"
+          className="text-xs border-2 border-[#8B1E3F] bg-white text-[#8B1E3F] hover:bg-[#8B1E3F] hover:text-white transition-all rounded-xl font-bold w-full md:w-auto justify-center shadow-2xs"
         >
           View Profile
         </Button>

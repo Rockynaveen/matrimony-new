@@ -65,6 +65,28 @@ export const VerificationPage: React.FC = () => {
     checkVerificationStatus().catch(() => {});
   }, []);
 
+  // Bind live camera stream to video DOM element whenever camera is active
+  useEffect(() => {
+    if (isCameraActive && mediaStreamRef.current && videoRef.current) {
+      const video = videoRef.current;
+      video.srcObject = mediaStreamRef.current;
+      
+      const playVideo = async () => {
+        try {
+          await video.play();
+        } catch (e) {
+          console.warn('Auto-play error:', e);
+        }
+      };
+
+      if (video.readyState >= 1) {
+        playVideo();
+      } else {
+        video.onloadedmetadata = playVideo;
+      }
+    }
+  }, [isCameraActive]);
+
   // Cleanup camera stream on unmount
   useEffect(() => {
     return () => {
@@ -79,16 +101,21 @@ export const VerificationPage: React.FC = () => {
         throw new Error('Camera access is not supported on this device/browser');
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: false
-      });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 1280, min: 640 }, height: { ideal: 720, min: 480 } },
+          audio: false
+        });
+      } catch {
+        // Fallback for basic video stream if resolution constraints fail
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+      }
 
       mediaStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
       setIsCameraActive(true);
     } catch (err: any) {
       setCameraError(err?.message || 'Unable to access camera. Please allow camera permission or upload a photo.');
@@ -105,16 +132,32 @@ export const VerificationPage: React.FC = () => {
   };
 
   const capturePhoto = () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current) {
+      showToast('Camera feed not ready');
+      return;
+    }
     const video = videoRef.current;
+
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+
+    if (width === 0 || height === 0) {
+      showToast('Camera feed is initializing. Please wait a second.');
+      return;
+    }
+
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Flip horizontal canvas to match mirrored selfie view
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
 
     canvas.toBlob((blob) => {
       if (blob) {
@@ -122,9 +165,20 @@ export const VerificationPage: React.FC = () => {
         setPhotoFile(file);
         setPhotoPreview(dataUrl);
         stopCamera();
-        showToast('✓ Live selfie photo captured successfully!');
+        showToast('✓ Live selfie photo captured clearly!');
+      } else {
+        // Fallback if toBlob fails
+        fetch(dataUrl)
+          .then(res => res.blob())
+          .then(blob => {
+            const file = new File([blob], `live_photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+            setPhotoFile(file);
+            setPhotoPreview(dataUrl);
+            stopCamera();
+            showToast('✓ Live selfie photo captured clearly!');
+          });
       }
-    }, 'image/jpeg', 0.85);
+    }, 'image/jpeg', 0.9);
   };
 
   const handleIdFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

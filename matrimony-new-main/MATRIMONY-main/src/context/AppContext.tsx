@@ -19,6 +19,17 @@ import { notificationApi } from '../api/notificationApi';
 import { verificationService } from '../services/verification.service';
 import { queryClient } from '../lib/queryClient';
 
+// Import Focused Domain Stores
+import { useAuthStore } from '../store/useAuthStore';
+import { useOnboardingStore } from '../store/useOnboardingStore';
+import { useSearchStore, initialSearchFilter, type SearchFilterState } from '../store/useSearchStore';
+import { useShortlistStore } from '../store/useShortlistStore';
+import { useNotificationStore } from '../store/useNotificationStore';
+import { useChatStore } from '../store/useChatStore';
+import { useUIStore } from '../store/useUIStore';
+
+export type { SearchFilterState };
+
 interface AppContextType {
   currentUser: User;
   setCurrentUserRole: (role: UserRole) => void;
@@ -72,34 +83,6 @@ interface AppContextType {
   updateCurrentUserAvatar: (avatarUrl: string) => void;
   logout: () => void;
 }
-
-export interface SearchFilterState {
-  gender: string;
-  ageMin: number;
-  ageMax: number;
-  religion: string;
-  caste: string;
-  location: string;
-  profession: string;
-  education: string;
-  verifiedOnly: boolean;
-  maritalStatus: string;
-  keyword: string;
-}
-
-const initialSearchFilter: SearchFilterState = {
-  gender: 'Female',
-  ageMin: 22,
-  ageMax: 35,
-  religion: 'All',
-  caste: 'All',
-  location: 'All',
-  profession: 'All',
-  education: 'All',
-  verifiedOnly: false,
-  maritalStatus: 'All',
-  keyword: ''
-};
 
 export const getStoredOnboardingStatus = (email?: string): OnboardingStatus => {
   const currentEmail = (email || localStorage.getItem('logged_in_email') || '').toLowerCase().trim();
@@ -175,32 +158,21 @@ export const saveStoredOnboardingStatus = (partial: Partial<OnboardingStatus>, e
 };
 
 export const getNextPendingRoute = (status: OnboardingStatus): string => {
-  // Priority 1: If registration is not completed -> continue registration
   if (!status.registration_completed) {
     return '/register';
   }
-
-  // Priority 2: If the user registered with Google and Basic Profile is incomplete -> Basic Profile
   if (status.registration_method === 'google' && !status.basic_profile_completed) {
     return '/complete-basic-profile';
   }
-
-  // Priority 3: If Complete Profile is incomplete -> Complete Profile
   if (!status.complete_profile_completed) {
     return '/profile/complete';
   }
-
-  // Priority 4: If Partner Preferences are incomplete -> Partner Preferences
   if (!status.partner_preferences_completed) {
     return '/preferences';
   }
-
-  // Priority 5: If Verification is not submitted or rejected -> Verification
   if (!status.verification_completed || status.verification_status === 'NOT_SUBMITTED' || status.verification_status === 'REJECTED') {
     return '/verification';
   }
-
-  // Priority 6: If all required onboarding steps are complete (verification is PENDING or VERIFIED) -> Matches
   return '/matches';
 };
 
@@ -224,7 +196,6 @@ export const markUserProfileCompleted = (email?: string): void => {
     localStorage.setItem(key, 'true');
   }
 };
-
 
 export const isGenericName = (name?: string | null): boolean => {
   if (!name) return true;
@@ -266,14 +237,10 @@ export const extractNameFromEmail = (email: string | undefined | null): string =
   const username = email.split('@')[0];
   if (!username) return 'User';
 
-  // Replace separators with spaces
   let cleaned = username.replace(/[._\-+]/g, ' ');
-
-  // If numbers exist, strip trailing digits if alphabetic chars remain
   const alphabeticOnly = cleaned.replace(/[0-9]/g, '').trim();
   const targetStr = alphabeticOnly.length >= 2 ? alphabeticOnly : cleaned;
 
-  // Handle camelCase / PascalCase
   const expanded = targetStr.replace(/([a-z])([A-Z])/g, '$1 $2').trim();
   const words = expanded.split(/\s+/).filter(Boolean);
 
@@ -335,48 +302,51 @@ const getInitialUser = (): User => {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User>(getInitialUser);
+  // Sync state with Zustand stores for optimal re-render isolation
+  const currentUser = useAuthStore(state => state.currentUser);
+  const setCurrentUserStore = useAuthStore(state => state.setCurrentUser);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  const searchFilter = useSearchStore(state => state.searchFilter);
+  const setSearchFilterStore = useSearchStore(state => state.setSearchFilter);
+  const resetSearchFilterStore = useSearchStore(state => state.resetSearchFilter);
+
+  const shortlistedIds = useShortlistStore(state => state.shortlistedIds);
+  const toggleShortlistStore = useShortlistStore(state => state.toggleShortlist);
+
+  const notifications = useNotificationStore(state => state.notifications);
+  const unreadCount = useNotificationStore(state => state.unreadCount);
+  const fetchNotificationsStore = useNotificationStore(state => state.fetchNotifications);
+  const markNotificationReadStore = useNotificationStore(state => state.markNotificationRead);
+  const markAllNotificationsReadStore = useNotificationStore(state => state.markAllNotificationsRead);
+  const deleteNotificationStore = useNotificationStore(state => state.deleteNotification);
+  const addNotificationStore = useNotificationStore(state => state.addNotification);
+
+  const activeChatUserId = useChatStore(state => state.activeChatUserId);
+  const setActiveChatUserIdStore = useChatStore(state => state.setActiveChatUserId);
+
+  const toastMessage = useUIStore(state => state.toastMessage);
+  const showToastStore = useUIStore(state => state.showToast);
+
   const [profiles, setProfiles] = useState<Profile[]>(MOCK_PROFILES);
-  const [shortlistedIds, setShortlistedIds] = useState<string[]>([]);
   const [interests, setInterests] = useState<Interest[]>([]);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
 
-  const [searchFilter, setSearchFilter] = useState<SearchFilterState>(initialSearchFilter);
-  const [activeChatUserId, setActiveChatUserId] = useState<string | null>('MAT-1001');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Authentication State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return Boolean(localStorage.getItem('access_token'));
-  });
-
-  const fetchNotifications = async () => {
-    if (!localStorage.getItem('access_token')) {
-      setNotifications([]);
-      setUnreadCount(0);
-      return;
+  // Sync initial user state to auth store if needed
+  useEffect(() => {
+    if (localStorage.getItem('access_token') && !isAuthenticated) {
+      const initialUser = getInitialUser();
+      useAuthStore.setState({
+        accessToken: localStorage.getItem('access_token'),
+        refreshToken: localStorage.getItem('refresh_token'),
+        isAuthenticated: true,
+        currentUser: initialUser
+      });
     }
-    try {
-      const payload = await notificationApi.getNotificationsPayload();
-
-      const validNotifications = payload.notifications.filter(n =>
-        !n.title?.includes('Interest Sent!') &&
-        !n.message?.includes('Your interest request was sent') &&
-        !n.title?.includes('Interest Request Sent')
-      );
-
-      setNotifications(validNotifications);
-      setUnreadCount(payload.unread_count);
-    } catch {
-      setNotifications([]);
-      setUnreadCount(0);
-    }
-  };
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchNotifications();
+      fetchNotificationsStore();
       let deviceToken = localStorage.getItem('device_token');
       if (!deviceToken) {
         deviceToken = `web_device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -384,24 +354,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       notificationApi.registerDeviceToken(deviceToken, 'web').catch(() => {});
 
-      // Background timer to poll and keep notification count dynamic
       const intervalId = setInterval(() => {
-        fetchNotifications();
+        fetchNotificationsStore();
       }, 15000);
 
       return () => clearInterval(intervalId);
-    } else {
-      setNotifications([]);
-      setUnreadCount(0);
     }
   }, [isAuthenticated]);
 
-  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus>(() => {
+  const [onboardingStatus, setOnboardingStatusState] = useState<OnboardingStatus>(() => {
     const email = localStorage.getItem('logged_in_email') || '';
     return getStoredOnboardingStatus(email);
   });
 
-  const [verificationStatus, setVerificationStatus] = useState<VerificationState>(() => {
+  const [verificationStatus, setVerificationStatusState] = useState<VerificationState>(() => {
     const email = localStorage.getItem('logged_in_email') || '';
     const stored = getStoredOnboardingStatus(email);
     return stored.verification_status || (stored.verification_completed ? 'PENDING' : 'NOT_SUBMITTED');
@@ -426,9 +392,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateOnboardingStatus = (partial: Partial<OnboardingStatus>): OnboardingStatus => {
     const email = localStorage.getItem('logged_in_email') || currentUser.email || '';
     const updated = saveStoredOnboardingStatus(partial, email);
-    setOnboardingStatus(updated);
+    setOnboardingStatusState(updated);
+    useOnboardingStore.getState().setOnboardingStatus(updated);
     if (updated.verification_status) {
-      setVerificationStatus(updated.verification_status);
+      setVerificationStatusState(updated.verification_status);
     }
     return updated;
   };
@@ -440,7 +407,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const markBasicProfileCompleted = () => {
     const email = localStorage.getItem('logged_in_email') || currentUser.email || '';
     const updated = saveStoredOnboardingStatus({ basic_profile_completed: true }, email);
-    setOnboardingStatus(updated);
+    setOnboardingStatusState(updated);
     setProfileStatus(prev => ({
       ...prev,
       is_basic_complete: true,
@@ -451,7 +418,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const markProfileCompleted = () => {
     const email = localStorage.getItem('logged_in_email') || currentUser.email || '';
     const updated = saveStoredOnboardingStatus({ complete_profile_completed: true, basic_profile_completed: true }, email);
-    setOnboardingStatus(updated);
+    setOnboardingStatusState(updated);
     setProfileStatus({
       is_basic_complete: true,
       is_detailed_complete: true,
@@ -466,7 +433,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       complete_profile_completed: true,
       basic_profile_completed: true
     }, email);
-    setOnboardingStatus(updated);
+    setOnboardingStatusState(updated);
     setProfileStatus(prev => ({
       ...prev,
       completion_percentage: 90
@@ -480,10 +447,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       verification_status: status,
       rejection_reason: null
     }, email);
-    setOnboardingStatus(updated);
-    setVerificationStatus(status);
+    setOnboardingStatusState(updated);
+    setVerificationStatusState(status);
     if (status === 'VERIFIED') {
-      setCurrentUser(prev => ({ ...prev, verified: true }));
+      setCurrentUserStore({ verified: true });
       markUserProfileCompleted(email);
     }
   };
@@ -505,8 +472,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       rejection_reason: null
     }, email);
 
-    setOnboardingStatus(updated);
-    setVerificationStatus('PENDING');
+    setOnboardingStatusState(updated);
+    setVerificationStatusState('PENDING');
 
     const userRecord = {
       status: 'PENDING',
@@ -541,16 +508,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('admin_pending_verifications', JSON.stringify(filtered));
     } catch {}
 
-    showToast('✓ Verification documents submitted for Admin Review');
+    showToastStore('✓ Verification documents submitted for Admin Review');
   };
 
   const skipVerificationForSession = () => {
     sessionStorage.setItem('verification_skipped_session', 'true');
-    setOnboardingStatus(prev => ({
+    setOnboardingStatusState(prev => ({
       ...prev,
       verification_skipped_for_session: true
     }));
-    showToast('Verification skipped for now. Redirecting to matches...');
+    useOnboardingStore.getState().skipVerificationForSession();
+    showToastStore('Verification skipped for now. Redirecting to matches...');
   };
 
   const checkVerificationStatus = async (email?: string): Promise<VerificationState> => {
@@ -565,9 +533,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           rejection_reason: res.rejection_reason || null
         }, targetEmail);
       }
-      setVerificationStatus(mapped);
+      setVerificationStatusState(mapped);
       if (mapped === 'VERIFIED') {
-        setCurrentUser(prev => ({ ...prev, verified: true }));
+        setCurrentUserStore({ verified: true });
       }
       return mapped;
     } catch {
@@ -615,12 +583,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const currentEmail = (localStorage.getItem('logged_in_email') || currentUser.email || '').toLowerCase().trim();
       if (currentEmail === targetEmail) {
-        setVerificationStatus('VERIFIED');
-        setCurrentUser(prev => ({ ...prev, verified: true }));
+        setVerificationStatusState('VERIFIED');
+        setCurrentUserStore({ verified: true });
       }
     }
 
-    showToast('✓ Member successfully verified! Verified badge activated.');
+    showToastStore('✓ Member successfully verified! Verified badge activated.');
   };
 
   const adminRejectUserVerification = async (userIdOrEmail: string | number, reason: string) => {
@@ -662,12 +630,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const currentEmail = (localStorage.getItem('logged_in_email') || currentUser.email || '').toLowerCase().trim();
       if (currentEmail === targetEmail) {
-        setVerificationStatus('REJECTED');
-        setCurrentUser(prev => ({ ...prev, verified: false }));
+        setVerificationStatusState('REJECTED');
+        setCurrentUserStore({ verified: false });
       }
     }
 
-    showToast('Verification rejected.');
+    showToastStore('Verification rejected.');
   };
 
   const checkProfileStatus = async (): Promise<ProfileApiResponse> => {
@@ -682,14 +650,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const isPreferencesDone = Boolean((res as any).is_preferences_complete) || storedStatus.partner_preferences_completed;
 
       let mappedVStatus: VerificationState = storedStatus.verification_status || (storedStatus.verification_completed ? 'PENDING' : 'NOT_SUBMITTED');
-      let isVerifiedMember = mappedVStatus === 'VERIFIED';
       let vRejectionReason: string | null = storedStatus.rejection_reason || null;
 
       try {
         const vRes = await verificationService.getVerificationStatus();
         if (vRes.status) {
           mappedVStatus = vRes.status as VerificationState;
-          isVerifiedMember = mappedVStatus === 'VERIFIED' || Boolean(vRes.is_verified);
           vRejectionReason = vRes.rejection_reason || null;
         }
       } catch {}
@@ -703,14 +669,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         verification_status: mappedVStatus,
         rejection_reason: vRejectionReason
       }, email);
-      setOnboardingStatus(syncedStatus);
-      setVerificationStatus(mappedVStatus);
+
+      setOnboardingStatusState(syncedStatus);
+      setVerificationStatusState(mappedVStatus);
 
       setProfileStatus({
         is_basic_complete: isBasicDone,
         is_detailed_complete: isDetailedDone,
         completion_percentage: isDoneLocally ? 100 : (isDetailedDone ? 85 : (isBasicDone ? 30 : 15))
       });
+
       const storedName = localStorage.getItem('logged_in_name');
       const storedEmail = localStorage.getItem('logged_in_email') || res.email || currentUser.email || '';
       const emailName = extractNameFromEmail(storedEmail);
@@ -743,13 +711,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('logged_in_avatar', finalAvatar);
       }
 
-      setCurrentUser(prev => ({
-        ...prev,
+      setCurrentUserStore({
         name: finalName,
-        email: res.email || storedEmail || prev.email,
-        phone: res.phone || prev.phone,
+        email: res.email || storedEmail || currentUser.email,
+        phone: res.phone || currentUser.phone,
         avatar: finalAvatar
-      }));
+      });
+
       return {
         ...res,
         is_basic_complete: isBasicDone,
@@ -757,7 +725,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     } catch (err: any) {
       console.error('Error fetching profile status:', err);
-      // Handle unauthorized or missing token
       if (err?.status === 401 || err?.response?.status === 401) {
         logout();
       }
@@ -795,8 +762,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('local_deleted_interest_ids');
     localStorage.removeItem('local_ignored_user_ids');
     localStorage.removeItem('local_photo_requested_user_ids');
-    setNotifications([]);
-    setUnreadCount(0);
+    useNotificationStore.getState().clearNotifications();
   };
 
   const loginUser = async (payload: LoginRequest): Promise<ProfileApiResponse> => {
@@ -805,7 +771,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const userEmail = res.user?.email || payload.email || '';
     const prevEmail = localStorage.getItem('logged_in_email');
 
-    // If logging in with a new user account, clear transient draft items
     if (!prevEmail || prevEmail.toLowerCase() !== userEmail.toLowerCase()) {
       localStorage.removeItem('user_profile_draft');
       localStorage.removeItem('vivah_mock_profile');
@@ -830,17 +795,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('logged_in_email', userEmail);
     }
     localStorage.setItem('login_method', 'email');
-    setIsAuthenticated(true);
-    setCurrentUser(prev => ({
-      ...prev,
-      name: finalName,
-      email: userEmail
-    }));
-    showToast('Logged in successfully!');
 
-    // Initialize user-scoped onboarding state
+    useAuthStore.setState({
+      accessToken: res.access_token || localStorage.getItem('access_token'),
+      refreshToken: res.refresh_token || localStorage.getItem('refresh_token'),
+      isAuthenticated: true,
+      currentUser: {
+        ...currentUser,
+        name: finalName,
+        email: userEmail
+      }
+    });
+
+    showToastStore('Logged in successfully!');
+
     const userOnboarding = getStoredOnboardingStatus(userEmail);
-    setOnboardingStatus(userOnboarding);
+    setOnboardingStatusState(userOnboarding);
 
     const profileRes = await checkProfileStatus();
     const isDoneLocally = isUserProfileCompleted(userEmail);
@@ -867,13 +837,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('logged_in_email', payload.email);
       localStorage.setItem('login_method', 'email');
       localStorage.setItem('registration_method', 'manual');
-      setIsAuthenticated(true);
-      setCurrentUser(prev => ({
-        ...prev,
-        name,
-        email: payload.email || prev.email,
-        phone: payload.phone || prev.phone
-      }));
+
+      useAuthStore.setState({
+        accessToken: res.access_token,
+        refreshToken: res.refresh_token || null,
+        isAuthenticated: true,
+        currentUser: {
+          ...currentUser,
+          name,
+          email: payload.email || currentUser.email,
+          phone: payload.phone || currentUser.phone
+        }
+      });
+
       const newStatus = saveStoredOnboardingStatus({
         registration_completed: true,
         registration_method: 'manual',
@@ -881,14 +857,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         complete_profile_completed: false,
         partner_preferences_completed: false,
       }, payload.email);
-      setOnboardingStatus(newStatus);
+
+      setOnboardingStatusState(newStatus);
       setProfileStatus({
         is_basic_complete: true,
         is_detailed_complete: false,
         completion_percentage: 20
       });
     }
-    showToast('Registration successful! Welcome.');
+    showToastStore('Registration successful! Welcome.');
     return res;
   };
 
@@ -903,12 +880,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('logged_in_email', payload.email);
     localStorage.setItem('login_method', 'google_register');
     localStorage.setItem('registration_method', 'google');
-    setIsAuthenticated(true);
-    setCurrentUser(prev => ({
-      ...prev,
-      name: finalName,
-      email: payload.email
-    }));
+
+    useAuthStore.setState({
+      accessToken: localStorage.getItem('access_token'),
+      refreshToken: localStorage.getItem('refresh_token'),
+      isAuthenticated: true,
+      currentUser: {
+        ...currentUser,
+        name: finalName,
+        email: payload.email
+      }
+    });
+
     const newStatus = saveStoredOnboardingStatus({
       registration_completed: true,
       registration_method: 'google',
@@ -916,12 +899,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       complete_profile_completed: false,
       partner_preferences_completed: false,
     }, payload.email);
-    setOnboardingStatus(newStatus);
+
+    setOnboardingStatusState(newStatus);
     setProfileStatus({
       is_basic_complete: false,
       is_detailed_complete: false,
       completion_percentage: 15
     });
+
     return {
       id: 'PRO-NEW',
       first_name: payload.first_name || finalName.split(' ')[0],
@@ -996,17 +981,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     localStorage.setItem('login_method', 'google');
-    setIsAuthenticated(true);
-    setCurrentUser(prev => ({
-      ...prev,
-      name: finalName,
-      email: userEmail,
-      avatar: resolvedAvatar
-    }));
-    showToast('Google Login successful!');
+
+    useAuthStore.setState({
+      accessToken: res.access_token || localStorage.getItem('access_token'),
+      refreshToken: res.refresh_token || localStorage.getItem('refresh_token'),
+      isAuthenticated: true,
+      currentUser: {
+        ...currentUser,
+        name: finalName,
+        email: userEmail,
+        avatar: resolvedAvatar
+      }
+    });
+
+    showToastStore('Google Login successful!');
 
     const userOnboarding = getStoredOnboardingStatus(userEmail);
-    setOnboardingStatus(userOnboarding);
+    setOnboardingStatusState(userOnboarding);
 
     const profileRes = await checkProfileStatus();
     const isDoneLocally = isUserProfileCompleted(userEmail);
@@ -1027,13 +1018,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await profileApi.patchBasicProfile(payload);
     markBasicProfileCompleted();
     await checkProfileStatus();
-    showToast('✓ Profile Updated Successfully');
+    showToastStore('✓ Profile Updated Successfully');
   };
 
   const updateCurrentUserAvatar = (avatarUrl: string) => {
     if (!avatarUrl) return;
     localStorage.setItem('logged_in_avatar', avatarUrl);
-    setCurrentUser(prev => ({ ...prev, avatar: avatarUrl }));
+    setCurrentUserStore({ avatar: avatarUrl });
   };
 
   const logout = async () => {
@@ -1056,72 +1047,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('vivah_mock_profile');
     localStorage.removeItem('vivah_mock_user');
     sessionStorage.removeItem('verification_skipped_session');
-    setIsAuthenticated(false);
-    setOnboardingStatus(getStoredOnboardingStatus(''));
+
+    useAuthStore.getState().logout();
+    setOnboardingStatusState(getStoredOnboardingStatus(''));
     setProfileStatus({
       is_basic_complete: false,
       is_detailed_complete: false,
       completion_percentage: 0
     });
-    setCurrentUser(defaultEmptyUser);
-    showToast('Logged out successfully.');
+    showToastStore('Logged out successfully.');
   };
 
-
   const setCurrentUserRole = (role: UserRole) => {
-    setCurrentUser(prev => ({ ...prev, role }));
-    showToast(`Switched user mode to ${role.toUpperCase()}`);
+    setCurrentUserStore({ role });
+    showToastStore(`Switched user mode to ${role.toUpperCase()}`);
   };
 
   const setMembershipTier = (membershipTier: MembershipTier) => {
-    setCurrentUser(prev => ({ ...prev, membershipTier }));
-    showToast(`Membership updated to ${membershipTier}`);
-  };
-
-  const toggleShortlist = async (profileId: string) => {
-    const target = profiles.find(p => p.id === profileId);
-    const numericId = parseInt(String(profileId).replace(/\D/g, ''), 10);
-    if (!isNaN(numericId) && numericId > 0) {
-      const exists = shortlistedIds.includes(profileId);
-      try {
-        if (exists) {
-          await matchingApi.removeFromShortlist(numericId);
-          setShortlistedIds(prev => prev.filter(id => id !== profileId));
-          showToast('Profile removed from shortlist');
-        } else {
-          await matchingApi.addToShortlist({ user: numericId });
-          setShortlistedIds(prev => [...prev, profileId]);
-          showToast('Profile added to shortlist ✨');
-          addNotification({
-            title: 'Profile Shortlisted ⭐',
-            message: `You shortlisted ${target?.name || 'a profile'} to your saved matches.`,
-            category: 'Matches',
-            link: '/matching/shortlist',
-            avatar: target?.profileImage
-          });
-        }
-        queryClient.invalidateQueries({ queryKey: ['matching'] });
-      } catch (err: any) {
-        showToast(err?.message || 'Failed to update shortlist');
-      }
-      return;
-    }
-
-    setShortlistedIds(prev => {
-      const exists = prev.includes(profileId);
-      const updated = exists ? prev.filter(id => id !== profileId) : [...prev, profileId];
-      showToast(exists ? 'Profile removed from shortlist' : 'Profile added to shortlist ✨');
-      if (!exists) {
-        addNotification({
-          title: 'Profile Shortlisted ⭐',
-          message: `You shortlisted ${target?.name || 'a profile'} to your saved matches.`,
-          category: 'Matches',
-          link: '/matching/shortlist',
-          avatar: target?.profileImage
-        });
-      }
-      return updated;
-    });
+    setCurrentUserStore({ membershipTier });
+    showToastStore(`Membership updated to ${membershipTier}`);
   };
 
   const sendInterest = async (profileId: string) => {
@@ -1132,7 +1076,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         await matchingApi.sendInterest({ to_user: numericId, message: 'Hi, I am interested in your profile.' });
         
-        // Populate local state to match immediately
         const newInterest: Interest = {
           id: `INT-${Date.now()}`,
           senderId: currentUser.id,
@@ -1147,9 +1090,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
         setInterests(prev => [newInterest, ...prev]);
         setProfiles(prev => prev.map(p => p.id === profileId ? { ...p, interestSent: true } : p));
-        showToast(`Interest sent successfully to ${target ? target.name : 'member'} 💕`);
+        showToastStore(`Interest sent successfully to ${target ? target.name : 'member'} 💕`);
         
-        addNotification({
+        addNotificationStore({
           title: 'Interest Request Sent 💌',
           message: `Your interest expression was sent to ${target ? target.name : 'member'}. You will be notified when they respond.`,
           category: 'Interests',
@@ -1159,7 +1102,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         queryClient.invalidateQueries({ queryKey: ['matching'] });
       } catch (err: any) {
-        showToast(err?.message || 'Failed to send interest to backend');
+        showToastStore(err?.message || 'Failed to send interest to backend');
       }
       return;
     }
@@ -1167,7 +1110,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!target) return;
     const existing = interests.find(i => i.receiverId === profileId && i.senderId === currentUser.id);
     if (existing) {
-      showToast(`Interest already sent to ${target.name}`);
+      showToastStore(`Interest already sent to ${target.name}`);
       return;
     }
 
@@ -1186,78 +1129,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setInterests(prev => [newInterest, ...prev]);
     setProfiles(prev => prev.map(p => p.id === profileId ? { ...p, interestSent: true } : p));
-    showToast(`Interest sent successfully to ${target.name} 💕`);
+    showToastStore(`Interest sent successfully to ${target.name} 💕`);
   };
 
-  const markNotificationRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    setUnreadCount(prev => Math.max(0, prev - 1));
-    notificationApi.markAsRead(id).catch(() => {});
-    try {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    } catch {}
-  };
-
-  const markAllNotificationsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    setUnreadCount(0);
-    try {
-      await notificationApi.markAllAsRead();
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    } catch {}
-  };
-
-  const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    const target = notifications.find(n => n.id === id);
-    if (target && !target.read) {
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    }
-    notificationApi.deleteNotification(id).catch(() => {});
-    try {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    } catch {}
-  };
-
-  const addNotification = (item: {
-    title: string;
-    message: string;
-    category: NotificationItem['category'];
-    link?: string;
-    avatar?: string;
-  }) => {
-    const newNotif: NotificationItem = {
-      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      title: item.title,
-      message: item.message,
-      category: item.category,
-      timestamp: 'Just now',
-      read: false,
-      link: item.link,
-      avatar: item.avatar
-    };
-
-    setNotifications(prev => {
-      // Prevent exact duplicate message spam within 5 seconds
-      if (prev.length > 0 && prev[0].message === item.message && prev[0].title === item.title) {
-        return prev;
-      }
-      const updated = [newNotif, ...prev];
-      saveNotificationsToStorage(updated);
-      return updated;
-    });
-    setUnreadCount(prev => prev + 1);
-  };
-
-  const resetSearchFilter = () => {
-    setSearchFilter(initialSearchFilter);
-  };
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3500);
+  const toggleShortlist = async (profileId: string) => {
+    const target = profiles.find(p => p.id === profileId);
+    await toggleShortlistStore(profileId, target?.name, target?.profileImage);
   };
 
   return (
@@ -1273,18 +1150,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         sendInterest,
         notifications,
         unreadCount,
-        markNotificationRead,
-        markAllNotificationsRead,
-        deleteNotification,
-        addNotification,
-        fetchNotifications,
+        markNotificationRead: markNotificationReadStore,
+        markAllNotificationsRead: markAllNotificationsReadStore,
+        deleteNotification: deleteNotificationStore,
+        addNotification: addNotificationStore,
+        fetchNotifications: fetchNotificationsStore,
         searchFilter,
-        setSearchFilter,
-        resetSearchFilter,
+        setSearchFilter: setSearchFilterStore,
+        resetSearchFilter: resetSearchFilterStore,
         activeChatUserId,
-        setActiveChatUserId,
+        setActiveChatUserId: setActiveChatUserIdStore,
         toastMessage,
-        showToast,
+        showToast: showToastStore,
 
         isAuthenticated,
         onboardingStatus,

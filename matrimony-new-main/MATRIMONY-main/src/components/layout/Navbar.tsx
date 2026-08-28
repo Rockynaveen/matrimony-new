@@ -29,11 +29,13 @@ import {
   Check,
   Star,
   EyeOff,
-  Ban,
   ShieldCheck
 } from 'lucide-react';
+import { useShortlistStore } from '../../store/useShortlistStore';
+
 export const Navbar: React.FC = () => {
-  const { currentUser, verificationStatus, notifications, unreadCount, markNotificationRead, logout, isAuthenticated, shortlistedIds, onboardingStatus, getPendingRoute } = useApp();
+  const { currentUser, verificationStatus, notifications, unreadCount, markNotificationRead, logout, isAuthenticated, onboardingStatus, getPendingRoute } = useApp();
+  const shortlistedIds = useShortlistStore((state) => state.shortlistedIds);
   const { data: sentInterests } = useSentInterests();
   const { data: receivedInterests } = useReceivedInterests();
   const { data: shortlistData } = useShortlist();

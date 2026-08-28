@@ -19,18 +19,21 @@ import { motion } from 'framer-motion';
 
 import { MatchAvatar } from '../ui/MatchAvatar';
 
+import { useShortlistStore } from '../../store/useShortlistStore';
+
 interface ProfileCardProps {
   profile: Profile;
 }
 
-export const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
-  const { shortlistedIds, toggleShortlist, interests, sendInterest, isAuthenticated } = useApp();
+export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) => {
+  const { interests, sendInterest, isAuthenticated } = useApp();
+  const isShortlisted = useShortlistStore((state) => state.shortlistedIds.includes(profile.id));
+  const toggleShortlist = useShortlistStore((state) => state.toggleShortlist);
   const navigate = useNavigate();
 
   const [isSending, setIsSending] = React.useState(false);
   const [isJustSent, setIsJustSent] = React.useState(false);
 
-  const isShortlisted = shortlistedIds.includes(profile.id);
   const hasSentInterest = isJustSent || profile.interestSent || interests.some(i => String(i.receiverId) === String(profile.id) || String(i.user_id) === String(profile.id) || String(i.to_user) === String(profile.id));
 
   const handleSendInterestClick = async () => {
@@ -201,4 +204,6 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
       </Card>
     </motion.div>
   );
-};
+});
+
+ProfileCard.displayName = 'ProfileCard';

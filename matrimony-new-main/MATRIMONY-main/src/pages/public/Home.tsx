@@ -187,18 +187,18 @@ export const Home: React.FC = () => {
                 variant="gold"
                 size="lg"
                 onClick={() => navigate('/register')}
-                className="w-full sm:w-auto px-8 font-bold text-sm h-12 shadow-2xl"
+                className="w-full sm:w-auto uppercase tracking-wider"
               >
                 Register Free Profile
               </Button>
 
               <Button
-                variant="outline"
+                variant="outline-white"
                 size="lg"
                 onClick={() => handleProtectedNavigate('/search')}
-                className="w-full sm:w-auto px-8 font-bold text-xs h-12 bg-white/10 text-white border-white/30 hover:bg-white/20 backdrop-blur-md"
+                className="w-full sm:w-auto uppercase tracking-wider"
               >
-                <Search className="h-4 w-4 mr-2" /> Find Matches Now
+                <Search className="h-4 w-4" /> Find Matches Now
               </Button>
             </motion.div>
 
@@ -684,19 +684,19 @@ export const Home: React.FC = () => {
               <div className="pt-1 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-start">
                 <Button
                   variant="primary"
-                  size="sm"
+                  size="md"
                   onClick={() => navigate('/register')}
-                  className="px-6 font-bold text-xs h-10 shadow-xl bg-[#8B1E3F] hover:bg-[#721733] text-white uppercase tracking-wider"
+                  className="px-6 uppercase tracking-wider"
                 >
                   Register Free Profile Now
                 </Button>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="md"
                   onClick={() => navigate('/search')}
-                  className="px-6 font-bold text-xs h-10 border-[#8B1E3F] text-[#8B1E3F] hover:bg-[#8B1E3F] hover:text-white bg-white/70 backdrop-blur-md uppercase tracking-wider transition-all"
+                  className="px-6 uppercase tracking-wider"
                 >
-                  <Search className="h-3.5 w-3.5 mr-1.5" /> Explore Matches
+                  <Search className="h-4 w-4" /> Explore Matches
                 </Button>
               </div>
             </div>

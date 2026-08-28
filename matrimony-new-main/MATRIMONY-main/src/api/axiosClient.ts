@@ -27,7 +27,7 @@ class AxiosClient {
   }
 
   private getAuthHeaders(): Record<string, string> {
-    const token = useAuthStore.getState().accessToken || localStorage.getItem('access_token');
+    const token = localStorage.getItem('access_token') || useAuthStore.getState().accessToken;
     const csrfToken = getCsrfToken();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
@@ -55,93 +55,99 @@ class AxiosClient {
 
   private workingRefreshEndpoint: string | null = null;
   private workingRefreshKey: string | null = null;
-  private lastRefreshAttemptTime = 0;
+  private refreshPromise: Promise<string | null> | null = null;
 
   private async tryRefreshToken(): Promise<string | null> {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken || this.isRefreshing) return null;
+    const refreshToken = localStorage.getItem('refresh_token') || useAuthStore.getState().refreshToken;
+    if (!refreshToken) return null;
 
-    // Cooldown: prevent spamming refresh requests if attempted within last 30 seconds
-    const now = Date.now();
-    if (now - this.lastRefreshAttemptTime < 30000) {
-      return null;
+    // Single-flight queue: If a refresh operation is already in flight, await its result!
+    if (this.refreshPromise) {
+      return this.refreshPromise;
     }
 
-    try {
-      this.isRefreshing = true;
-      this.lastRefreshAttemptTime = now;
-
-      // If we already discovered the working endpoint, try it first
-      if (this.workingRefreshEndpoint && this.workingRefreshKey) {
-        try {
-          const response = await fetch(`${this.baseURL}${this.workingRefreshEndpoint}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ [this.workingRefreshKey]: refreshToken })
-          });
-          if (response.ok) {
-            const data = await response.json();
-            const newAccess = data.access || data.access_token || data.data?.access_token || data.token;
-            if (newAccess) {
-              localStorage.setItem('access_token', newAccess);
-              if (data.refresh || data.refresh_token) {
-                localStorage.setItem('refresh_token', data.refresh || data.refresh_token);
-              }
-              return newAccess;
-            }
-          }
-        } catch {}
-      }
-
-      const refreshEndpoints = [
-        '/token/refresh',
-        '/token/refresh/',
-        '/token/pair/refresh',
-        '/token/pair/refresh/',
-        '/auth/token/refresh',
-        '/auth/token/refresh/',
-        '/auth/token/pair/refresh',
-        '/auth/token/pair/refresh/',
-        '/refresh',
-        '/refresh/'
-      ];
-
-      const payloadKeys = ['refresh', 'refresh_token', 'token'];
-
-      for (const endpoint of refreshEndpoints) {
-        for (const key of payloadKeys) {
+    this.refreshPromise = (async () => {
+      try {
+        // 1. Try previously discovered & working refresh endpoint if available
+        if (this.workingRefreshEndpoint && this.workingRefreshKey) {
           try {
-            const response = await fetch(`${this.baseURL}${endpoint}`, {
+            const response = await fetch(`${this.baseURL}${this.workingRefreshEndpoint}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ [key]: refreshToken })
+              body: JSON.stringify({ [this.workingRefreshKey]: refreshToken })
             });
-
             if (response.ok) {
               const data = await response.json();
               const newAccess = data.access || data.access_token || data.data?.access_token || data.token;
+              const newRefresh = data.refresh || data.refresh_token || data.data?.refresh_token;
               if (newAccess) {
-                this.workingRefreshEndpoint = endpoint;
-                this.workingRefreshKey = key;
                 localStorage.setItem('access_token', newAccess);
-                if (data.refresh || data.refresh_token) {
-                  localStorage.setItem('refresh_token', data.refresh || data.refresh_token);
+                if (newRefresh) {
+                  localStorage.setItem('refresh_token', newRefresh);
                 }
-                console.log(`[AxiosClient] Discovered & cached JWT refresh endpoint: ${endpoint}`);
+                useAuthStore.getState().setTokens(newAccess, newRefresh || refreshToken);
+                console.log('[AxiosClient] JWT token refreshed successfully via cached endpoint');
                 return newAccess;
               }
             }
-          } catch {
-            continue;
+          } catch {}
+        }
+
+        // 2. Discover working refresh endpoint
+        const refreshEndpoints = [
+          '/token/refresh',
+          '/token/refresh/',
+          '/token/pair/refresh',
+          '/token/pair/refresh/',
+          '/auth/token/refresh',
+          '/auth/token/refresh/',
+          '/auth/token/pair/refresh',
+          '/auth/token/pair/refresh/',
+          '/refresh',
+          '/refresh/'
+        ];
+
+        const payloadKeys = ['refresh', 'refresh_token', 'token'];
+
+        for (const endpoint of refreshEndpoints) {
+          for (const key of payloadKeys) {
+            try {
+              const response = await fetch(`${this.baseURL}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [key]: refreshToken })
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                const newAccess = data.access || data.access_token || data.data?.access_token || data.token;
+                const newRefresh = data.refresh || data.refresh_token || data.data?.refresh_token;
+                if (newAccess) {
+                  this.workingRefreshEndpoint = endpoint;
+                  this.workingRefreshKey = key;
+                  localStorage.setItem('access_token', newAccess);
+                  if (newRefresh) {
+                    localStorage.setItem('refresh_token', newRefresh);
+                  }
+                  useAuthStore.getState().setTokens(newAccess, newRefresh || refreshToken);
+                  console.log(`[AxiosClient] Discovered & synchronized JWT refresh endpoint: ${endpoint}`);
+                  return newAccess;
+                }
+              }
+            } catch {
+              continue;
+            }
           }
         }
+      } catch (err) {
+        console.warn('[AxiosClient] Refresh token error:', err);
+      } finally {
+        this.refreshPromise = null;
       }
-    } catch (err) {
-      console.warn('[AxiosClient] Refresh token error:', err);
-    } finally {
-      this.isRefreshing = false;
-    }
-    return null;
+      return null;
+    })();
+
+    return this.refreshPromise;
   }
 
   private async handleResponse<T>(
@@ -158,14 +164,18 @@ class AxiosClient {
         dataStr.includes('invalid') ||
         dataStr.includes('expired') ||
         dataStr.includes('Authentication credentials') ||
-        dataStr.includes('Unauthorized');
+        dataStr.includes('Unauthorized') ||
+        dataStr.includes('detail') ||
+        response.status === 401;
 
       if (isTokenInvalid) {
+        console.log('[AxiosClient] 401 Unauthorized detected. Refreshing token...');
         const newAccessToken = await this.tryRefreshToken();
         if (newAccessToken) {
+          console.log('[AxiosClient] Token refreshed. Retrying original request with new token...');
           return this.handleResponse(fetchFn, true);
         } else {
-          console.warn('[AxiosClient] Token refresh failed. Preserving session if refresh token exists.');
+          console.warn('[AxiosClient] Token refresh failed. User session may have expired.');
         }
       }
     }

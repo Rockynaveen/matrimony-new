@@ -1,10 +1,11 @@
 import React from 'react';
-import { useApp } from '../../context/AppContext';
+import { useUIStore } from '../../store/useUIStore';
 import { Bell, Sparkles, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 export const Toast: React.FC = () => {
-  const { toastMessage, showToast } = useApp();
+  const toastMessage = useUIStore((state) => state.toastMessage);
+  const clearToast = useUIStore((state) => state.clearToast);
 
   return (
     <AnimatePresence>
@@ -34,7 +35,7 @@ export const Toast: React.FC = () => {
 
           {/* Dismiss Button */}
           <button
-            onClick={() => showToast('')}
+            onClick={clearToast}
             className="text-stone-400 hover:text-stone-700 p-1 rounded-lg hover:bg-stone-100 transition-colors"
           >
             <X className="h-4 w-4" />

@@ -14,10 +14,14 @@ import {
   ChevronUp
 } from 'lucide-react';
 
+import { useSearchStore } from '../../store/useSearchStore';
 import { useIgnoredProfiles } from '../../hooks/useMatching';
 
 export const SearchPage: React.FC = () => {
-  const { profiles, searchFilter, setSearchFilter, resetSearchFilter, showToast } = useApp();
+  const { profiles, showToast } = useApp();
+  const searchFilter = useSearchStore((state) => state.searchFilter);
+  const setSearchFilter = useSearchStore((state) => state.setSearchFilter);
+  const resetSearchFilter = useSearchStore((state) => state.resetSearchFilter);
   const { data: ignoredList } = useIgnoredProfiles();
   const ignoredUserIds = ignoredList?.map(i => i.user_id) || [];
 

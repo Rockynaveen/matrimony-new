@@ -2,7 +2,7 @@ import React from 'react';
 import { clsx } from 'clsx';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'primary' | 'secondary' | 'outline' | 'ghost' | 'gold' | 'danger';
+  variant?: 'default' | 'primary' | 'secondary' | 'outline' | 'outline-white' | 'ghost' | 'gold' | 'danger';
   size?: 'sm' | 'md' | 'lg' | 'icon';
   isLoading?: boolean;
 }
@@ -16,22 +16,36 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] select-none rounded-xl';
+  const baseStyles = 'inline-flex items-center justify-center font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/40 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] select-none rounded-xl cursor-pointer';
 
   const variants = {
-    default: 'bg-primary text-white hover:bg-primary/90 shadow-md shadow-primary/20',
-    primary: 'bg-gradient-to-r from-[#8B1E3F] to-[#C44569] text-white hover:opacity-95 shadow-md shadow-[#8B1E3F]/25 hover:shadow-lg hover:shadow-[#8B1E3F]/35',
-    secondary: 'bg-[#F5ECE5] text-[#8B1E3F] hover:bg-[#EADBD1] font-semibold',
-    outline: 'border border-[#E8DDD5] bg-white text-foreground hover:bg-[#FFF9F5] hover:border-primary/50 hover:text-primary shadow-sm',
-    ghost: 'text-foreground hover:bg-muted hover:text-primary',
-    gold: 'bg-gradient-to-r from-[#D4AF37] to-[#AA7C11] text-white hover:brightness-105 shadow-md shadow-[#D4AF37]/30 font-semibold',
-    danger: 'bg-destructive text-white hover:bg-destructive/90 shadow-sm'
+    // Royal Burgundy Brand Primary Variant
+    default: 'bg-[#8B1E3F] text-white hover:bg-[#721733] hover:text-white shadow-md shadow-[#8B1E3F]/25 border border-[#8B1E3F]/30',
+    primary: 'bg-gradient-to-r from-[#8B1E3F] via-[#A0234A] to-[#8B1E3F] text-white hover:from-[#721733] hover:via-[#8B1E3F] hover:to-[#721733] hover:text-white shadow-md shadow-[#8B1E3F]/25 hover:shadow-lg hover:shadow-[#8B1E3F]/35 border border-[#8B1E3F]/30',
+    
+    // Warm Ivory & Burgundy Brand Secondary Variant
+    secondary: 'bg-[#F7EFE9] text-[#8B1E3F] hover:bg-[#8B1E3F] hover:text-white hover:border-[#8B1E3F] border border-[#EADBCE] font-bold shadow-2xs',
+    
+    // Crisp White + Burgundy Brand Outline Variant
+    outline: 'border-2 border-[#8B1E3F] bg-white text-[#8B1E3F] hover:bg-[#8B1E3F] hover:text-white hover:border-[#8B1E3F] shadow-xs font-bold',
+    
+    // Dark Backdrop Brand Outline Variant (Hero & Dark Cards) -> Hovers to white background with Brand Burgundy text!
+    'outline-white': 'border-2 border-white/60 bg-white/10 text-white hover:bg-white hover:text-[#8B1E3F] hover:border-white backdrop-blur-md shadow-md font-bold',
+    
+    // Minimal Theme Ghost
+    ghost: 'text-stone-700 hover:bg-[#8B1E3F]/10 hover:text-[#8B1E3F] font-bold',
+    
+    // Luxury Metallic Gold Logo Accent Variant
+    gold: 'bg-gradient-to-r from-[#D4AF37] via-[#F3E5AB] to-[#AA7C11] text-[#2C0A15] hover:brightness-105 hover:text-[#2C0A15] shadow-md shadow-[#D4AF37]/25 font-extrabold border border-[#D4AF37]/50',
+    
+    // Rose Red Brand Destructive Variant
+    danger: 'bg-[#9E1C27] text-white hover:bg-[#7D141C] hover:text-white shadow-sm font-bold border border-[#9E1C27]'
   };
 
   const sizes = {
-    sm: 'text-xs px-3 py-1.5 gap-1.5 h-8',
+    sm: 'text-xs px-3.5 py-1.5 gap-1.5 h-9',
     md: 'text-sm px-4 py-2.5 gap-2 h-10',
-    lg: 'text-base px-6 py-3.5 gap-2.5 h-12 font-semibold',
+    lg: 'text-base px-6 py-3.5 gap-2.5 h-12 font-bold',
     icon: 'h-10 w-10 p-2'
   };
 

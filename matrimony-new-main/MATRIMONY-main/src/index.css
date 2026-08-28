@@ -114,13 +114,14 @@
 }
 
 * {
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
 body {
-  font-family: var(--font-sans);
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   background-color: #FAF6F0;
   background-image: 
     radial-gradient(ellipse at 50% 0%, rgba(212, 175, 55, 0.12) 0%, transparent 60%),
@@ -134,8 +135,71 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, .font-serif {
-  font-family: var(--font-sans);
+/* ================= UNIFIED HEADING FONT SIZES ACROSS WEBSITE ================= */
+h1, h2, h3, h4, h5, h6, .font-serif, .font-sans {
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Page Primary Title (h1) */
+h1 {
+  font-size: 1.875rem !important; /* 30px mobile */
+  line-height: 1.25 !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
+@media (min-width: 640px) {
+  h1 {
+    font-size: 2.25rem !important; /* 36px desktop uniform h1 */
+  }
+}
+
+/* Section Header (h2) */
+h2 {
+  font-size: 1.5rem !important; /* 24px mobile */
+  line-height: 1.3 !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.015em !important;
+}
+
+@media (min-width: 640px) {
+  h2 {
+    font-size: 1.75rem !important; /* 28px desktop uniform h2 */
+  }
+}
+
+/* Card & Sub-Section Header (h3) */
+h3 {
+  font-size: 1.25rem !important; /* 20px mobile */
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+}
+
+@media (min-width: 640px) {
+  h3 {
+    font-size: 1.375rem !important; /* 22px desktop uniform h3 */
+  }
+}
+
+/* Sub-Card Header (h4) */
+h4 {
+  font-size: 1.125rem !important; /* 18px uniform h4 */
+  line-height: 1.4 !important;
+  font-weight: 700 !important;
+}
+
+/* Small Sub-Header (h5) */
+h5 {
+  font-size: 1rem !important; /* 16px uniform h5 */
+  line-height: 1.4 !important;
+  font-weight: 700 !important;
+}
+
+/* Micro Header (h6) */
+h6 {
+  font-size: 0.875rem !important; /* 14px uniform h6 */
+  line-height: 1.4 !important;
+  font-weight: 700 !important;
 }
 
 /* Custom Scrollbars */

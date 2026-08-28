@@ -54,15 +54,53 @@ const HOME_FAQS: AccordionItemData[] = [
   }
 ];
 
+const DEFAULT_PLANS: ApiMembershipPlan[] = [
+  {
+    id: 1,
+    name: 'Silver Choice',
+    price: 2499,
+    profile_credits: 10,
+    validity_days: 90,
+    profile_boost_count: 2,
+    is_featured_profile: false,
+    unlimited_messaging: false,
+    is_active: true
+  },
+  {
+    id: 2,
+    name: 'Gold Premier',
+    price: 4999,
+    profile_credits: 30,
+    validity_days: 180,
+    profile_boost_count: 5,
+    is_featured_profile: true,
+    unlimited_messaging: true,
+    is_active: true
+  },
+  {
+    id: 3,
+    name: 'Royal VIP Platinum',
+    price: 9999,
+    profile_credits: 999,
+    validity_days: 365,
+    profile_boost_count: 10,
+    is_featured_profile: true,
+    unlimited_messaging: true,
+    is_active: true
+  }
+];
+
 export const Home: React.FC = () => {
   const { isAuthenticated } = useApp();
   const navigate = useNavigate();
   const { data: recommendations } = useRecommendations();
-  const [plans, setPlans] = React.useState<ApiMembershipPlan[]>([]);
+  const [plans, setPlans] = React.useState<ApiMembershipPlan[]>(DEFAULT_PLANS);
 
   React.useEffect(() => {
     membershipApi.getPlans().then(res => {
-      if (Array.isArray(res)) setPlans(res);
+      if (Array.isArray(res) && res.length > 0) {
+        setPlans(res);
+      }
     }).catch(() => {});
   }, []);
 
@@ -361,96 +399,107 @@ export const Home: React.FC = () => {
       </section>
 
       {/* ================= MEMBERSHIP PLANS PREVIEW (LUXURY REDESIGN) ================= */}
-      <section className="bg-transparent py-12 relative overflow-hidden">
+      <section className="bg-gradient-to-b from-stone-50/50 via-amber-50/30 to-stone-50/50 py-16 relative overflow-hidden">
         {/* Ambient Glow Effects */}
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[450px] bg-[#8B1E3F]/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-10 right-10 w-[300px] h-[300px] bg-[#D4AF37]/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[450px] bg-gradient-to-r from-[#8B1E3F]/10 via-[#D4AF37]/15 to-[#8B1E3F]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-[350px] h-[350px] bg-[#D4AF37]/15 rounded-full blur-3xl pointer-events-none" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
           <ScrollReveal direction="up">
-            <div className="text-center max-w-3xl mx-auto mb-12 space-y-3">
-              <Badge variant="gold" className="bg-[#D4AF37]/15 text-[#8B1E3F] border-[#D4AF37]/40 font-bold px-4 py-1">
-                <Crown className="h-4 w-4 mr-1.5 text-[#D4AF37]" /> Premium Subscriptions
-              </Badge>
-              <h2 className="font-serif text-3xl sm:text-5xl font-extrabold text-stone-900 tracking-tight">
-                Invest in Your <span className="text-[#8B1E3F]">Happily Ever After</span>
+            {/* Header Section */}
+            <div className="text-center max-w-3xl mx-auto mb-14 space-y-4">
+              <div className="inline-flex items-center gap-2 bg-[#D4AF37]/15 text-[#8B1E3F] border border-[#D4AF37]/40 px-4 py-1.5 rounded-full text-xs font-bold shadow-sm tracking-wide">
+                <Crown className="h-4 w-4 text-[#D4AF37] animate-pulse" /> Royal & VIP Subscriptions
+              </div>
+              <h2 className="font-serif text-3xl sm:text-5xl font-black text-stone-900 tracking-tight leading-tight">
+                Invest in Your <span className="bg-gradient-to-r from-[#8B1E3F] via-[#A0234A] to-[#C44569] bg-clip-text text-transparent">Happily Ever After</span>
               </h2>
-              <p className="text-sm sm:text-base text-stone-600 font-medium max-w-2xl mx-auto">
-                Upgrade your membership to unlock verified contact numbers, direct messaging, priority search boost, and personalized matchmaking.
+              <p className="text-sm sm:text-base text-stone-600 font-medium max-w-2xl mx-auto leading-relaxed">
+                Upgrade your membership to unlock verified contact numbers, direct messaging, priority search boost, and personalized human matchmaking.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-6xl mx-auto">
+            {/* Plans Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-6xl mx-auto pt-4">
               {plans.map(plan => {
-                const isPopular = plan.is_featured_profile || plan.name.toLowerCase().includes('gold');
                 const isVIP = plan.name.toLowerCase().includes('platinum') || plan.name.toLowerCase().includes('royal');
+                const isPopular = !isVIP && (plan.is_featured_profile || plan.name.toLowerCase().includes('gold') || Boolean((plan as any).popular));
                 const price = typeof plan.price === 'string' ? parseFloat(plan.price) : plan.price;
 
                 return (
                   <div
                     key={plan.id}
-                    className={`rounded-3xl flex flex-col justify-between relative transition-all duration-500 overflow-hidden ${isPopular
-                      ? 'bg-gradient-to-b from-[#8B1E3F] via-[#A0234A] to-[#8B1E3F] text-white shadow-none scale-105 ring-4 ring-[#D4AF37]/50 z-20 p-8'
-                      : isVIP
-                        ? 'bg-stone-950 text-white shadow-none border border-stone-800 hover:border-amber-400/60 p-8'
-                        : 'bg-white/80 backdrop-blur-md text-stone-900 shadow-none border border-stone-200/90 hover:border-[#8B1E3F]/40 p-8'
-                      }`}
+                    className={`rounded-3xl flex flex-col justify-between relative transition-all duration-500 overflow-hidden ${
+                      isPopular
+                        ? 'bg-gradient-to-b from-[#7A1835] via-[#8B1E3F] to-[#5C1028] text-white ring-4 ring-[#D4AF37]/70 shadow-[0_20px_50px_rgba(139,30,63,0.35)] scale-105 z-20 p-8 hover:scale-[1.07]'
+                        : isVIP
+                        ? 'bg-gradient-to-b from-stone-950 via-stone-900 to-stone-950 text-white border border-amber-500/40 shadow-2xl hover:border-amber-400/80 p-8 hover:-translate-y-1'
+                        : 'bg-white/90 backdrop-blur-xl text-stone-900 shadow-xl border border-stone-200/90 hover:border-[#8B1E3F]/40 p-8 hover:-translate-y-1'
+                    }`}
                   >
                     {/* Floating Highlight Badges */}
                     {isPopular && (
-                      <div className="absolute top-0 inset-x-0 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 text-stone-950 font-extrabold text-[11px] uppercase tracking-widest text-center py-1.5 shadow-md flex items-center justify-center gap-1.5">
+                      <div className="absolute top-0 inset-x-0 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 text-stone-950 font-black text-[11px] uppercase tracking-widest text-center py-2.5 shadow-md flex items-center justify-center gap-1.5 z-10">
                         <Sparkles className="h-3.5 w-3.5 text-stone-950" /> Most Popular Choice
                       </div>
                     )}
 
                     {isVIP && (
-                      <div className="absolute top-0 inset-x-0 bg-gradient-to-r from-amber-500/20 via-amber-400/30 to-amber-500/20 text-amber-300 font-extrabold text-[11px] uppercase tracking-widest text-center py-1.5 border-b border-amber-400/30 flex items-center justify-center gap-1.5">
-                        <Crown className="h-3.5 w-3.5 text-amber-400" /> Concierge Matchmaking
+                      <div className="absolute top-0 inset-x-0 bg-gradient-to-r from-amber-500/20 via-amber-400/30 to-amber-500/20 text-amber-300 font-black text-[11px] uppercase tracking-widest text-center py-2.5 border-b border-amber-400/30 flex items-center justify-center gap-1.5 backdrop-blur-md z-10">
+                        <Crown className="h-3.5 w-3.5 text-amber-400" /> Executive Concierge
                       </div>
                     )}
 
-                    <div className={isPopular || isVIP ? 'pt-3' : ''}>
-                      {/* Header */}
+                    <div className={isPopular || isVIP ? 'pt-6' : ''}>
+                      {/* Card Header */}
                       <div className="flex items-start justify-between pb-5 border-b border-current/15">
                         <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className={`font-serif text-2xl font-extrabold capitalize ${isPopular || isVIP ? 'text-white' : 'text-stone-900'}`}>
-                              {plan.name}
-                            </h3>
+                          <h3 className={`font-serif text-2xl font-black capitalize tracking-tight ${
+                            isPopular ? 'text-white' : isVIP ? 'bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 bg-clip-text text-transparent' : 'text-stone-900'
+                          }`}>
+                            {plan.name}
+                          </h3>
+                          <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+                            isPopular || isVIP ? 'border-amber-400/30 bg-amber-400/10 text-amber-300' : 'border-stone-200 bg-stone-100 text-stone-700'
+                          }`}>
+                            <Calendar className="h-3.5 w-3.5" />
+                            <span>{plan.validity_days} Days Full Access</span>
                           </div>
-                          <p className={`text-xs mt-1 font-semibold ${isPopular || isVIP ? 'text-stone-200' : 'text-stone-500'}`}>
-                            Validity: <span className="font-extrabold text-amber-300">{plan.validity_days} Days</span>
-                          </p>
                         </div>
                       </div>
 
                       {/* Price Display */}
                       <div className="my-6">
                         <div className="flex items-baseline gap-2">
-                          <span className={`font-serif text-4xl sm:text-5xl font-black tracking-tight ${isPopular ? 'text-amber-300' : isVIP ? 'text-amber-400' : 'text-[#8B1E3F]'
-                            }`}>
+                          <span className={`font-serif text-4xl sm:text-5xl font-black tracking-tight ${
+                            isPopular ? 'text-amber-300' : isVIP ? 'text-amber-400' : 'text-[#8B1E3F]'
+                          }`}>
                             {price === 0 ? 'Free' : `₹${price.toLocaleString()}`}
+                          </span>
+                          <span className={`text-xs font-medium ${isPopular || isVIP ? 'text-stone-300' : 'text-stone-500'}`}>
+                            / {plan.validity_days} Days
                           </span>
                         </div>
                         <p className={`text-[11px] mt-1 font-medium ${isPopular || isVIP ? 'text-stone-300' : 'text-stone-500'}`}>
-                          All-Inclusive Premium Access
+                          All-inclusive membership, no hidden fees
                         </p>
                       </div>
 
                       {/* Feature Highlight Pill Box */}
-                      <div className={`p-3.5 rounded-2xl mb-6 text-xs font-semibold space-y-2 border ${isPopular
-                        ? 'bg-white/10 border-white/20 text-white'
-                        : isVIP
-                          ? 'bg-stone-900 border-stone-800 text-amber-200'
-                          : 'bg-stone-50 border-stone-200 text-stone-800'
-                        }`}>
+                      <div className={`p-4 rounded-2xl mb-6 text-xs font-bold space-y-2 border ${
+                        isPopular
+                          ? 'bg-white/10 border-white/20 text-white'
+                          : isVIP
+                          ? 'bg-stone-900/90 border-stone-800 text-amber-200'
+                          : 'bg-stone-50 border-stone-200/80 text-stone-800'
+                      }`}>
                         <div className="flex items-center justify-between">
-                          <span className="opacity-90">Verified Contacts:</span>
-                          <span className="font-extrabold text-amber-300">{plan.profile_credits} Unlocks</span>
+                          <span className="opacity-90">Verified Phone Unlocks:</span>
+                          <span className={`font-extrabold ${isPopular || isVIP ? 'text-amber-300' : 'text-[#8B1E3F]'}`}>{plan.profile_credits} Unlocks</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="opacity-90">Messaging:</span>
-                          <span className="font-extrabold text-amber-300">{plan.unlimited_messaging ? 'Unlimited' : 'Standard'}</span>
+                          <span className="opacity-90">Direct Chat:</span>
+                          <span className={`font-extrabold ${isPopular || isVIP ? 'text-amber-300' : 'text-[#8B1E3F]'}`}>{plan.unlimited_messaging ? 'Unlimited Messages' : 'Standard Access'}</span>
                         </div>
                       </div>
 
@@ -459,20 +508,20 @@ export const Home: React.FC = () => {
                         <li className="flex items-start gap-2.5">
                           <CheckCircle2 className={`h-4 w-4 shrink-0 mt-0.5 ${isPopular ? 'text-amber-300' : isVIP ? 'text-amber-400' : 'text-emerald-600'}`} />
                           <span className={isPopular || isVIP ? 'text-stone-100 font-medium' : 'text-stone-700 font-medium'}>
-                            {plan.profile_credits} Contact Number Unlocks
+                            <strong>{plan.profile_credits}</strong> Verified Phone & Email Unlocks
                           </span>
                         </li>
                         <li className="flex items-start gap-2.5">
                           <CheckCircle2 className={`h-4 w-4 shrink-0 mt-0.5 ${isPopular ? 'text-amber-300' : isVIP ? 'text-amber-400' : 'text-emerald-600'}`} />
                           <span className={isPopular || isVIP ? 'text-stone-100 font-medium' : 'text-stone-700 font-medium'}>
-                            {plan.validity_days} Days Membership Validity
+                            <strong>{plan.validity_days} Days</strong> Membership Period
                           </span>
                         </li>
                         {plan.unlimited_messaging && (
                           <li className="flex items-start gap-2.5">
                             <CheckCircle2 className={`h-4 w-4 shrink-0 mt-0.5 ${isPopular ? 'text-amber-300' : isVIP ? 'text-amber-400' : 'text-emerald-600'}`} />
                             <span className={isPopular || isVIP ? 'text-stone-100 font-medium' : 'text-stone-700 font-medium'}>
-                              Unlimited Direct Conversations
+                              Unlimited Direct Messaging & Voice Call Requests
                             </span>
                           </li>
                         )}
@@ -480,7 +529,15 @@ export const Home: React.FC = () => {
                           <li className="flex items-start gap-2.5">
                             <CheckCircle2 className={`h-4 w-4 shrink-0 mt-0.5 ${isPopular ? 'text-amber-300' : isVIP ? 'text-amber-400' : 'text-emerald-600'}`} />
                             <span className={isPopular || isVIP ? 'text-stone-100 font-medium' : 'text-stone-700 font-medium'}>
-                              Featured Profile Tag in Search
+                              Top Priority Search Ranking & Featured Badge
+                            </span>
+                          </li>
+                        )}
+                        {isVIP && (
+                          <li className="flex items-start gap-2.5">
+                            <Crown className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
+                            <span className="text-amber-200 font-semibold">
+                              Dedicated Personal Relationship Matchmaker
                             </span>
                           </li>
                         )}
@@ -493,14 +550,15 @@ export const Home: React.FC = () => {
                         variant={isPopular ? 'gold' : isVIP ? 'primary' : 'outline'}
                         size="lg"
                         onClick={() => navigate('/membership')}
-                        className={`w-full font-extrabold shadow-xl h-12 text-xs uppercase tracking-wider transition-all duration-300 ${isPopular
-                          ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 text-stone-950 hover:brightness-110 border border-amber-300'
-                          : isVIP
-                            ? 'bg-gradient-to-r from-[#8B1E3F] to-[#C44569] text-white hover:opacity-95'
-                            : 'border-stone-300 text-stone-800 hover:bg-stone-100'
-                          }`}
+                        className={`w-full font-black shadow-xl h-12 text-xs uppercase tracking-wider transition-all duration-300 ${
+                          isPopular
+                            ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 text-stone-950 hover:brightness-110 border border-amber-200'
+                            : isVIP
+                            ? 'bg-gradient-to-r from-[#8B1E3F] via-[#A0234A] to-[#8B1E3F] hover:from-[#9E2347] hover:to-[#B32953] text-white border border-amber-400/50'
+                            : 'border-2 border-stone-300 text-stone-900 hover:bg-stone-900 hover:text-white'
+                        }`}
                       >
-                        Select {plan.name}
+                        Choose {plan.name}
                       </Button>
                     </div>
                   </div>
@@ -509,15 +567,18 @@ export const Home: React.FC = () => {
             </div>
 
             {/* Trust Guarantees */}
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-stone-600 text-xs font-semibold">
+            <div className="mt-12 pt-8 border-t border-stone-200/60 flex flex-wrap items-center justify-center gap-8 text-stone-600 text-xs font-bold">
               <span className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-emerald-600" /> 100% Safe & Encrypted Payment
+                <ShieldCheck className="h-4.5 w-4.5 text-emerald-600" /> 100% Safe & Encrypted Payments
               </span>
               <span className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-[#8B1E3F]" /> Instant Membership Activation
+                <Sparkles className="h-4.5 w-4.5 text-[#8B1E3F]" /> Instant Plan Activation
               </span>
               <span className="flex items-center gap-2">
-                <Crown className="h-4 w-4 text-[#D4AF37]" /> No Automatic Hidden Charges
+                <Crown className="h-4.5 w-4.5 text-[#D4AF37]" /> Personalized Matchmaking Support
+              </span>
+              <span className="flex items-center gap-2">
+                <Lock className="h-4.5 w-4.5 text-stone-700" /> Complete Phone & Photo Privacy
               </span>
             </div>
           </ScrollReveal>

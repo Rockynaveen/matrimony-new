@@ -55,7 +55,7 @@ export const MembershipPage: React.FC = () => {
     name: p.name.charAt(0).toUpperCase() + p.name.slice(1),
     price: typeof p.price === 'string' ? parseFloat(p.price) : p.price,
     period: `${p.validity_days} Days`,
-    popular: p.is_featured_profile || p.name.toLowerCase().includes('gold'),
+    popular: !p.name.toLowerCase().includes('platinum') && !p.name.toLowerCase().includes('royal') && (p.is_featured_profile || p.name.toLowerCase().includes('gold')),
     features: [
       `${p.profile_credits} Profile Contact Unlocks`,
       `${p.validity_days} Days Full Validity`,
@@ -133,7 +133,7 @@ export const MembershipPage: React.FC = () => {
                   {/* Header Banner */}
                   <div className="flex items-center justify-between pb-3 mb-4 border-b border-current/15">
                     <div>
-                      <h3 className={`font-serif text-xl font-bold ${isPopular || isVIP ? 'text-white' : 'text-stone-900'}`}>
+                      <h3 className={`font-serif text-xl font-bold ${isPopular ? 'text-white' : isVIP ? 'text-amber-300' : 'text-stone-900'}`}>
                         {plan.name}
                       </h3>
                       <p className={`text-[11px] mt-0.5 font-medium ${isPopular || isVIP ? 'text-stone-200' : 'text-stone-500'}`}>

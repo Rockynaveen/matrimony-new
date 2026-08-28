@@ -20,6 +20,7 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { useAddToShortlist, useRemoveFromShortlist, useSendInterest, useAddToIgnore, useBlockProfile } from '../../hooks/useMatching';
 import { useApp } from '../../context/AppContext';
+import { useUIStore } from '../../store/useUIStore';
 
 import { MatchAvatar } from '../ui/MatchAvatar';
 
@@ -109,6 +110,22 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
     }
   };
 
+  const isLocked = match.is_unlocked === false;
+
+  const handleProfileUnlockFlow = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isLocked) {
+      if (match.lock_reason === 'NO_PROFILE_CREDITS') {
+        useUIStore.getState().setLockModal(
+          true,
+          'Profile Locked. You have used all your matching profile credits. Take a membership to view more profiles.'
+        );
+        return;
+      }
+    }
+    navigate(`/profile/${match.user_id}`);
+  };
+
   return (
     <motion.div
       whileHover={{ y: -3 }}
@@ -124,7 +141,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
               firstName={match.first_name}
               lastName={match.last_name}
               variant="card"
-              imgClassName="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+              imgClassName={`h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ${isLocked ? 'filter blur-[3px] opacity-85' : ''}`}
             />
             
             {/* Gradient Overlay */}
@@ -133,9 +150,9 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
             {/* Shortlist Heart Button & Top Badges */}
             <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10">
               <div className="flex items-center gap-1.5">
-                {match.is_unlocked === false && (
-                  <span className="inline-flex items-center gap-1 bg-stone-950/90 text-amber-300 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-amber-400/40 backdrop-blur-xs shadow-xs">
-                    <Lock className="h-2.5 w-2.5 text-amber-400" /> Locked
+                {isLocked && (
+                  <span className="inline-flex items-center gap-1 bg-amber-500 text-stone-950 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-amber-400/40 backdrop-blur-xs shadow-xs">
+                    <Lock className="h-2.5 w-2.5 text-stone-950" /> Locked
                   </span>
                 )}
                 {match.is_mutual && (
@@ -178,7 +195,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
             <div>
               <button
                 type="button"
-                onClick={() => navigate(`/profile/${match.user_id}`)}
+                onClick={handleProfileUnlockFlow}
                 className="font-serif text-sm sm:text-base font-bold text-stone-900 hover:text-[#8B1E3F] transition-colors text-left truncate block w-full"
               >
                 {match.first_name} {match.last_name}{match.age ? `, ${match.age}` : ''}
@@ -254,14 +271,25 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
               </Button>
             )}
 
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => navigate(`/profile/${match.user_id}`)}
-              className="w-full h-8 text-[11px] border-2 border-[#8B1E3F] bg-white text-[#8B1E3F] hover:bg-[#8B1E3F] hover:text-white transition-all font-bold shadow-2xs"
-            >
-              View Profile
-            </Button>
+            {isLocked ? (
+              <Button
+                size="sm"
+                variant="gold"
+                onClick={handleProfileUnlockFlow}
+                className="w-full h-8 text-[11px] font-extrabold bg-amber-500 hover:bg-amber-600 text-stone-950 flex items-center justify-center gap-1 rounded-xl shadow-xs"
+              >
+                <Lock className="h-3 w-3 text-stone-950" /> Unlock Profile
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleProfileUnlockFlow}
+                className="w-full h-8 text-[11px] border-2 border-[#8B1E3F] bg-white text-[#8B1E3F] hover:bg-[#8B1E3F] hover:text-white transition-all font-bold shadow-2xs"
+              >
+                View Profile
+              </Button>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-1 mt-1.5 pt-1 border-t border-stone-50/50">

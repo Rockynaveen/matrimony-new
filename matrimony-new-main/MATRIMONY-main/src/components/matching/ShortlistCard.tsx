@@ -10,11 +10,13 @@ import {
   Eye,
   Trash2,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  Lock
 } from 'lucide-react';
 import type { MatchResponseSchema } from '../../types/matching.types';
 import { useRemoveFromShortlist } from '../../hooks/useMatching';
 import { useApp } from '../../context/AppContext';
+import { useUIStore } from '../../store/useUIStore';
 
 import { MatchAvatar } from '../ui/MatchAvatar';
 
@@ -27,6 +29,22 @@ export const ShortlistCard: React.FC<ShortlistCardProps> = ({ profile }) => {
   const { showToast } = useApp();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const removeMutation = useRemoveFromShortlist();
+
+  const isLocked = profile.is_unlocked === false;
+
+  const handleProfileUnlockFlow = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isLocked) {
+      if (profile.lock_reason === 'NO_PROFILE_CREDITS') {
+        useUIStore.getState().setLockModal(
+          true,
+          'Profile Locked. You have used all your matching profile credits. Take a membership to view more profiles.'
+        );
+        return;
+      }
+    }
+    navigate(`/profile/${profile.user_id}`);
+  };
 
   const handleRemove = async () => {
     try {
@@ -49,9 +67,16 @@ export const ShortlistCard: React.FC<ShortlistCardProps> = ({ profile }) => {
               firstName={profile.first_name}
               lastName={profile.last_name}
               variant="card"
-              imgClassName="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+              imgClassName={`h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ${isLocked ? 'filter blur-[3px] opacity-85' : ''}`}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            
+            {isLocked && (
+              <div className="absolute top-3 left-3 bg-amber-500 text-stone-950 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-amber-400/40 backdrop-blur-xs flex items-center gap-1">
+                <Lock className="h-2.5 w-2.5 text-stone-950" /> Locked
+              </div>
+            )}
+
             <div className="absolute bottom-3 left-3 text-white">
               <span className="text-[10px] font-bold text-white/90">ID: {profile.user_id}</span>
             </div>
@@ -63,17 +88,21 @@ export const ShortlistCard: React.FC<ShortlistCardProps> = ({ profile }) => {
           </div>
 
           {/* Details */}
-          <div className="p-4 space-y-1.5">
+          <div className="p-4 space-y-2">
             <div>
-              <h4 className="font-serif text-base font-bold text-stone-900 line-clamp-1">
+              <button
+                type="button"
+                onClick={handleProfileUnlockFlow}
+                className="font-serif text-base font-bold text-stone-900 hover:text-[#8B1E3F] transition-colors text-left block w-full truncate"
+              >
                 {profile.first_name} {profile.last_name}{profile.age ? `, ${profile.age}` : ''}
-              </h4>
-              <p className="text-[10px] font-bold text-[#8B1E3F] tracking-wide uppercase mt-0.5">
+              </button>
+              <p className="text-[10px] font-bold text-[#8B1E3F] uppercase tracking-wider mt-0.5">
                 {profile.religion} • {profile.caste}
               </p>
             </div>
 
-            <div className="space-y-1 text-xs text-stone-500 pt-1 border-t border-stone-50">
+            <div className="space-y-1 text-xs text-stone-600 pt-2 border-t border-stone-100">
               <div className="flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5 text-stone-400 shrink-0" />
                 <span className="truncate">{profile.city || 'Not specified'}, {profile.state || 'N/A'}</span>
@@ -92,14 +121,25 @@ export const ShortlistCard: React.FC<ShortlistCardProps> = ({ profile }) => {
 
         {/* Actions */}
         <div className="p-4 pt-0 grid grid-cols-2 gap-2 mt-1 border-t border-stone-50/50 pt-3">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => navigate(`/profile/${profile.user_id}`)}
-            className="w-full text-xs border-2 border-[#8B1E3F] bg-white text-[#8B1E3F] hover:bg-[#8B1E3F] hover:text-white transition-all font-bold shadow-2xs"
-          >
-            <Eye className="h-3.5 w-3.5 mr-1" /> View
-          </Button>
+          {isLocked ? (
+            <Button
+              size="sm"
+              variant="gold"
+              onClick={handleProfileUnlockFlow}
+              className="w-full text-xs font-extrabold bg-amber-500 hover:bg-amber-600 text-stone-950 flex items-center justify-center gap-1 rounded-xl shadow-xs"
+            >
+              <Lock className="h-3.5 w-3.5 mr-1 text-stone-950" /> Unlock
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleProfileUnlockFlow}
+              className="w-full text-xs border-2 border-[#8B1E3F] bg-white text-[#8B1E3F] hover:bg-[#8B1E3F] hover:text-white transition-all font-bold shadow-2xs"
+            >
+              <Eye className="h-3.5 w-3.5 mr-1" /> View
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"

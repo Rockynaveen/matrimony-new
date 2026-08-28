@@ -4,6 +4,7 @@ import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
 import { Breadcrumbs } from '../components/layout/Breadcrumbs';
 import { Toast } from '../components/ui/Toast';
+import { LockedFeatureModal } from '../components/ui/LockedFeatureModal';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { UserLayout } from '../components/layout/UserLayout';
 
@@ -79,6 +80,7 @@ const MainLayout: React.FC = () => {
       </main>
       <Footer />
       <Toast />
+      <LockedFeatureModal />
     </div>
   );
 };

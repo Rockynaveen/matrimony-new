@@ -92,8 +92,8 @@ export function useSendTextMessage() {
 export function useSendAttachmentMessage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ roomId, file, message }: { roomId: number | string; file: File; message?: string }) =>
-      chatApi.sendWithAttachment(roomId, file, message),
+    mutationFn: ({ roomId, file, message, receiverId }: { roomId: number | string; file: File; message?: string; receiverId?: number | string }) =>
+      chatApi.sendWithAttachment(roomId, file, message, receiverId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: chatKeys.messages(variables.roomId) });
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
@@ -149,6 +149,10 @@ export function useChatHeartbeat(roomId?: number | string, enabled: boolean = tr
 
     // Periodic heartbeat timer every 25s
     const timer = setInterval(() => {
+      if (!localStorage.getItem('access_token')) {
+        clearInterval(timer);
+        return;
+      }
       chatApi.sendHeartbeat(roomId).catch(() => {});
     }, 25000);
 
@@ -174,8 +178,8 @@ export function useGetUserOnlineStatus(userId?: number | string, enabled: boolea
 export function useSendVoiceMessage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ roomId, audioBlob }: { roomId: number | string; audioBlob: Blob | File }) =>
-      chatApi.sendVoiceMessage(roomId, audioBlob),
+    mutationFn: ({ roomId, audioBlob, receiverId }: { roomId: number | string; audioBlob: Blob | File; receiverId?: number | string }) =>
+      chatApi.sendVoiceMessage(roomId, audioBlob, receiverId),
     onSuccess: (data, variables) => {
       const roomIdStr = String(variables.roomId);
       queryClient.setQueryData<import('../types/chat.types').ChatMessageOut[]>(chatKeys.messages(roomIdStr), (old = []) => {
@@ -210,8 +214,8 @@ export function useSendImageMessage() {
 export function useSendVideoMessage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ roomId, videoFile }: { roomId: number | string; videoFile: File }) =>
-      chatApi.sendVideoMessage(roomId, videoFile),
+    mutationFn: ({ roomId, videoFile, receiverId }: { roomId: number | string; videoFile: File; receiverId?: number | string }) =>
+      chatApi.sendVideoMessage(roomId, videoFile, receiverId),
     onSuccess: (data, variables) => {
       const roomIdStr = String(variables.roomId);
       queryClient.setQueryData<import('../types/chat.types').ChatMessageOut[]>(chatKeys.messages(roomIdStr), (old = []) => {
@@ -228,8 +232,8 @@ export function useSendVideoMessage() {
 export function useSendDocumentMessage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ roomId, docFile }: { roomId: number | string; docFile: File }) =>
-      chatApi.sendDocumentMessage(roomId, docFile),
+    mutationFn: ({ roomId, docFile, receiverId }: { roomId: number | string; docFile: File; receiverId?: number | string }) =>
+      chatApi.sendDocumentMessage(roomId, docFile, receiverId),
     onSuccess: (data, variables) => {
       const roomIdStr = String(variables.roomId);
       queryClient.setQueryData<import('../types/chat.types').ChatMessageOut[]>(chatKeys.messages(roomIdStr), (old = []) => {

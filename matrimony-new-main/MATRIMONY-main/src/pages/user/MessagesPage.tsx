@@ -322,69 +322,11 @@ export const MessagesPage: React.FC = () => {
     return true;
   });
 
-  const fallbackMockConversations = [
-    {
-      id: '1001',
-      user_id: 1001,
-      name: 'Ananya Sharma',
-      profileImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
-      verified: true,
-      age: 26,
-      height: "5'6\"",
-      profession: 'Software Engineer',
-      city: 'Bangalore, India',
-      religion: 'Hindu',
-      caste: 'Brahmin',
-      online: true,
-      matchPercentage: 96,
-      last_message: 'Hi! I liked your profile. Would love to connect!',
-      last_message_time: '10:30 AM',
-      is_accepted: true
-    },
-    {
-      id: '1002',
-      user_id: 1002,
-      name: 'Rohan Verma',
-      profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
-      verified: true,
-      age: 28,
-      height: "5'10\"",
-      profession: 'Senior Product Manager',
-      city: 'Delhi NCR, India',
-      religion: 'Hindu',
-      caste: 'Khatri',
-      online: true,
-      matchPercentage: 94,
-      last_message: 'Hello! I checked your profile and would love to connect.',
-      last_message_time: 'Yesterday',
-      is_accepted: true
-    },
-    {
-      id: '1003',
-      user_id: 1003,
-      name: 'Priya Patel',
-      profileImage: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400',
-      verified: true,
-      age: 25,
-      height: "5'4\"",
-      profession: 'UI/UX Designer',
-      city: 'Mumbai, India',
-      religion: 'Hindu',
-      caste: 'Patel',
-      online: false,
-      matchPercentage: 91,
-      last_message: 'Thanks for accepting my interest request.',
-      last_message_time: '2 days ago',
-      is_accepted: true
-    }
-  ];
-
   const existingIds = new Set(acceptedRemoteConvs.map(c => String(c.id)));
   const existingUserIds = new Set(acceptedRemoteConvs.map(c => String(c.user_id)));
   const additionalAccepted = acceptedInterestsList.filter(a => !existingIds.has(String(a.id)) && !existingUserIds.has(String(a.user_id)));
 
-  const rawConvsList = [...acceptedRemoteConvs, ...additionalAccepted];
-  const conversationsList = rawConvsList.length > 0 ? rawConvsList : fallbackMockConversations;
+  const conversationsList = [...acceptedRemoteConvs, ...additionalAccepted];
 
   const parseNumericId = (val?: string | number): number => {
     if (!val) return 0;
@@ -393,16 +335,15 @@ export const MessagesPage: React.FC = () => {
     return digits ? Number(digits) : (Number(val) || 0);
   };
 
-  const selectedProfileId = id || conversationsList[0]?.id || '1001';
-  const numericRoomId = parseNumericId(selectedProfileId) || 1001;
+  const selectedProfileId = id || conversationsList[0]?.id || '';
+  const numericRoomId = parseNumericId(selectedProfileId);
 
   // Find active match from conversationsList
   const activeMatch = conversationsList.find(c =>
     String(c.id) === String(selectedProfileId) ||
     String(c.user_id) === String(selectedProfileId) ||
-    parseNumericId(c.id) === numericRoomId ||
-    parseNumericId(c.user_id) === numericRoomId
-  ) || conversationsList[0];
+    (numericRoomId > 0 && (parseNumericId(c.id) === numericRoomId || parseNumericId(c.user_id) === numericRoomId))
+  ) || conversationsList[0] || null;
 
   const targetRecipientUserId = activeMatch && activeMatch.user_id ? Number(activeMatch.user_id) : undefined;
   const { data: recipientOnlineStatusData } = useGetUserOnlineStatus(targetRecipientUserId, Boolean(targetRecipientUserId));
@@ -553,9 +494,9 @@ export const MessagesPage: React.FC = () => {
   const handleSendVoiceBlob = async (audioBlob: Blob) => {
     const recipientUserId = activeMatch && activeMatch.user_id && Number(activeMatch.user_id) !== currentUserIdNum
       ? Number(activeMatch.user_id)
-      : undefined;
+      : numericRoomId;
     try {
-      await sendVoiceMutation.mutateAsync({ roomId: numericRoomId, audioBlob });
+      await sendVoiceMutation.mutateAsync({ roomId: numericRoomId, receiverId: recipientUserId, audioBlob });
       showToast('Voice note sent!');
       setIsVoiceRecording(false);
     } catch (err: any) {
@@ -567,7 +508,7 @@ export const MessagesPage: React.FC = () => {
   const handleSendImageFile = async (file: File) => {
     const recipientUserId = activeMatch && activeMatch.user_id && Number(activeMatch.user_id) !== currentUserIdNum
       ? Number(activeMatch.user_id)
-      : undefined;
+      : numericRoomId;
     try {
       await sendImageMutation.mutateAsync({ roomId: numericRoomId, receiverId: recipientUserId, imageFile: file });
       showToast('Image sent successfully!');
@@ -577,8 +518,11 @@ export const MessagesPage: React.FC = () => {
   };
 
   const handleSendVideoFile = async (file: File) => {
+    const recipientUserId = activeMatch && activeMatch.user_id && Number(activeMatch.user_id) !== currentUserIdNum
+      ? Number(activeMatch.user_id)
+      : numericRoomId;
     try {
-      await sendVideoMutation.mutateAsync({ roomId: numericRoomId, videoFile: file });
+      await sendVideoMutation.mutateAsync({ roomId: numericRoomId, receiverId: recipientUserId, videoFile: file });
       showToast('Video sent successfully!');
     } catch (err: any) {
       showToast(err?.message || 'Video upload complete!');
@@ -586,8 +530,11 @@ export const MessagesPage: React.FC = () => {
   };
 
   const handleSendDocumentFile = async (file: File) => {
+    const recipientUserId = activeMatch && activeMatch.user_id && Number(activeMatch.user_id) !== currentUserIdNum
+      ? Number(activeMatch.user_id)
+      : numericRoomId;
     try {
-      await sendDocumentMutation.mutateAsync({ roomId: numericRoomId, docFile: file });
+      await sendDocumentMutation.mutateAsync({ roomId: numericRoomId, receiverId: recipientUserId, docFile: file });
       showToast('Document sent successfully!');
     } catch (err: any) {
       showToast(err?.message || 'Document upload complete!');
@@ -595,8 +542,11 @@ export const MessagesPage: React.FC = () => {
   };
 
   const handleSendAttachmentFile = async (file: File) => {
+    const recipientUserId = activeMatch && activeMatch.user_id && Number(activeMatch.user_id) !== currentUserIdNum
+      ? Number(activeMatch.user_id)
+      : numericRoomId;
     try {
-      await sendAttachmentMutation.mutateAsync({ roomId: numericRoomId, file });
+      await sendAttachmentMutation.mutateAsync({ roomId: numericRoomId, receiverId: recipientUserId, file });
       showToast('Attachment uploaded successfully!');
     } catch (err: any) {
       showToast(err?.message || 'Attachment sent!');

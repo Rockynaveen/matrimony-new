@@ -333,27 +333,46 @@ export const chatApi = {
   },
 
   // 4. POST /api/chat/send-with-attachment
-  sendWithAttachment: async (roomId: number | string, file: File, message?: string): Promise<ChatMessageOut> => {
-    const roomIdNum = Number(roomId);
-    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+  sendWithAttachment: async (roomId: number | string, file: File, message?: string, receiverId?: number | string): Promise<ChatMessageOut> => {
+    const roomIdNum = toNumericId(roomId);
+    const receiverIdNum = toNumericId(receiverId) || roomIdNum;
+    const currentUserId = getAuthUserId();
     const objectUrl = URL.createObjectURL(file);
 
     const formData = new FormData();
     formData.append('room_id', String(roomIdNum));
-    formData.append('receiver_id', String(roomIdNum));
+    formData.append('user_id', String(currentUserId));
+    formData.append('sender_id', String(currentUserId));
+    formData.append('from_user', String(currentUserId));
+    formData.append('receiver_id', String(receiverIdNum));
+    formData.append('recipient_id', String(receiverIdNum));
+    formData.append('to_user', String(receiverIdNum));
     formData.append('file', file);
     formData.append('attachment', file);
     if (message) formData.append('message', message);
 
     try {
-      const res = await axiosClient.post<any>('/chat/send-with-attachment', formData);
+      const res = await axiosClient.post<any>('/chat/send-with-attachment', formData, {
+        params: {
+          room_id: roomIdNum,
+          user_id: currentUserId,
+          sender_id: currentUserId,
+          from_user: currentUserId,
+          receiver_id: receiverIdNum,
+          recipient_id: receiverIdNum,
+          to_user: receiverIdNum
+        }
+      });
       if (res.status >= 200 && res.status < 300 && res.data) {
+        const rawUrl = res.data.attachment_url || res.data.url || res.data.file || res.data.image || objectUrl;
+        const finalUrl = formatMediaUrl(rawUrl) || objectUrl;
         return {
           ...res.data,
           id: res.data.id || Date.now(),
           room_id: roomIdNum,
           sender_id: currentUserId,
-          attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+          receiver_id: receiverIdNum,
+          attachment_url: finalUrl,
           is_me: true
         };
       }
@@ -363,6 +382,7 @@ export const chatApi = {
       id: Date.now(),
       room_id: roomIdNum,
       sender_id: currentUserId,
+      receiver_id: receiverIdNum,
       attachment_url: objectUrl,
       created_at: new Date().toISOString(),
       timestamp: new Date().toISOString(),
@@ -406,18 +426,27 @@ export const chatApi = {
       '/chat/UserOnlineStatus',
       '/chat/UserOnlineStatus/',
       '/chat/user-online-status',
-      '/chat/user-online-status/'
+      '/chat/user-online-status/',
+      '/chat/heartbeat',
+      '/chat/heartbeat/',
+      '/chat/online-status',
+      '/chat/online-status/'
     ];
+
+    const body: Record<string, any> = {
+      user_id: currentUserId,
+      user: currentUserId,
+      is_online: true,
+      status: 'online'
+    };
+    if (roomId) body.room_id = toNumericId(roomId);
 
     for (const url of candidateUrls) {
       try {
-        const res = await axiosClient.post(url, {
-          user_id: currentUserId,
-          room_id: roomId ? Number(roomId) : undefined
-        });
+        const res = await axiosClient.post(url, body);
         if (res.status >= 200 && res.status < 300 && res.data) {
           const rawData = res.data;
-          const isOnline = rawData.is_online ?? (rawData.status === 'online') ?? true;
+          const isOnline = rawData.is_online ?? rawData.online ?? (rawData.status === 'online') ?? true;
           return {
             success: rawData.success ?? true,
             user_id: rawData.user_id || currentUserId,
@@ -436,7 +465,7 @@ export const chatApi = {
   // 8.5 UserOnlineStatus Query (GET -> /api/chat/UserOnlineStatus?user_id=167 to read/check status without mutating last_active)
   getUserOnlineStatus: async (userId?: number | string): Promise<{ success: boolean; user_id: number; is_online: boolean; status: string; last_seen?: string }> => {
     const currentUserId = getAuthUserId();
-    const targetUserId = Number(userId || currentUserId || 0);
+    const targetUserId = toNumericId(userId) || currentUserId;
 
     if (!targetUserId) return { success: true, user_id: 0, is_online: false, status: 'offline' };
 
@@ -446,7 +475,9 @@ export const chatApi = {
       `/chat/UserOnlineStatus?userId=${targetUserId}`,
       `/chat/UserOnlineStatus/?userId=${targetUserId}`,
       `/chat/user-online-status?user_id=${targetUserId}`,
-      `/chat/user-online-status/?user_id=${targetUserId}`
+      `/chat/user-online-status/?user_id=${targetUserId}`,
+      `/chat/online-status?user_id=${targetUserId}`,
+      `/chat/online-status/?user_id=${targetUserId}`
     ];
 
     for (const url of candidateUrls) {
@@ -460,16 +491,20 @@ export const chatApi = {
             isOnline = rawData.is_online;
           } else if (typeof rawData.online === 'boolean') {
             isOnline = rawData.online;
-          } else if (rawData.status === 'online') {
+          } else if (typeof rawData.is_active === 'boolean') {
+            isOnline = rawData.is_active;
+          } else if (typeof rawData.active === 'boolean') {
+            isOnline = rawData.active;
+          } else if (rawData.status === 'online' || rawData.status === 'active') {
             isOnline = true;
           }
 
-          // If last_seen is present, enforce 90-second online timeout check
+          // If last_seen is present, check timeout (120 sec window)
           if (rawData.last_seen) {
             const lastSeenDate = new Date(rawData.last_seen);
             if (!isNaN(lastSeenDate.getTime())) {
               const diffSec = (Date.now() - lastSeenDate.getTime()) / 1000;
-              if (diffSec > 90) {
+              if (diffSec > 120) {
                 isOnline = false;
               }
             }
@@ -488,7 +523,7 @@ export const chatApi = {
       }
     }
 
-    // Fallback: If user is current logged in user and no response from endpoint
+    // Fallback: If user is current logged in user and authenticated
     if (currentUserId && targetUserId === currentUserId) {
       return { success: true, user_id: currentUserId, is_online: true, status: 'online' };
     }
@@ -497,14 +532,20 @@ export const chatApi = {
   },
 
   // 9. POST /api/chat/send-voice
-  sendVoiceMessage: async (roomId: number | string, audioBlob: Blob | File): Promise<ChatMessageOut> => {
-    const roomIdNum = Number(roomId);
-    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+  sendVoiceMessage: async (roomId: number | string, audioBlob: Blob | File, receiverId?: number | string): Promise<ChatMessageOut> => {
+    const roomIdNum = toNumericId(roomId);
+    const receiverIdNum = toNumericId(receiverId) || roomIdNum;
+    const currentUserId = getAuthUserId();
     const objectUrl = URL.createObjectURL(audioBlob);
 
     const formData = new FormData();
     formData.append('room_id', String(roomIdNum));
-    formData.append('receiver_id', String(roomIdNum));
+    formData.append('user_id', String(currentUserId));
+    formData.append('sender_id', String(currentUserId));
+    formData.append('from_user', String(currentUserId));
+    formData.append('receiver_id', String(receiverIdNum));
+    formData.append('recipient_id', String(receiverIdNum));
+    formData.append('to_user', String(receiverIdNum));
     const file = audioBlob instanceof File ? audioBlob : new File([audioBlob], 'voice_note.webm', { type: 'audio/webm' });
     formData.append('file', file);
     formData.append('audio', file);
@@ -522,7 +563,15 @@ export const chatApi = {
     for (const url of candidateUrls) {
       try {
         const res = await axiosClient.post<any>(url, formData, {
-          params: { room_id: roomIdNum, receiver_id: roomIdNum, recipient_id: roomIdNum }
+          params: {
+            room_id: roomIdNum,
+            user_id: currentUserId,
+            sender_id: currentUserId,
+            from_user: currentUserId,
+            receiver_id: receiverIdNum,
+            recipient_id: receiverIdNum,
+            to_user: receiverIdNum
+          }
         });
         if (res.status >= 200 && res.status < 300 && res.data) {
           createdMsg = {
@@ -530,8 +579,9 @@ export const chatApi = {
             id: res.data.id || Date.now(),
             room_id: roomIdNum,
             sender_id: currentUserId,
+            receiver_id: receiverIdNum,
             message_type: 'voice',
-            attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+            attachment_url: formatMediaUrl(res.data.attachment_url || res.data.url || res.data.file || objectUrl) || objectUrl,
             created_at: res.data.created_at || new Date().toISOString(),
             timestamp: res.data.timestamp || new Date().toISOString(),
             is_me: true
@@ -546,6 +596,7 @@ export const chatApi = {
         id: Date.now(),
         room_id: roomIdNum,
         sender_id: currentUserId,
+        receiver_id: receiverIdNum,
         message_type: 'voice',
         attachment_url: objectUrl,
         created_at: new Date().toISOString(),
@@ -566,17 +617,19 @@ export const chatApi = {
 
   // 10. POST /api/chat/send-image
   sendImageMessage: async (roomId: number | string, imageFile: File, receiverId?: number | string): Promise<ChatMessageOut> => {
-    const roomIdNum = Number(roomId);
-    const receiverIdNum = Number(receiverId || roomIdNum);
-    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+    const roomIdNum = toNumericId(roomId);
+    const receiverIdNum = toNumericId(receiverId) || roomIdNum;
+    const currentUserId = getAuthUserId();
     const objectUrl = URL.createObjectURL(imageFile);
 
     const formData = new FormData();
     formData.append('room_id', String(roomIdNum));
+    formData.append('user_id', String(currentUserId));
+    formData.append('sender_id', String(currentUserId));
+    formData.append('from_user', String(currentUserId));
     formData.append('receiver_id', String(receiverIdNum));
     formData.append('recipient_id', String(receiverIdNum));
     formData.append('to_user', String(receiverIdNum));
-    formData.append('user_id', String(receiverIdNum));
     formData.append('file', imageFile);
     formData.append('image', imageFile);
     formData.append('photo', imageFile);
@@ -597,7 +650,15 @@ export const chatApi = {
     for (const url of candidateUrls) {
       try {
         const res = await axiosClient.post<any>(url, formData, {
-          params: { room_id: roomIdNum, receiver_id: receiverIdNum, recipient_id: receiverIdNum, to_user: receiverIdNum }
+          params: {
+            room_id: roomIdNum,
+            user_id: currentUserId,
+            sender_id: currentUserId,
+            from_user: currentUserId,
+            receiver_id: receiverIdNum,
+            recipient_id: receiverIdNum,
+            to_user: receiverIdNum
+          }
         });
         if (res.status >= 200 && res.status < 300 && res.data) {
           const dataStr = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
@@ -652,15 +713,20 @@ export const chatApi = {
   },
 
   // 11. POST /api/chat/send-video
-  sendVideoMessage: async (roomId: number | string, videoFile: File): Promise<ChatMessageOut> => {
-    const roomIdNum = Number(roomId);
-    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+  sendVideoMessage: async (roomId: number | string, videoFile: File, receiverId?: number | string): Promise<ChatMessageOut> => {
+    const roomIdNum = toNumericId(roomId);
+    const receiverIdNum = toNumericId(receiverId) || roomIdNum;
+    const currentUserId = getAuthUserId();
     const objectUrl = URL.createObjectURL(videoFile);
 
     const formData = new FormData();
     formData.append('room_id', String(roomIdNum));
-    formData.append('receiver_id', String(roomIdNum));
-    formData.append('recipient_id', String(roomIdNum));
+    formData.append('user_id', String(currentUserId));
+    formData.append('sender_id', String(currentUserId));
+    formData.append('from_user', String(currentUserId));
+    formData.append('receiver_id', String(receiverIdNum));
+    formData.append('recipient_id', String(receiverIdNum));
+    formData.append('to_user', String(receiverIdNum));
     formData.append('file', videoFile);
     formData.append('video', videoFile);
     formData.append('media', videoFile);
@@ -678,16 +744,26 @@ export const chatApi = {
     for (const url of candidateUrls) {
       try {
         const res = await axiosClient.post<any>(url, formData, {
-          params: { room_id: roomIdNum, receiver_id: roomIdNum, recipient_id: roomIdNum }
+          params: {
+            room_id: roomIdNum,
+            user_id: currentUserId,
+            sender_id: currentUserId,
+            from_user: currentUserId,
+            receiver_id: receiverIdNum,
+            recipient_id: receiverIdNum,
+            to_user: receiverIdNum
+          }
         });
         if (res.status >= 200 && res.status < 300 && res.data) {
+          const rawUrl = res.data.attachment_url || res.data.url || res.data.file || res.data.video || objectUrl;
           createdMsg = {
             ...res.data,
             id: res.data.id || Date.now(),
             room_id: roomIdNum,
             sender_id: currentUserId,
+            receiver_id: receiverIdNum,
             message_type: 'video',
-            attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+            attachment_url: formatMediaUrl(rawUrl) || objectUrl,
             created_at: res.data.created_at || new Date().toISOString(),
             timestamp: res.data.timestamp || new Date().toISOString(),
             is_me: true
@@ -702,6 +778,7 @@ export const chatApi = {
         id: Date.now(),
         room_id: roomIdNum,
         sender_id: currentUserId,
+        receiver_id: receiverIdNum,
         message_type: 'video',
         attachment_url: objectUrl,
         created_at: new Date().toISOString(),
@@ -721,14 +798,20 @@ export const chatApi = {
   },
 
   // 12. POST /api/chat/send-document
-  sendDocumentMessage: async (roomId: number | string, docFile: File): Promise<ChatMessageOut> => {
-    const roomIdNum = Number(roomId);
-    const currentUserId = Number(localStorage.getItem('user_id') || 0);
+  sendDocumentMessage: async (roomId: number | string, docFile: File, receiverId?: number | string): Promise<ChatMessageOut> => {
+    const roomIdNum = toNumericId(roomId);
+    const receiverIdNum = toNumericId(receiverId) || roomIdNum;
+    const currentUserId = getAuthUserId();
     const objectUrl = URL.createObjectURL(docFile);
 
     const formData = new FormData();
     formData.append('room_id', String(roomIdNum));
-    formData.append('receiver_id', String(roomIdNum));
+    formData.append('user_id', String(currentUserId));
+    formData.append('sender_id', String(currentUserId));
+    formData.append('from_user', String(currentUserId));
+    formData.append('receiver_id', String(receiverIdNum));
+    formData.append('recipient_id', String(receiverIdNum));
+    formData.append('to_user', String(receiverIdNum));
     formData.append('file', docFile);
     formData.append('document', docFile);
 
@@ -745,16 +828,26 @@ export const chatApi = {
     for (const url of candidateUrls) {
       try {
         const res = await axiosClient.post<any>(url, formData, {
-          params: { room_id: roomIdNum, receiver_id: roomIdNum, recipient_id: roomIdNum }
+          params: {
+            room_id: roomIdNum,
+            user_id: currentUserId,
+            sender_id: currentUserId,
+            from_user: currentUserId,
+            receiver_id: receiverIdNum,
+            recipient_id: receiverIdNum,
+            to_user: receiverIdNum
+          }
         });
         if (res.status >= 200 && res.status < 300 && res.data) {
+          const rawUrl = res.data.attachment_url || res.data.url || res.data.file || res.data.document || objectUrl;
           createdMsg = {
             ...res.data,
             id: res.data.id || Date.now(),
             room_id: roomIdNum,
             sender_id: currentUserId,
+            receiver_id: receiverIdNum,
             message_type: 'document',
-            attachment_url: res.data.attachment_url || res.data.url || res.data.file || objectUrl,
+            attachment_url: formatMediaUrl(rawUrl) || objectUrl,
             message: docFile.name,
             created_at: res.data.created_at || new Date().toISOString(),
             timestamp: res.data.timestamp || new Date().toISOString(),
@@ -770,6 +863,7 @@ export const chatApi = {
         id: Date.now(),
         room_id: roomIdNum,
         sender_id: currentUserId,
+        receiver_id: receiverIdNum,
         message_type: 'document',
         attachment_url: objectUrl,
         message: docFile.name,

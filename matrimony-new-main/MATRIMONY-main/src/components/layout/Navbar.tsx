@@ -32,9 +32,13 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { useShortlistStore } from '../../store/useShortlistStore';
+import { useChatHeartbeat } from '../../hooks/useChat';
 
 export const Navbar: React.FC = () => {
   const { currentUser, verificationStatus, notifications, unreadCount, markNotificationRead, logout, isAuthenticated, onboardingStatus, getPendingRoute } = useApp();
+  
+  // Continuous global online status heartbeat for logged-in user
+  useChatHeartbeat(undefined, isAuthenticated);
   const shortlistedIds = useShortlistStore((state) => state.shortlistedIds);
   const { data: sentInterests } = useSentInterests();
   const { data: receivedInterests } = useReceivedInterests();

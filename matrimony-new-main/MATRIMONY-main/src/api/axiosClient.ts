@@ -175,7 +175,12 @@ class AxiosClient {
           console.log('[AxiosClient] Token refreshed. Retrying original request with new token...');
           return this.handleResponse(fetchFn, true);
         } else {
-          console.warn('[AxiosClient] Token refresh failed. User session may have expired.');
+          console.warn('[AxiosClient] Token refresh failed. User session expired.');
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          try {
+            useAuthStore.getState().logout();
+          } catch {}
         }
       }
     }

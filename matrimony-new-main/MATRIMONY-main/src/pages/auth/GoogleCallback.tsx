@@ -22,26 +22,10 @@ export const GoogleCallback: React.FC = () => {
         if (idToken) {
           setStatusMsg('Verifying Google credentials with server...');
           const resGoogle = await googleAuthApi.googleLogin({ id_token: idToken, action: 'login' });
-          if (resGoogle.user) {
-            const name = `${resGoogle.user.first_name || ''} ${resGoogle.user.last_name || ''}`.trim();
-            if (name) {
-              localStorage.setItem('logged_in_name', name);
-            }
-            if (resGoogle.user.email) {
-              localStorage.setItem('logged_in_email', resGoogle.user.email);
-            }
-            const avatarUrl = (resGoogle.user as any).picture ||
-              (resGoogle.user as any).avatar ||
-              (resGoogle.user as any).profile_image ||
-              (resGoogle.user as any).photo_url ||
-              (resGoogle.user as any).image ||
-              (resGoogle as any).picture ||
-              (resGoogle as any).avatar;
-            if (avatarUrl) {
-              localStorage.setItem('logged_in_avatar', avatarUrl);
-              localStorage.setItem('google_avatar', avatarUrl);
-            }
+          if (resGoogle.user && resGoogle.user.email) {
+            localStorage.setItem('logged_in_email', resGoogle.user.email);
           }
+          localStorage.removeItem('google_avatar');
           localStorage.setItem('login_method', 'google');
           const res = await checkProfileStatus();
           showToast('Google Sign-In successful!');

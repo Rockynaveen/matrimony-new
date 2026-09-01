@@ -914,11 +914,14 @@ export const MessagesPage: React.FC = () => {
                           /* Standard Message Bubble */
                           <div className="flex items-end gap-2 max-w-[80%] sm:max-w-md relative">
                             {!isMe && (
-                              <img
-                                src={activeProfile.profileImage}
-                                alt=""
-                                className="h-6 w-6 rounded-full object-cover ring-1 ring-stone-300 mb-1 shrink-0"
-                              />
+                              <div className="h-6 w-6 shrink-0 mb-1">
+                                <MatchAvatar
+                                  photo={activeProfile.profileImage}
+                                  name={activeProfile.name}
+                                  variant="circle"
+                                  className="h-6 w-6 text-[10px] ring-1 ring-stone-300"
+                                />
+                              </div>
                             )}
                             <div className="relative group">
                               

@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://matrimony-production-e116.up.railway.app/api/:path*"
+      "destination": "https://matrimony-production-4b00.up.railway.app/api/:path*"
     },
     {
       "source": "/(.*)",

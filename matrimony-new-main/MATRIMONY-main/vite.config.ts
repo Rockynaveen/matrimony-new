@@ -17,7 +17,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://matrimony-production-e116.up.railway.app',
+        target: 'https://matrimony-production-4b00.up.railway.app',
         changeOrigin: true,
         secure: true,
       },

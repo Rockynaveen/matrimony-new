@@ -283,7 +283,7 @@ class AxiosClient {
 
 // In dev → '/api' (proxied by Vite)
 // In production (Vercel) → direct Railway backend URL (Railway handles CORS natively)
-const RAILWAY_API_URL = 'https://matrimony-production-e116.up.railway.app/api';
+const RAILWAY_API_URL = 'https://matrimony-production-4b00.up.railway.app/api';
 const API_BASE_URL = import.meta.env.DEV
   ? '/api'
   : (import.meta.env.VITE_API_BASE_URL || RAILWAY_API_URL);

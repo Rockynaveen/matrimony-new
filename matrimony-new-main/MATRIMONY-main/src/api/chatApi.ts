@@ -17,7 +17,7 @@ export const formatMediaUrl = (url?: string): string | undefined => {
     return trimmed;
   }
   const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  return `https://matrimony-production-e116.up.railway.app${cleanPath}`;
+  return `https://matrimony-production-4b00.up.railway.app${cleanPath}`;
 };
 
 const extractErrorMsg = (data: any, status: number): string => {

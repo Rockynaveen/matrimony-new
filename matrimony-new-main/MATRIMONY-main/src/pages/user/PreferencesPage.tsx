@@ -175,19 +175,62 @@ export const PreferencesPage: React.FC = () => {
 
   useEffect(() => {
     if (apiPreferences) {
+      const api: any = apiPreferences;
+      const toList = (val: any): string[] | null => {
+        if (!val) return null;
+        if (Array.isArray(val)) return val.map(s => String(s).trim()).filter(Boolean);
+        if (typeof val === 'string') {
+          const split = val.split(',').map(s => s.trim()).filter(Boolean);
+          return split.length > 0 ? split : null;
+        }
+        return null;
+      };
+
+      const formatHeightStr = (val: any): string | null => {
+        if (val === null || val === undefined) return null;
+        if (typeof val === 'string' && val.includes("'")) return val;
+        const num = typeof val === 'number' ? val : parseFloat(String(val));
+        if (isNaN(num)) return null;
+        if (num > 30) {
+          const feet = Math.floor(num / 30.48);
+          const inches = Math.round((num / 30.48 - feet) * 12);
+          return `${feet}' ${inches}"`;
+        }
+        const feet = Math.floor(num);
+        const inches = Math.round((num - feet) * 10);
+        return `${feet}' ${inches}"`;
+      };
+
+      const formatSalaryStr = (val: any, isMax = false): string | null => {
+        if (val === null || val === undefined) return null;
+        if (typeof val === 'string' && (val.includes('Lakh') || val.includes('₹') || val.includes('Above'))) return val;
+        const num = typeof val === 'number' ? val : parseFloat(String(val));
+        if (isNaN(num) || num === 0) return null;
+        const lakhs = num >= 100000 ? Math.round(num / 100000) : num;
+        if (isMax && lakhs >= 50) return 'Above ₹50 Lakhs';
+        return `₹${lakhs} Lakhs`;
+      };
+
       setPrefs(prev => ({
         ...prev,
-        ageMin: apiPreferences.minimum_age || prev.ageMin,
-        ageMax: apiPreferences.maximum_age || prev.ageMax,
-        religions: apiPreferences.religion ? apiPreferences.religion.split(',').map(s => s.trim()) : prev.religions,
-        castes: apiPreferences.caste ? apiPreferences.caste.split(',').map(s => s.trim()) : prev.castes,
-        educations: apiPreferences.education ? apiPreferences.education.split(',').map(s => s.trim()) : prev.educations,
-        professions: apiPreferences.profession ? apiPreferences.profession.split(',').map(s => s.trim()) : prev.professions,
-        countries: apiPreferences.country ? apiPreferences.country.split(',').map(s => s.trim()) : prev.countries,
-        diet: apiPreferences.diet ? apiPreferences.diet.split(',').map(s => s.trim()) : prev.diet,
-        smoking: apiPreferences.smoking ? apiPreferences.smoking.split(',').map(s => s.trim()) : prev.smoking,
-        drinking: apiPreferences.drinking ? apiPreferences.drinking.split(',').map(s => s.trim()) : prev.drinking,
-        maritalStatuses: apiPreferences.marital_status ? apiPreferences.marital_status.split(',').map(s => s.trim()) : prev.maritalStatuses
+        ageMin: api.minimum_age ?? api.min_age ?? api.age_min ?? api.ageMin ?? prev.ageMin,
+        ageMax: api.maximum_age ?? api.max_age ?? api.age_max ?? api.ageMax ?? prev.ageMax,
+        heightMin: formatHeightStr(api.minimum_height ?? api.min_height ?? api.height_min ?? api.heightMin) || prev.heightMin,
+        heightMax: formatHeightStr(api.maximum_height ?? api.max_height ?? api.height_max ?? api.heightMax) || prev.heightMax,
+        incomeMin: formatSalaryStr(api.minimum_salary ?? api.min_salary ?? api.salary_min ?? api.income_min ?? api.incomeMin) || prev.incomeMin,
+        incomeMax: formatSalaryStr(api.maximum_salary ?? api.max_salary ?? api.salary_max ?? api.income_max ?? api.incomeMax, true) || prev.incomeMax,
+        religions: toList(api.religion ?? api.religions ?? api.preferred_religion) || prev.religions,
+        castes: toList(api.caste ?? api.castes ?? api.preferred_caste) || prev.castes,
+        educations: toList(api.education ?? api.educations ?? api.qualification) || prev.educations,
+        professions: toList(api.profession ?? api.professions ?? api.occupation) || prev.professions,
+        countries: toList(api.country ?? api.countries) || prev.countries,
+        states: toList(api.state ?? api.states) || prev.states,
+        cities: toList(api.city ?? api.cities) || prev.cities,
+        diet: toList(api.diet ?? api.diets) || prev.diet,
+        smoking: toList(api.smoking ?? api.smoking_habits) || prev.smoking,
+        drinking: toList(api.drinking ?? api.drinking_habits) || prev.drinking,
+        maritalStatuses: toList(api.marital_status ?? api.marital_statuses ?? api.maritalStatus ?? api.maritalStatuses) || prev.maritalStatuses,
+        manglik: api.horoscope_preferences || api.manglik || api.dosha || api.horoscope || prev.manglik
       }));
     }
   }, [apiPreferences]);

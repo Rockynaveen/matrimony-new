@@ -217,15 +217,21 @@ export const MessagesPage: React.FC = () => {
   const { data: sentInterests } = useSentInterests();
 
   const resolveOnlineStatus = (item: any): boolean => {
-    if (!item) return true;
+    if (!item) return false;
     if (typeof item.is_online === 'boolean') return item.is_online;
     if (typeof item.online === 'boolean') return item.online;
-    if (typeof item.status === 'string') {
-      const s = item.status.toLowerCase();
-      if (s === 'offline') return false;
-      if (s === 'online' || s.includes('registered') || s.includes('active') || s.includes('success')) return true;
-    }
-    return true;
+    if (typeof item.isOnline === 'boolean') return item.isOnline;
+    if (item.is_online === 1 || item.online === 1) return true;
+    if (item.is_online === 0 || item.online === 0) return false;
+
+    const presenceStr = String(
+      item.online_status || item.presence_status || item.user_status || (typeof item.status === 'string' && (item.status.toLowerCase() === 'online' || item.status.toLowerCase() === 'offline') ? item.status : '')
+    ).trim().toLowerCase();
+
+    if (presenceStr === 'online') return true;
+    if (presenceStr === 'offline') return false;
+
+    return false;
   };
 
   const remoteConvsMapped = (remoteConversations || []).map(conv => {
@@ -724,7 +730,7 @@ export const MessagesPage: React.FC = () => {
                         variant="circle"
                         className="h-11 w-11 ring-2 ring-stone-300"
                       />
-                      {p.online && (
+                      {((String(p.id) === String(activeProfile?.id) || String(p.user_id) === String(activeProfile?.id)) ? isRecipientOnline : Boolean(p.online)) && (
                         <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-600 ring-2 ring-white" />
                       )}
                     </div>

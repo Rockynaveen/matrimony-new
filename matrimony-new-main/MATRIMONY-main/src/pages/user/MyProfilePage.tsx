@@ -39,8 +39,11 @@ export const MyProfilePage: React.FC = () => {
     }
   } catch {}
 
-  const apiFullName = (apiProfile as any)?.first_name ? `${(apiProfile as any).first_name} ${(apiProfile as any).last_name || ''}`.trim() : '';
-  const emailName = extractNameFromEmail(currentUser.email || (apiProfile as any)?.email || localStorage.getItem('logged_in_email'));
+  const apiData: any = (apiProfile as any)?.data || (apiProfile as any)?.profile || apiProfile || {};
+  const apiFirstName = apiData.first_name || apiData.firstName || '';
+  const apiLastName = apiData.last_name || apiData.lastName || '';
+  const apiFullName = apiFirstName ? `${apiFirstName} ${apiLastName}`.trim() : (apiData.name || '');
+  const emailName = extractNameFromEmail(currentUser.email || apiData.email || localStorage.getItem('logged_in_email'));
 
   let resolvedProfileName = '';
   if (currentUser.name && !isGenericName(currentUser.name)) {
@@ -51,34 +54,68 @@ export const MyProfilePage: React.FC = () => {
     resolvedProfileName = emailName;
   }
 
+  const formatHeight = (val: any): string => {
+    if (!val) return 'Not Specified';
+    if (typeof val === 'string' && (val.includes("'") || val.includes('cm'))) return val;
+    const num = typeof val === 'number' ? val : parseFloat(String(val));
+    if (isNaN(num)) return String(val);
+    if (num > 30) return `${Math.round(num)} cm`;
+    const feet = Math.floor(num);
+    const inches = Math.round((num - feet) * 10);
+    return `${feet}' ${inches}"`;
+  };
+
+  const formatWeight = (val: any): string => {
+    if (!val) return 'Not Specified';
+    if (typeof val === 'string' && val.toLowerCase().includes('kg')) return val;
+    const num = typeof val === 'number' ? val : parseFloat(String(val));
+    if (isNaN(num) || num === 0) return String(val);
+    return `${Math.round(num)} kg`;
+  };
+
+  const formatIncome = (val: any): string => {
+    if (!val) return 'Not Specified';
+    if (typeof val === 'string' && (val.includes('Lakh') || val.includes('₹') || val.includes('Crore'))) return val;
+    const num = typeof val === 'number' ? val : parseFloat(String(val));
+    if (isNaN(num) || num === 0) return String(val);
+    const lakhs = num >= 100000 ? Math.round(num / 100000) : num;
+    return `₹${lakhs} Lakhs`;
+  };
+
+  const formatStringOrArray = (val: any, fallback: string): string => {
+    if (!val) return fallback;
+    if (Array.isArray(val)) return val.join(', ');
+    return String(val);
+  };
+
   // Synthesize displayed profile values from API -> localDraft -> currentUser context
   const profile = {
     name: resolvedProfileName || 'User Profile',
-    email: currentUser.email || (apiProfile as any)?.email || localStorage.getItem('logged_in_email') || '',
-    avatar: apiProfile?.profile_photo || localDraft?.profile_photo || currentUser.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
-    about_me: apiProfile?.about_me || localDraft?.about_me || 'No description provided yet. Click edit to add your bio.',
-    height: apiProfile?.height || (localDraft?.height ? String(localDraft.height) : 'Not Specified'),
-    weight: apiProfile?.weight || (localDraft?.weight ? String(localDraft.weight) : 'Not Specified'),
-    complexion: apiProfile?.complexion || localDraft?.complexion || 'Not Specified',
-    highest_education: apiProfile?.highest_education || localDraft?.highest_education || 'Not Specified',
-    occupation: apiProfile?.occupation || localDraft?.occupation || 'Not Specified',
-    annual_income: apiProfile?.annual_income || (localDraft?.annual_income ? `₹${localDraft.annual_income} Lakhs` : 'Not Specified'),
-    religion: apiProfile?.religion || localDraft?.religion || 'Not Specified',
-    caste: apiProfile?.caste || localDraft?.caste || 'Not Specified',
-    rashi: apiProfile?.rashi || localDraft?.rashi || 'Not Specified',
-    nakshatra: apiProfile?.nakshatra || localDraft?.nakshatra || 'Not Specified',
-    dosha: apiProfile?.dosha || localDraft?.dosha || 'Not Specified',
-    family_information: apiProfile?.family_information || localDraft?.family_information || 'No family details provided.',
-    diet: apiProfile?.diet || localDraft?.diet || 'Not Specified',
-    smoking: apiProfile?.smoking || localDraft?.smoking || 'Not Specified',
-    drinking: apiProfile?.drinking || localDraft?.drinking || 'Not Specified',
-    languages_known: apiProfile?.languages_known || localDraft?.languages_known || 'Not Specified',
-    hobbies_interests: apiProfile?.hobbies_interests || localDraft?.hobbies_interests || 'Not Specified',
-    marital_status: apiProfile?.marital_status || localDraft?.marital_status || 'Not Specified',
-    disability_information: apiProfile?.disability_information || localDraft?.disability_information || 'None',
-    country: apiProfile?.country || localDraft?.country || 'India',
-    state: apiProfile?.state || localDraft?.state || '',
-    city: apiProfile?.city || localDraft?.city || '',
+    email: currentUser.email || apiData.email || localStorage.getItem('logged_in_email') || '',
+    avatar: apiData.profile_photo || apiData.photo || apiData.avatar || apiData.profile_image || localDraft?.profile_photo || currentUser.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+    about_me: apiData.about_me || apiData.about || apiData.bio || localDraft?.about_me || 'No description provided yet. Click edit to add your bio.',
+    height: formatHeight(apiData.height ?? localDraft?.height),
+    weight: formatWeight(apiData.weight ?? localDraft?.weight),
+    complexion: apiData.complexion || localDraft?.complexion || 'Not Specified',
+    highest_education: apiData.highest_education || apiData.education || apiData.qualification || localDraft?.highest_education || 'Not Specified',
+    occupation: apiData.occupation || apiData.profession || apiData.job_title || localDraft?.occupation || 'Not Specified',
+    annual_income: formatIncome(apiData.annual_income ?? apiData.income ?? apiData.annualIncome ?? localDraft?.annual_income),
+    religion: apiData.religion || localDraft?.religion || 'Not Specified',
+    caste: apiData.caste || localDraft?.caste || 'Not Specified',
+    rashi: apiData.rashi || localDraft?.rashi || 'Not Specified',
+    nakshatra: apiData.nakshatra || localDraft?.nakshatra || 'Not Specified',
+    dosha: apiData.dosha || localDraft?.dosha || 'Not Specified',
+    family_information: apiData.family_information || apiData.family_details || apiData.family || localDraft?.family_information || 'No family details provided.',
+    diet: formatStringOrArray(apiData.diet ?? localDraft?.diet, 'Not Specified'),
+    smoking: formatStringOrArray(apiData.smoking ?? localDraft?.smoking, 'Not Specified'),
+    drinking: formatStringOrArray(apiData.drinking ?? localDraft?.drinking, 'Not Specified'),
+    languages_known: formatStringOrArray(apiData.languages_known ?? apiData.languages ?? apiData.mother_tongue ?? localDraft?.languages_known, 'Not Specified'),
+    hobbies_interests: formatStringOrArray(apiData.hobbies_interests ?? apiData.hobbies ?? apiData.interests ?? localDraft?.hobbies_interests, 'Not Specified'),
+    marital_status: formatStringOrArray(apiData.marital_status ?? apiData.maritalStatus ?? localDraft?.marital_status, 'Not Specified'),
+    disability_information: apiData.disability_information || apiData.disability || localDraft?.disability_information || 'None',
+    country: apiData.country || localDraft?.country || 'India',
+    state: apiData.state || localDraft?.state || '',
+    city: apiData.city || localDraft?.city || '',
   };
 
   return (

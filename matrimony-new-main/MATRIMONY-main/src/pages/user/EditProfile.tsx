@@ -75,40 +75,42 @@ export const EditProfile: React.FC = () => {
   useEffect(() => {
     const localDraftRaw = localStorage.getItem('user_profile_draft');
     const localDraft = localDraftRaw ? JSON.parse(localDraftRaw) : null;
-    const source = profile || localDraft;
+    const rawSource: any = profile || localDraft;
+    const source = rawSource?.data || rawSource?.profile || rawSource;
 
     if (source) {
+      const photo = source.profile_photo || source.photo || source.avatar || source.profile_image || currentUser.avatar || localStorage.getItem('logged_in_avatar');
       setFormData(prev => ({
         ...prev,
-        profile_photo: source.profile_photo || currentUser.avatar || localStorage.getItem('logged_in_avatar') || prev.profile_photo,
+        profile_photo: photo || prev.profile_photo,
         video_introduction: source.video_introduction || prev.video_introduction,
-        about_me: source.about_me || prev.about_me,
+        about_me: source.about_me || source.about || source.bio || prev.about_me,
         height: source.height ? String(source.height) : prev.height,
         weight: source.weight ? String(source.weight) : prev.weight,
         complexion: source.complexion || prev.complexion,
-        highest_education: source.highest_education || prev.highest_education,
-        occupation: source.occupation || prev.occupation,
-        annual_income: source.annual_income ? String(source.annual_income) : prev.annual_income,
+        highest_education: source.highest_education || source.education || source.qualification || prev.highest_education,
+        occupation: source.occupation || source.profession || source.job_title || prev.occupation,
+        annual_income: source.annual_income ? String(source.annual_income) : (source.income ? String(source.income) : prev.annual_income),
         religion: source.religion || prev.religion,
         caste: source.caste || prev.caste,
         rashi: source.rashi || prev.rashi,
         nakshatra: source.nakshatra || prev.nakshatra,
         dosha: source.dosha || prev.dosha,
-        family_information: source.family_information || prev.family_information,
-        diet: source.diet || prev.diet,
-        smoking: source.smoking || prev.smoking,
-        drinking: source.drinking || prev.drinking,
-        languages_known: source.languages_known || prev.languages_known,
-        hobbies_interests: source.hobbies_interests || prev.hobbies_interests,
-        marital_status: source.marital_status || prev.marital_status,
-        disability_information: source.disability_information || prev.disability_information,
+        family_information: source.family_information || source.family_details || source.family || prev.family_information,
+        diet: Array.isArray(source.diet) ? source.diet.join(', ') : (source.diet || prev.diet),
+        smoking: Array.isArray(source.smoking) ? source.smoking.join(', ') : (source.smoking || prev.smoking),
+        drinking: Array.isArray(source.drinking) ? source.drinking.join(', ') : (source.drinking || prev.drinking),
+        languages_known: Array.isArray(source.languages_known) ? source.languages_known.join(', ') : (source.languages_known || source.languages || source.mother_tongue || prev.languages_known),
+        hobbies_interests: Array.isArray(source.hobbies_interests) ? source.hobbies_interests.join(', ') : (source.hobbies_interests || source.hobbies || source.interests || prev.hobbies_interests),
+        marital_status: Array.isArray(source.marital_status) ? source.marital_status.join(', ') : (source.marital_status || source.maritalStatus || prev.marital_status),
+        disability_information: source.disability_information || source.disability || prev.disability_information,
         country: source.country || prev.country,
         state: source.state || prev.state,
         city: source.city || prev.city
       }));
 
-      if (source.profile_photo) {
-        updateCurrentUserAvatar(source.profile_photo);
+      if (photo) {
+        updateCurrentUserAvatar(photo);
       }
     }
   }, [profile]);

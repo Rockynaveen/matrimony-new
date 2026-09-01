@@ -18,17 +18,21 @@ export const profileApi = {
     try {
       const dbProfile = await profileService.getProfile();
       if (dbProfile) {
+        const raw: any = dbProfile;
+        const normalized = raw.data || raw.profile || raw.user_profile || raw.result || raw;
+        const userObj = raw.user || {};
         return {
-          id: String(dbProfile.id || ''),
-          first_name: dbProfile.first_name || '',
-          last_name: dbProfile.last_name || '',
-          email: dbProfile.email || localStorage.getItem('logged_in_email') || '',
-          phone: dbProfile.phone || '',
-          gender: dbProfile.gender || '',
-          date_of_birth: dbProfile.date_of_birth || '',
-          is_basic_complete: Boolean(dbProfile.is_basic_complete),
-          is_detailed_complete: Boolean(dbProfile.is_detailed_complete),
-          profile_completion_percentage: dbProfile.profile_completion_percentage || 100
+          ...normalized,
+          id: String(normalized.id || userObj.id || ''),
+          first_name: normalized.first_name || userObj.first_name || normalized.firstName || '',
+          last_name: normalized.last_name || userObj.last_name || normalized.lastName || '',
+          email: normalized.email || userObj.email || localStorage.getItem('logged_in_email') || '',
+          phone: normalized.phone || userObj.phone || '',
+          gender: normalized.gender || userObj.gender || '',
+          date_of_birth: normalized.date_of_birth || userObj.date_of_birth || '',
+          is_basic_complete: Boolean(normalized.is_basic_complete || userObj.is_basic_complete || true),
+          is_detailed_complete: Boolean(normalized.is_detailed_complete || userObj.is_detailed_complete || true),
+          profile_completion_percentage: normalized.profile_completion_percentage || 100
         };
       }
     } catch {}

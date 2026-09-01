@@ -44,15 +44,17 @@ export const partnerPreferencesService = {
    */
   async getPreferences(): Promise<PartnerPreferenceAPI | null> {
     try {
-      let res = await axiosClient.get<PartnerPreferenceAPI>('/partner-preferences/get/');
+      let res = await axiosClient.get<any>('/partner-preferences/get/');
 
       if (res.status === 502 || res.status === 503) {
         await sleep(1500);
-        res = await axiosClient.get<PartnerPreferenceAPI>('/partner-preferences/get/');
+        res = await axiosClient.get<any>('/partner-preferences/get/');
       }
 
       if (res.status === 200 && res.data) {
-        return res.data;
+        const raw = res.data;
+        const normalized = raw.data || raw.partner_preference || raw.partner_preferences || raw.preferences || raw.preference || raw.result || raw;
+        return normalized;
       }
       if (res.status === 401) {
         throw new PartnerPreferenceServiceError('Unauthorized — please log in', 401);

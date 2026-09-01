@@ -159,16 +159,21 @@ export const profileService = {
    */
   async getProfile(): Promise<ProfileOutAPI | null> {
     try {
-      let res = await axiosClient.get<ProfileOutAPI>('/profile/get/');
+      let res = await axiosClient.get<any>('/profile/get/');
 
       if (res.status === 502 || res.status === 503) {
         await sleep(1500);
-        res = await axiosClient.get<ProfileOutAPI>('/profile/get/');
+        res = await axiosClient.get<any>('/profile/get/');
       }
 
       if (res.status === 200 && res.data) {
-        localStorage.setItem('vivah_mock_profile', JSON.stringify(res.data));
-        return res.data;
+        const raw = res.data;
+        let normalized = raw.data || raw.profile || raw.user_profile || raw.result || raw;
+        if (raw.user && typeof raw.user === 'object') {
+          normalized = { ...raw.user, ...normalized };
+        }
+        localStorage.setItem('vivah_mock_profile', JSON.stringify(normalized));
+        return normalized;
       }
     } catch (err: any) {
       // ignore

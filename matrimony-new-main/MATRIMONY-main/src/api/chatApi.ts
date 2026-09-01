@@ -55,6 +55,21 @@ export const getAuthUserId = (): number => {
   return 0;
 };
 
+export const toNumericId = (val: any): number => {
+  if (!val) return 0;
+  if (typeof val === 'number') return isNaN(val) ? 0 : val;
+  if (typeof val === 'string') {
+    const digits = val.replace(/\D/g, '');
+    if (digits) return Number(digits);
+    const parsed = Number(val);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  if (typeof val === 'object') {
+    return toNumericId(val.id || val.room_id || val.user_id || val.pk || 0);
+  }
+  return 0;
+};
+
 export const chatApi = {
   // 1. GET /api/chat/conversations
   getConversations: async (): Promise<ConversationOut[]> => {

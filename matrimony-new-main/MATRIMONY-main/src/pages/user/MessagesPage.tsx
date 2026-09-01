@@ -234,6 +234,25 @@ export const MessagesPage: React.FC = () => {
     return false;
   };
 
+  const checkIsUserVerified = (item: any): boolean => {
+    if (!item) return false;
+    if (typeof item.is_verified === 'boolean') return item.is_verified;
+    if (item.is_verified === 1) return true;
+    if (item.is_verified === 0 || item.is_verified === false) return false;
+
+    if (typeof item.is_approved === 'boolean') return item.is_approved;
+    if (item.is_approved === 1) return true;
+    if (item.is_approved === 0 || item.is_approved === false) return false;
+
+    const vStatus = String(item.verification_status || item.admin_verification_status || item.verification_state || '').toUpperCase().trim();
+    if (vStatus === 'VERIFIED' || vStatus === 'APPROVED') return true;
+    if (vStatus === 'PENDING' || vStatus === 'REJECTED' || vStatus === 'NOT_SUBMITTED' || vStatus === 'UNVERIFIED') return false;
+
+    if (typeof item.verified === 'boolean') return item.verified;
+
+    return false;
+  };
+
   const remoteConvsMapped = (remoteConversations || []).map(conv => {
     const other = conv.other_user || {};
     const recipientId = extractRecipientUserId(conv, currentUserIdNum);
@@ -244,9 +263,9 @@ export const MessagesPage: React.FC = () => {
       id: String(conv.room_id || conv.id),
       room_id: Number(conv.room_id || conv.id),
       user_id: recipientId,
-      name: other.name || `${other.first_name || 'Verified'} ${other.last_name || 'Member'}`.trim(),
+      name: other.name || `${other.first_name || 'Member'} ${other.last_name || ''}`.trim(),
       profileImage: other.profile_photo || other.avatar || null,
-      verified: true,
+      verified: checkIsUserVerified(other) || checkIsUserVerified(conv),
       age: other.age || 26,
       height: "5'6\"",
       profession: other.profession || 'Professional',
@@ -269,7 +288,7 @@ export const MessagesPage: React.FC = () => {
         user_id: Number(i.from_user || i.id),
         name: `${i.first_name || ''} ${i.last_name || ''}`.trim() || `Member #${i.from_user || i.id}`,
         profileImage: i.profile_photo || null,
-        verified: true,
+        verified: checkIsUserVerified(i),
         age: i.age || 26,
         height: "5'6\"",
         profession: i.occupation || 'Professional',
@@ -289,7 +308,7 @@ export const MessagesPage: React.FC = () => {
         user_id: Number(i.to_user || i.id),
         name: `${i.first_name || ''} ${i.last_name || ''}`.trim() || `Member #${i.to_user || i.id}`,
         profileImage: i.profile_photo || null,
-        verified: true,
+        verified: checkIsUserVerified(i),
         age: i.age || 26,
         height: "5'6\"",
         profession: i.occupation || 'Professional',
@@ -357,9 +376,9 @@ export const MessagesPage: React.FC = () => {
 
   const activeProfile = activeMatch ? {
     id: String(activeMatch.user_id || activeMatch.id || selectedProfileId),
-    name: activeMatch.name || `${(activeMatch as any).first_name || ''} ${(activeMatch as any).last_name || ''}`.trim() || 'Verified Member',
+    name: activeMatch.name || `${(activeMatch as any).first_name || ''} ${(activeMatch as any).last_name || ''}`.trim() || 'Member',
     profileImage: activeMatch.profileImage || (activeMatch as any).profile_photo || null,
-    verified: activeMatch.verified ?? true,
+    verified: checkIsUserVerified(activeMatch),
     age: activeMatch.age || 26,
     height: activeMatch.height || "5'6\"",
     profession: activeMatch.profession || (activeMatch as any).occupation || 'Professional',

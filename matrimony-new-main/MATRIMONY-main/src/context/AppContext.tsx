@@ -96,7 +96,7 @@ export const getStoredOnboardingStatus = (email?: string): OnboardingStatus => {
   const defaultStatus: OnboardingStatus = {
     registration_completed: hasToken,
     registration_method: regMethod,
-    basic_profile_completed: regMethod === 'manual' ? hasToken : false,
+    basic_profile_completed: hasToken,
     complete_profile_completed: false,
     partner_preferences_completed: false,
     verification_completed: false,
@@ -119,6 +119,7 @@ export const getStoredOnboardingStatus = (email?: string): OnboardingStatus => {
           ...defaultStatus,
           ...parsed,
           registration_completed: parsed.registration_completed ?? hasToken,
+          basic_profile_completed: true,
           verification_completed: parsed.verification_completed || mappedStatus === 'PENDING' || mappedStatus === 'VERIFIED',
           verification_status: mappedStatus
         };
@@ -162,9 +163,6 @@ export const saveStoredOnboardingStatus = (partial: Partial<OnboardingStatus>, e
 export const getNextPendingRoute = (status: OnboardingStatus): string => {
   if (!status.registration_completed) {
     return '/register';
-  }
-  if (status.registration_method === 'google' && !status.basic_profile_completed) {
-    return '/complete-basic-profile';
   }
   if (!status.complete_profile_completed) {
     return '/profile/complete';
@@ -906,16 +904,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newStatus = saveStoredOnboardingStatus({
       registration_completed: true,
       registration_method: 'google',
-      basic_profile_completed: false,
+      basic_profile_completed: true,
       complete_profile_completed: false,
       partner_preferences_completed: false,
     }, payload.email);
 
     setOnboardingStatusState(newStatus);
     setProfileStatus({
-      is_basic_complete: false,
+      is_basic_complete: true,
       is_detailed_complete: false,
-      completion_percentage: 15
+      completion_percentage: 20
     });
 
     return {
@@ -926,9 +924,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       phone: '',
       gender: '',
       date_of_birth: '',
-      is_basic_complete: false,
+      is_basic_complete: true,
       is_detailed_complete: false,
-      profile_completion_percentage: 15
+      profile_completion_percentage: 20
     };
   };
 

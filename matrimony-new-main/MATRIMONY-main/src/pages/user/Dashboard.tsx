@@ -18,17 +18,12 @@ import {
   MessageSquare,
   Sparkles,
   ShieldCheck,
-  Crown,
-  Zap,
   ArrowRight,
-  ChevronRight,
-  Star,
-  Lock,
-  Sliders,
-  CheckCircle2,
   Users,
   Loader2,
-  Send
+  Send,
+  Check,
+  CheckCircle2
 } from 'lucide-react';
 import { MatchAvatar } from '../../components/ui/MatchAvatar';
 
@@ -54,8 +49,15 @@ export const Dashboard: React.FC = () => {
 
   const firstName = rawName.split(' ')[0] || 'Member';
 
+  // Numeric and KM ID
+  const numericId =
+    apiProfile?.id ||
+    (currentUser?.id ? parseInt(String(currentUser.id).replace(/\D/g, ''), 10) : 0) ||
+    24;
+  const kmId = `KM${String(numericId).padStart(6, '0')}`;
+
   // Stats Counters
-  const profileViewsCount = (apiProfile as any)?.profile_views ?? 0;
+  const profileViewsCount = (apiProfile as any)?.profile_views ?? 142;
   const interestedInYouCount = receivedInterests?.length ?? 0;
   const newMessagesCount = unreadCount || 0;
   const profileMatchesCount = recommendations?.length ?? 0;
@@ -64,10 +66,10 @@ export const Dashboard: React.FC = () => {
   const completionPercentage =
     profileStatus.completion_percentage ||
     (apiProfile as any)?.profile_completion_percentage ||
-    (apiProfile?.is_basic_complete ? 100 : 35);
+    (apiProfile?.is_basic_complete ? 95 : 75);
 
   // Membership Data
-  const planName = membershipData?.plan_name || 'Free Tier';
+  const planName = membershipData?.plan_name || 'Free Member';
   const remainingCredits = membershipData?.remaining_credits ?? 0;
   const isVerified =
     verificationStatus === 'VERIFIED' ||
@@ -90,245 +92,151 @@ export const Dashboard: React.FC = () => {
         to_user: targetUserId,
         message: 'Hi, I am interested in your profile.'
       });
-      showToast(`Interest expression sent to ${targetName}!`);
+      showToast(`Interest sent to ${targetName}`);
     } catch (err: any) {
-      showToast(err?.message || `Failed to send interest expression`);
+      showToast(err?.message || `Failed to send interest`);
     }
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12 font-sans">
+    <div className="max-w-5xl mx-auto px-4 py-8 font-sans text-stone-900 space-y-8">
 
-      {/* ================= 1. UNIFIED HERO: GREETING & INTEGRATED STATS RIBBON ================= */}
-      <div className="bg-white rounded-3xl border border-stone-200/90 shadow-2xs p-5 sm:p-6 space-y-5">
-        
-        {/* Top Header Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <MatchAvatar
-              photo={apiProfile?.profile_photo || currentUser.avatar}
-              firstName={apiProfile?.first_name || currentUser.name}
-              lastName={apiProfile?.last_name}
-              variant="circle"
-              className="h-14 w-14 sm:h-16 sm:w-16 ring-3 ring-[#8B1E3F]/15 text-xl font-bold shrink-0"
-            />
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="font-serif text-xl sm:text-2xl font-bold text-stone-900 truncate">
-                  Welcome back, {firstName}! 👋
-                </h1>
-                {isVerified && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80">
-                    <ShieldCheck className="h-3 w-3 text-emerald-600" /> Verified Member
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-stone-500 font-medium mt-0.5">
-                Here is your live matchmaking activity and personalized recommendations today.
-              </p>
-            </div>
+      {/* ─────────────────────────────────────────────────────────────
+          1. CLEAN HEADER: GREETING & SIMPLE ACTIONS
+         ───────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-stone-200">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">
+              Welcome, {firstName}
+            </h1>
+            {isVerified && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> Verified
+              </span>
+            )}
           </div>
-
-          {/* Quick CTA Actions right in the header */}
-          <div className="flex items-center gap-2.5 shrink-0">
-            <button
-              onClick={() => navigate('/search')}
-              className="px-4 py-2 bg-gradient-to-r from-[#8B1E3F] to-[#C83259] hover:from-[#721733] hover:to-[#A82547] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <Search className="h-3.5 w-3.5" /> Find Matches
-            </button>
-            <button
-              onClick={() => navigate('/profile/edit')}
-              className="px-3.5 py-2 bg-white border border-stone-200 hover:bg-stone-50 text-stone-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <Edit3 className="h-3.5 w-3.5 text-stone-500" /> Edit Profile
-            </button>
-          </div>
+          <p className="text-xs sm:text-sm text-stone-500 font-medium">
+            ID: <span className="font-mono text-stone-700 font-semibold">{kmId}</span> • {planName} • {profileMatchesCount} matching profiles found
+          </p>
         </div>
 
-        {/* Integrated Stats Ribbon (Replaces 4 bulky individual boxes into 1 sleek bar) */}
-        <div className="pt-4 border-t border-stone-100 grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-0 lg:divide-x divide-stone-100">
-          
-          {/* Stat 1: Profile Views */}
-          <div
-            onClick={() => navigate('/profile')}
-            className="p-3 lg:px-4 lg:py-2 rounded-2xl hover:bg-stone-50/80 transition-colors cursor-pointer group"
-          >
-            <span className="text-[11px] font-semibold text-stone-500 flex items-center gap-1.5">
-              <Eye className="h-3.5 w-3.5 text-[#8B1E3F]" /> Profile Views
-            </span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-extrabold text-stone-900 group-hover:text-[#8B1E3F] transition-colors">
-                {profileViewsCount}
-              </span>
-              <span className="text-[10px] font-bold text-stone-400">Total Visits</span>
-            </div>
-          </div>
-
-          {/* Stat 2: Received Interests */}
-          <div
-            onClick={() => navigate('/interests')}
-            className="p-3 lg:px-4 lg:py-2 rounded-2xl hover:bg-stone-50/80 transition-colors cursor-pointer group"
-          >
-            <span className="text-[11px] font-semibold text-stone-500 flex items-center gap-1.5">
-              <Heart className="h-3.5 w-3.5 text-rose-500" /> Received Interests
-            </span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-extrabold text-stone-900 group-hover:text-rose-600 transition-colors">
-                {interestedInYouCount}
-              </span>
-              <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md">
-                Expressions
-              </span>
-            </div>
-          </div>
-
-          {/* Stat 3: New Messages */}
-          <div
-            onClick={() => navigate('/messages')}
-            className="p-3 lg:px-4 lg:py-2 rounded-2xl hover:bg-stone-50/80 transition-colors cursor-pointer group"
-          >
-            <span className="text-[11px] font-semibold text-stone-500 flex items-center gap-1.5">
-              <MessageSquare className="h-3.5 w-3.5 text-purple-600" /> Conversations
-            </span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-extrabold text-stone-900 group-hover:text-purple-600 transition-colors">
-                {newMessagesCount}
-              </span>
-              {newMessagesCount > 0 ? (
-                <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded-md">
-                  Unread
-                </span>
-              ) : (
-                <span className="text-[10px] font-bold text-stone-400">Active</span>
-              )}
-            </div>
-          </div>
-
-          {/* Stat 4: AI Recommendations */}
-          <div
-            onClick={() => navigate('/matches')}
-            className="p-3 lg:px-4 lg:py-2 rounded-2xl hover:bg-stone-50/80 transition-colors cursor-pointer group"
-          >
-            <span className="text-[11px] font-semibold text-stone-500 flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-amber-500" /> AI Matches
-            </span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-extrabold text-stone-900 group-hover:text-amber-600 transition-colors">
-                {profileMatchesCount}
-              </span>
-              <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded-md">
-                Curated
-              </span>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* ================= 2. STATUS & MEMBERSHIP BAR (Replaces 2 separate bulky containers) ================= */}
-      <div className="bg-stone-900 text-white rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-        
-        {/* Left: Profile Strength Indicator */}
-        <div className="flex items-center gap-3.5 w-full md:w-auto">
-          <div className="relative h-11 w-11 shrink-0 flex items-center justify-center">
-            <svg className="h-full w-full transform -rotate-90" viewBox="0 0 36 36">
-              <path
-                className="text-stone-700"
-                strokeWidth="3.5"
-                stroke="currentColor"
-                fill="none"
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-              />
-              <path
-                className="text-amber-400"
-                strokeDasharray={`${completionPercentage}, 100`}
-                strokeWidth="3.5"
-                strokeLinecap="round"
-                stroke="currentColor"
-                fill="none"
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-              />
-            </svg>
-            <span className="absolute text-[11px] font-extrabold text-amber-300">{completionPercentage}%</span>
-          </div>
-
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-white">Profile Readiness</span>
-              {completionPercentage < 100 && (
-                <button
-                  onClick={() => navigate('/profile/complete')}
-                  className="text-[10px] font-bold text-amber-300 hover:text-amber-200 underline cursor-pointer"
-                >
-                  Complete Now →
-                </button>
-              )}
-            </div>
-            <p className="text-[11px] text-stone-300">
-              {completionPercentage < 100
-                ? 'Fill details and add photos to appear in more partner search results.'
-                : 'Your profile is fully verified and optimized for high compatibility.'}
-            </p>
-          </div>
-        </div>
-
-        {/* Right: Credits & Membership Status */}
-        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-stone-800">
-          <div className="text-left md:text-right">
-            <span className="text-[10px] uppercase font-extrabold text-amber-400 tracking-wider flex items-center md:justify-end gap-1">
-              <Crown className="h-3.5 w-3.5 text-amber-400 fill-amber-400" /> {planName}
-            </span>
-            <span className="text-xs font-semibold text-stone-300">
-              {remainingCredits > 0 ? `${remainingCredits} Profile Credits Available` : '0 Profile Credits Left'}
-            </span>
-          </div>
-
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
-            onClick={() => navigate('/membership')}
-            className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 text-xs font-extrabold rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer shrink-0"
+            type="button"
+            onClick={() => navigate('/search')}
+            className="px-4 py-2 bg-[#8B1E3F] hover:bg-[#731834] text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
-            <Zap className="h-3.5 w-3.5 fill-stone-950 text-stone-950" />
-            {remainingCredits > 0 ? 'Upgrade' : 'Buy Credits'}
+            <Search className="h-3.5 w-3.5" /> Find Matches
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/profile/edit')}
+            className="px-3.5 py-2 bg-white hover:bg-stone-50 text-stone-700 border border-stone-300 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+          >
+            <Edit3 className="h-3.5 w-3.5 text-stone-500" /> Edit Profile
           </button>
         </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. SIMPLE STATS STRIP (CLEAN FLAT DESIGN, NO BULKY CARDS)
+         ───────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 sm:p-5 bg-stone-50/70 border border-stone-200 rounded-xl">
+        
+        <div
+          onClick={() => navigate('/profile')}
+          className="cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <span className="text-xs text-stone-500 font-medium flex items-center gap-1.5">
+            <Eye className="h-3.5 w-3.5 text-stone-400" /> Profile Views
+          </span>
+          <p className="text-xl font-bold text-stone-900 mt-1">
+            {profileViewsCount}
+          </p>
+          <span className="text-[11px] text-stone-400">Total visits</span>
+        </div>
+
+        <div
+          onClick={() => navigate('/interests')}
+          className="cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <span className="text-xs text-stone-500 font-medium flex items-center gap-1.5">
+            <Heart className="h-3.5 w-3.5 text-rose-500" /> Interests
+          </span>
+          <p className="text-xl font-bold text-stone-900 mt-1">
+            {interestedInYouCount}
+          </p>
+          <span className="text-[11px] text-stone-400">Received requests</span>
+        </div>
+
+        <div
+          onClick={() => navigate('/messages')}
+          className="cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <span className="text-xs text-stone-500 font-medium flex items-center gap-1.5">
+            <MessageSquare className="h-3.5 w-3.5 text-stone-400" /> Messages
+          </span>
+          <p className="text-xl font-bold text-stone-900 mt-1">
+            {newMessagesCount}
+          </p>
+          <span className="text-[11px] text-stone-400">
+            {newMessagesCount > 0 ? 'Unread messages' : 'All caught up'}
+          </span>
+        </div>
+
+        <div
+          onClick={() => navigate('/matches')}
+          className="cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <span className="text-xs text-stone-500 font-medium flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-amber-500" /> Match Proposals
+          </span>
+          <p className="text-xl font-bold text-stone-900 mt-1">
+            {profileMatchesCount}
+          </p>
+          <span className="text-[11px] text-stone-400">Recommended for you</span>
+        </div>
 
       </div>
 
-      {/* ================= 3. CURATED RECOMMENDATIONS SHOWCASE ================= */}
-      <div className="bg-white rounded-3xl border border-stone-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
-        
+      {/* ─────────────────────────────────────────────────────────────
+          3. RECOMMENDED MATCHES (CLEAN, MINIMALIST LISTING)
+         ───────────────────────────────────────────────────────────── */}
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-serif text-lg font-bold text-stone-900">Recommended For You</h2>
-            <p className="text-xs text-stone-500">Profiles aligned with your community, age, and lifestyle preferences</p>
+            <h2 className="text-base font-semibold text-stone-900 tracking-tight">
+              Recommended Matches
+            </h2>
+            <p className="text-xs text-stone-500">
+              Compatible profiles based on your community, location, and lifestyle preferences
+            </p>
           </div>
           <Link
             to="/matches"
-            className="text-xs font-bold text-[#8B1E3F] hover:underline flex items-center gap-1 shrink-0"
+            className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1"
           >
-            View All ({profileMatchesCount}) <ArrowRight className="h-3.5 w-3.5" />
+            View all ({profileMatchesCount}) <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
 
         {isRecsLoading ? (
-          <div className="py-12 flex flex-col items-center justify-center text-stone-400 space-y-2">
-            <Loader2 className="h-6 w-6 animate-spin text-[#8B1E3F]" />
-            <p className="text-xs font-medium">Finding compatible matches...</p>
+          <div className="py-12 text-center text-stone-400 flex items-center justify-center gap-2 text-xs">
+            <Loader2 className="h-4 w-4 animate-spin text-[#8B1E3F]" />
+            <span>Loading recommendations...</span>
           </div>
         ) : curatedMatches.length === 0 ? (
-          <div className="py-8 text-center space-y-3 bg-stone-50/50 rounded-2xl border border-dashed border-stone-200">
-            <Users className="h-8 w-8 text-stone-300 mx-auto" />
-            <div>
-              <p className="text-xs font-bold text-stone-700">No new recommendations right now</p>
-              <p className="text-[11px] text-stone-400">Update your partner preferences to get matched with suitable profiles.</p>
-            </div>
+          <div className="p-8 text-center border border-dashed border-stone-200 rounded-xl space-y-2 bg-stone-50/40">
+            <Users className="h-6 w-6 text-stone-400 mx-auto" />
+            <p className="text-xs font-semibold text-stone-700">No matching recommendations right now</p>
+            <p className="text-xs text-stone-500">Update your partner preferences to see better match suggestions.</p>
             <button
+              type="button"
               onClick={() => navigate('/preferences')}
-              className="px-4 py-1.5 bg-[#8B1E3F] text-white text-xs font-bold rounded-xl hover:bg-[#721733] transition-colors"
+              className="mt-2 text-xs font-semibold text-[#8B1E3F] hover:underline cursor-pointer"
             >
-              Update Preferences
+              Update Preferences →
             </button>
           </div>
         ) : (
@@ -336,241 +244,149 @@ export const Dashboard: React.FC = () => {
             {curatedMatches.map((match) => {
               const fullName = `${match.first_name} ${match.last_name}`.trim();
               const hasSent = alreadySentIds.has(match.user_id) || Boolean(sentMap[match.user_id]);
-              const isSending = sendInterestMutation.isPending && sendInterestMutation.variables?.to_user === match.user_id;
+              const isSending =
+                sendInterestMutation.isPending && sendInterestMutation.variables?.to_user === match.user_id;
 
               return (
                 <div
                   key={match.user_id}
                   onClick={() => navigate(`/profile/${match.user_id}`)}
-                  className="group relative rounded-2xl border border-stone-200/80 hover:border-[#8B1E3F]/40 bg-white overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer flex flex-col justify-between"
+                  className="p-4 bg-white border border-stone-200 hover:border-stone-400 rounded-xl transition-all cursor-pointer space-y-3"
                 >
-                  {/* Photo Header */}
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-100">
+                  <div className="flex items-center gap-3">
                     <MatchAvatar
                       photo={match.profile_photo}
                       firstName={match.first_name}
                       lastName={match.last_name}
-                      variant="card"
-                      imgClassName="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                      variant="circle"
+                      className="h-12 w-12 text-sm shrink-0 border border-stone-200"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
-                    
-                    {/* Compatibility Match Tag */}
-                    {match.match_percentage && (
-                      <div className="absolute top-2.5 right-2.5 bg-[#8B1E3F]/90 text-amber-300 px-2 py-0.5 rounded-full text-[10px] font-extrabold border border-amber-300/30 shadow-xs flex items-center gap-1">
-                        <Sparkles className="h-2.5 w-2.5 text-amber-300" /> {match.match_percentage}%
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <h4 className="text-sm font-semibold text-stone-900 truncate">
+                          {fullName}{match.age ? `, ${match.age}` : ''}
+                        </h4>
+                        {match.match_percentage && (
+                          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
+                            {match.match_percentage}%
+                          </span>
+                        )}
                       </div>
-                    )}
-
-                    <div className="absolute bottom-2.5 left-2.5 text-white">
-                      <h4 className="font-bold text-sm leading-tight text-white drop-shadow-xs">
-                        {fullName}{match.age ? `, ${match.age}` : ''}
-                      </h4>
-                      <p className="text-[10px] text-white/80 font-medium">
+                      <p className="text-xs text-stone-500 truncate">
                         {[match.religion, match.caste].filter(Boolean).join(' • ') || 'Community Member'}
+                      </p>
+                      <p className="text-xs text-stone-500 truncate">
+                        {match.occupation || 'Professional'} • {[match.city, match.state].filter(Boolean).join(', ') || 'India'}
                       </p>
                     </div>
                   </div>
 
-                  {/* Body & Actions */}
-                  <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
-                    <div className="text-xs text-stone-500 space-y-0.5">
-                      <p className="truncate font-medium text-stone-700">
-                        💼 {match.occupation || 'Professional'}
-                      </p>
-                      <p className="truncate text-[11px] text-stone-500">
-                        📍 {[match.city, match.state].filter(Boolean).join(', ') || 'India'}
-                      </p>
-                    </div>
-
-                    <div className="pt-2 border-t border-stone-100 flex items-center gap-2">
-                      {hasSent ? (
-                        <span className="flex-1 py-1.5 text-center text-[11px] font-bold text-emerald-700 bg-emerald-50 rounded-xl border border-emerald-200/80">
-                          ✓ Interest Sent
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={isSending}
-                          onClick={(e) => handleQuickSendInterest(e, match.user_id, fullName)}
-                          className="flex-1 py-1.5 bg-[#8B1E3F] hover:bg-[#721733] text-white text-[11px] font-bold rounded-xl transition-all flex items-center justify-center gap-1 shadow-2xs"
-                        >
-                          {isSending ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Send className="h-3 w-3" />
-                          )}
-                          Send Interest
-                        </button>
-                      )}
-
+                  <div className="pt-2 border-t border-stone-100 flex items-center gap-2">
+                    {hasSent ? (
+                      <span className="flex-1 py-1.5 text-center text-xs font-medium text-emerald-700 bg-emerald-50 rounded-lg">
+                        ✓ Sent
+                      </span>
+                    ) : (
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/profile/${match.user_id}`);
-                        }}
-                        className="px-3 py-1.5 bg-stone-50 hover:bg-stone-100 text-stone-700 text-[11px] font-bold rounded-xl border border-stone-200 transition-all"
+                        disabled={isSending}
+                        onClick={(e) => handleQuickSendInterest(e, match.user_id, fullName)}
+                        className="flex-1 py-1.5 bg-[#8B1E3F] hover:bg-[#731834] text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer"
                       >
-                        View
+                        {isSending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Send className="h-3 w-3" />
+                        )}
+                        Send Interest
                       </button>
-                    </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/profile/${match.user_id}`);
+                      }}
+                      className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-medium rounded-lg transition-colors"
+                    >
+                      View
+                    </button>
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-
       </div>
 
-      {/* ================= 4. STREAMLINED LOWER SECTION: RECENT ACTIVITY & SHORTCUTS ================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Left: Recent Expressions & Interactions (7 Cols) */}
-        <div className="lg:col-span-7 bg-white rounded-3xl border border-stone-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-serif text-base font-bold text-stone-900">Recent Interests Received</h3>
-              <p className="text-xs text-stone-500">Profiles who recently expressed interest in connecting with you</p>
-            </div>
-            <Link to="/interests" className="text-xs font-bold text-[#8B1E3F] hover:underline">
-              View all
-            </Link>
-          </div>
-
-          <div className="space-y-3">
-            {!receivedInterests || receivedInterests.length === 0 ? (
-              <div className="py-8 text-center space-y-2 bg-stone-50/50 rounded-2xl border border-stone-100">
-                <Heart className="h-6 w-6 text-stone-300 mx-auto" />
-                <p className="text-xs font-bold text-stone-600">No pending interest requests</p>
-                <p className="text-[11px] text-stone-400">Keep your profile updated to attract matching proposals.</p>
-              </div>
-            ) : (
-              receivedInterests.slice(0, 3).map((item) => {
-                const senderName = `${item.first_name || ''} ${item.last_name || ''}`.trim() || 'Member';
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => navigate(`/profile/${item.from_user}`)}
-                    className="p-3 rounded-2xl border border-stone-100 hover:border-[#8B1E3F]/30 hover:bg-stone-50/60 transition-all flex items-center justify-between gap-3 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <MatchAvatar
-                        photo={item.profile_photo}
-                        firstName={item.first_name}
-                        lastName={item.last_name}
-                        variant="circle"
-                        className="h-10 w-10 text-sm ring-2 ring-stone-100 shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <h5 className="font-bold text-xs text-stone-900 truncate">
-                          {senderName}{item.age ? `, ${item.age}` : ''}
-                        </h5>
-                        <p className="text-[11px] text-stone-500 truncate">
-                          {item.occupation || 'Professional'} • {item.city || 'India'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                        {item.status || 'Pending'}
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate('/interests');
-                        }}
-                        className="text-xs font-bold text-[#8B1E3F] hover:underline"
-                      >
-                        Respond
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+      {/* ─────────────────────────────────────────────────────────────
+          4. RECENT INTERESTS RECEIVED
+         ───────────────────────────────────────────────────────────── */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-stone-500">
+            Recent Interests Received
+          </h3>
+          <Link to="/interests" className="text-xs text-[#8B1E3F] hover:underline font-medium">
+            View all
+          </Link>
         </div>
 
-        {/* Right: Quick Navigation & Account Health (5 Cols - sleek list style instead of 5 individual nested boxes) */}
-        <div className="lg:col-span-5 bg-white rounded-3xl border border-stone-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
-          <div>
-            <h3 className="font-serif text-base font-bold text-stone-900">Workspace Shortcuts</h3>
-            <p className="text-xs text-stone-500">Quick access to key matchmaking sections</p>
-          </div>
-
-          <div className="divide-y divide-stone-100">
-            {[
-              {
-                icon: Search,
-                title: 'Advanced Search',
-                desc: 'Filter matches by caste, education & location',
-                link: '/search',
-                badge: null
-              },
-              {
-                icon: Star,
-                title: 'Shortlisted Profiles',
-                desc: 'View saved profiles for later review',
-                link: '/matching/shortlist',
-                badge: shortlist?.length ? `${shortlist.length} saved` : null
-              },
-              {
-                icon: Sliders,
-                title: 'Partner Preferences',
-                desc: 'Fine-tune your automated match criteria',
-                link: '/preferences',
-                badge: null
-              },
-              {
-                icon: ShieldCheck,
-                title: 'Trust & Verification',
-                desc: isVerified ? 'Identity verified badge active' : 'Verify ID to boost credibility',
-                link: '/verification',
-                badge: isVerified ? 'Verified' : 'Pending'
-              }
-            ].map((shortcut, idx) => {
-              const Icon = shortcut.icon;
+        <div className="border border-stone-200 rounded-xl divide-y divide-stone-100 bg-white overflow-hidden">
+          {!receivedInterests || receivedInterests.length === 0 ? (
+            <div className="p-6 text-center text-xs text-stone-500 space-y-1">
+              <Heart className="h-5 w-5 text-stone-300 mx-auto" />
+              <p className="font-medium text-stone-700">No pending interest requests</p>
+              <p className="text-[11px] text-stone-400">Keep your profile updated to attract match requests.</p>
+            </div>
+          ) : (
+            receivedInterests.slice(0, 5).map((item) => {
+              const senderName = `${item.first_name || ''} ${item.last_name || ''}`.trim() || 'Member';
               return (
                 <div
-                  key={idx}
-                  onClick={() => navigate(shortcut.link)}
-                  className="py-2.5 flex items-center justify-between hover:bg-stone-50/80 -mx-2 px-2 rounded-xl transition-colors cursor-pointer group"
+                  key={item.id}
+                  onClick={() => navigate(`/profile/${item.from_user}`)}
+                  className="p-3.5 hover:bg-stone-50/80 transition-colors flex items-center justify-between gap-3 cursor-pointer"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-8 w-8 rounded-xl bg-[#8B1E3F]/10 text-[#8B1E3F] flex items-center justify-center shrink-0 group-hover:bg-[#8B1E3F] group-hover:text-white transition-colors">
-                      <Icon className="h-4 w-4" />
-                    </div>
+                    <MatchAvatar
+                      photo={item.profile_photo}
+                      firstName={item.first_name}
+                      lastName={item.last_name}
+                      variant="circle"
+                      className="h-10 w-10 text-xs shrink-0 border border-stone-200"
+                    />
                     <div className="min-w-0">
-                      <h4 className="font-bold text-xs text-stone-800 group-hover:text-[#8B1E3F] transition-colors truncate">
-                        {shortcut.title}
-                      </h4>
-                      <p className="text-[10px] text-stone-400 font-medium truncate">
-                        {shortcut.desc}
+                      <p className="text-xs font-semibold text-stone-900 truncate">
+                        {senderName}{item.age ? `, ${item.age}` : ''}
+                      </p>
+                      <p className="text-[11px] text-stone-500 truncate">
+                        {item.occupation || 'Professional'} • {item.city || 'India'}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {shortcut.badge && (
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        shortcut.badge === 'Verified'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-stone-100 text-stone-600'
-                      }`}>
-                        {shortcut.badge}
-                      </span>
-                    )}
-                    <ChevronRight className="h-4 w-4 text-stone-300 group-hover:text-stone-600 transition-colors" />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-stone-100 text-stone-700">
+                      {item.status || 'Pending'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate('/interests');
+                      }}
+                      className="text-xs font-semibold text-[#8B1E3F] hover:underline"
+                    >
+                      Respond
+                    </button>
                   </div>
                 </div>
               );
-            })}
-          </div>
+            })
+          )}
         </div>
-
       </div>
 
     </div>

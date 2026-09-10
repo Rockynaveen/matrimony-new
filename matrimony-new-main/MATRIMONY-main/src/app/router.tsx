@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
 import { Breadcrumbs } from '../components/layout/Breadcrumbs';
@@ -21,7 +21,6 @@ import { ContactUs } from '../pages/public/ContactUs';
 // Authentication Pages
 import { Login } from '../pages/Login';
 import { Register } from '../pages/Register';
-import { CompleteBasicProfile } from '../pages/CompleteBasicProfile';
 import { CompleteProfile } from '../pages/CompleteProfile';
 import { VerifyOtp } from '../pages/auth/VerifyOtp';
 import { ForgotPassword } from '../pages/auth/ForgotPassword';
@@ -107,11 +106,7 @@ export const AppRouter: React.FC = () => (
         <Route path="/register" element={<Register />} />
         <Route
           path="/complete-basic-profile"
-          element={
-            <ProtectedRoute>
-              <CompleteBasicProfile />
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/profile/complete" replace />}
         />
         <Route
           path="/profile/complete"

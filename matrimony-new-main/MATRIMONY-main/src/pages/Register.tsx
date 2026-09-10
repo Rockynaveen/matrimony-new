@@ -215,11 +215,11 @@ export const Register: React.FC = () => {
         register_for: formValues.register_for || 'SELF'
       });
 
-      showToast('Google Registration successful. Please complete your basic profile.');
+      showToast('Google Registration successful. Please complete your profile.');
       if (redirectUrl) {
-        navigate(`/complete-basic-profile?redirect=${encodeURIComponent(redirectUrl)}`);
+        navigate(`/profile/complete?redirect=${encodeURIComponent(redirectUrl)}`);
       } else {
-        navigate('/complete-basic-profile');
+        navigate('/profile/complete');
       }
     } catch (err: any) {
       const msg = err.message || 'Google Registration failed';

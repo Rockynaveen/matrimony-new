@@ -4,7 +4,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '../../context/AppContext';
 import { profileService } from '../../services/profile.service';
 import { Badge } from '../../components/ui/Badge';
-import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { LoadingScreen } from '../../components/ui/LoadingScreen';
@@ -24,7 +23,16 @@ import {
   XCircle,
   Crown,
   Briefcase,
-  GraduationCap
+  GraduationCap,
+  Star,
+  Copy,
+  Check,
+  Camera,
+  Eye,
+  User,
+  Users,
+  Sun,
+  HeartHandshake
 } from 'lucide-react';
 import {
   useAddToShortlist,
@@ -82,6 +90,7 @@ export const ViewProfile: React.FC = () => {
   const queryClient = useQueryClient();
 
   const numericUserId = Number(id || 0);
+  const kmId = `KM${String(numericUserId).padStart(6, '0')}`;
 
   // Live queries for recommendations, shortlist, and interests
   const { data: recommendations } = useRecommendations();
@@ -99,6 +108,7 @@ export const ViewProfile: React.FC = () => {
   const [isLockedModalOpen, setIsLockedModalOpen] = useState(false);
   const [lockErrorMessage, setLockErrorMessage] = useState<string | null>(null);
   const [apiFetchedProfile, setApiFetchedProfile] = useState<any | null>(null);
+  const [copiedId, setCopiedId] = useState(false);
 
   useEffect(() => {
     if (!numericUserId || numericUserId <= 0) {
@@ -157,7 +167,7 @@ export const ViewProfile: React.FC = () => {
     i => Number(i.from_user || (i as any).user_id) === numericUserId || String(i.from_user) === String(id)
   );
 
-  // Merge all available data sources so that details from recommendations, shortlist, interests, or profile API combine seamlessly
+  // Merge all available data sources
   const mergedSource: any = {
     ...(foundInProfiles || {}),
     ...(foundInSent || {}),
@@ -201,7 +211,6 @@ export const ViewProfile: React.FC = () => {
 
   let fullDisplayName = [resolvedFirstName, resolvedLastName].filter(Boolean).join(' ').trim();
 
-  // If still empty or contains generic "Member #", check full profile_name or full_name:
   if (!fullDisplayName || fullDisplayName.toLowerCase().startsWith('member #') || fullDisplayName.toLowerCase().startsWith('member')) {
     const rawFullName = toText(
       apiFetchedProfile?.profile_name ||
@@ -219,7 +228,6 @@ export const ViewProfile: React.FC = () => {
     }
   }
 
-  // If still empty, check if email exists and extract readable name
   if (!fullDisplayName || fullDisplayName.toLowerCase().startsWith('member #') || fullDisplayName.toLowerCase().startsWith('member')) {
     const email = apiFetchedProfile?.email || activeSource?.email || activeSource?.user?.email;
     if (email && email.includes('@')) {
@@ -230,7 +238,6 @@ export const ViewProfile: React.FC = () => {
     }
   }
 
-  // Final fallback if truly no name exists in any backend field:
   if (!fullDisplayName || fullDisplayName.toLowerCase().startsWith('member #')) {
     const caste = toText(mergedSource.caste);
     const occupation = toText(mergedSource.occupation || mergedSource.profession);
@@ -243,6 +250,7 @@ export const ViewProfile: React.FC = () => {
 
   const profile = activeSource ? {
     id: String(activeSource.user_id || activeSource.id || numericUserId),
+    kmId,
     name: fullDisplayName,
     firstName: resolvedFirstName || (fullDisplayName ? fullDisplayName.split(' ')[0] : 'Profile'),
     lastName: resolvedLastName || (fullDisplayName ? fullDisplayName.split(' ').slice(1).join(' ') : ''),
@@ -252,7 +260,8 @@ export const ViewProfile: React.FC = () => {
     religion: toText(activeSource.religion, 'Hindu'),
     caste: toText(activeSource.caste, 'Member'),
     subcaste: toText(activeSource.sub_caste || activeSource.subcaste, ''),
-    motherTongue: toText(activeSource.mother_tongue || activeSource.motherTongue || (Array.isArray(activeSource.languages_known) ? activeSource.languages_known[0] : activeSource.languages_known), 'Hindi'),
+    gothram: toText(activeSource.gothram || activeSource.gotra, 'Not Specified'),
+    motherTongue: toText(activeSource.mother_tongue || activeSource.motherTongue || (Array.isArray(activeSource.languages_known) ? activeSource.languages_known[0] : activeSource.languages_known), 'Telugu'),
     maritalStatus: toText(activeSource.marital_status || activeSource.maritalStatus, 'Never Married'),
     location: {
       city: toText(activeSource.city || activeSource.location?.city, 'City'),
@@ -260,7 +269,9 @@ export const ViewProfile: React.FC = () => {
       country: toText(activeSource.country || activeSource.location?.country, 'India')
     },
     profession: toText(activeSource.occupation || activeSource.profession || activeSource.job_title, 'Professional'),
+    company: toText(activeSource.company_name || activeSource.company, 'Private Firm'),
     education: toText(activeSource.highest_education || activeSource.education, 'Graduate'),
+    educationDetail: toText(activeSource.education_detail || activeSource.qualification, 'Degree Details Not Specified'),
     annualIncome: typeof activeSource.annual_income === 'number'
       ? `₹${activeSource.annual_income} Lakhs`
       : toText(activeSource.annual_income, 'Not specified'),
@@ -270,39 +281,45 @@ export const ViewProfile: React.FC = () => {
       : (activeSource.profile_photo ? [toImageUrl(activeSource.profile_photo)] : []),
     about: toText(
       activeSource.about_me || activeSource.bio || activeSource.about,
-      `Namaste! I am working as a ${toText(activeSource.occupation, 'professional')}. Looking for a compatible partner who values traditions and family.`
+      `Namaste! I am working as a ${toText(activeSource.occupation, 'professional')}. Looking for an understanding and compatible life partner who values traditions, trust, and shared family values.`
     ),
     verified: Boolean(activeSource.is_verified === true || activeSource.is_verified === 1 || String(activeSource.verification_status || '').toUpperCase() === 'VERIFIED'),
-    compatibilityScore: typeof activeSource.match_percentage === 'number' ? activeSource.match_percentage : (Number(activeSource.compatibilityScore) || 90),
+    compatibilityScore: typeof activeSource.match_percentage === 'number' ? activeSource.match_percentage : (Number(activeSource.compatibilityScore) || 92),
     physicalAttributes: {
       height: activeSource.height ? (typeof activeSource.height === 'number' ? `${activeSource.height} cm` : toText(activeSource.height)) : "5'5\"",
-      weight: activeSource.weight ? `${toText(activeSource.weight)} kg` : 'N/A'
+      weight: activeSource.weight ? `${toText(activeSource.weight)} kg` : 'Not Specified',
+      complexion: toText(activeSource.complexion, 'Fair'),
+      physicalStatus: toText(activeSource.disability_information || activeSource.physical_status, 'Normal')
     },
     lifestyle: {
-      diet: toText(activeSource.diet, 'Vegetarian')
+      diet: toText(activeSource.diet, 'Vegetarian'),
+      smoking: toText(activeSource.smoking, 'No'),
+      drinking: toText(activeSource.drinking, 'No')
     },
     horoscope: {
       rashi: toText(activeSource.rashi, 'Not specified'),
       nakshatra: toText(activeSource.nakshatra, 'Not specified'),
-      dosha: toText(activeSource.dosha, 'No Dosha')
+      dosha: toText(activeSource.dosha, 'No Dosha / Clear')
     },
     family: {
       type: toText(activeSource.family?.type || activeSource.family_type, 'Nuclear Family'),
-      values: toText(activeSource.family?.values || activeSource.family_values, 'Traditional'),
+      values: toText(activeSource.family?.values || activeSource.family_values, 'Traditional / Moderate'),
       status: toText(activeSource.family?.status || activeSource.family_status, 'Upper Middle Class'),
-      fatherOccupation: toText(activeSource.family?.fatherOccupation || activeSource.father_occupation, 'N/A'),
-      motherOccupation: toText(activeSource.family?.motherOccupation || activeSource.mother_occupation, 'N/A')
+      fatherOccupation: toText(activeSource.family?.fatherOccupation || activeSource.father_occupation, 'Business / Employed'),
+      motherOccupation: toText(activeSource.family?.motherOccupation || activeSource.mother_occupation, 'Homemaker'),
+      information: toText(activeSource.family_information || activeSource.family_details || activeSource.family?.details, 'Respectable and affectionate family with traditional roots.')
     },
     partnerPreferences: {
       ageMin: Number(activeSource.partnerPreferences?.ageMin || activeSource.partner_preferences?.age_min || 22),
-      ageMax: Number(activeSource.partnerPreferences?.ageMax || activeSource.partner_preferences?.age_max || 35),
+      ageMax: Number(activeSource.partnerPreferences?.ageMax || activeSource.partner_preferences?.age_max || 32),
       heightMin: toText(activeSource.partnerPreferences?.heightMin || activeSource.partner_preferences?.height_min, "5'2\""),
-      heightMax: toText(activeSource.partnerPreferences?.heightMax || activeSource.partner_preferences?.height_max, "6'2\""),
+      heightMax: toText(activeSource.partnerPreferences?.heightMax || activeSource.partner_preferences?.height_max, "6'0\""),
       religions: toTextArray(activeSource.partnerPreferences?.religions || activeSource.partner_preferences?.religions, [toText(activeSource.religion, 'Hindu')]),
-      educations: toTextArray(activeSource.partnerPreferences?.educations || activeSource.partner_preferences?.educations, ['Graduate'])
+      educations: toTextArray(activeSource.partnerPreferences?.educations || activeSource.partner_preferences?.educations, ['Graduate Degree']),
+      location: toText(activeSource.partnerPreferences?.location, 'Telangana / Andhra Pradesh')
     },
-    languages: toTextArray(activeSource.languages_known || activeSource.languages, ['Hindi', 'English']),
-    hobbies: toTextArray(activeSource.hobbies_interests || activeSource.hobbies, ['Reading', 'Travel']),
+    languages: toTextArray(activeSource.languages_known || activeSource.languages, ['Telugu', 'English']),
+    hobbies: toTextArray(activeSource.hobbies_interests || activeSource.hobbies, ['Music', 'Travel', 'Reading']),
     videoIntro: toText(activeSource.video_url || activeSource.video_introduction || activeSource.videoIntro)
   } : null;
 
@@ -322,7 +339,7 @@ export const ViewProfile: React.FC = () => {
     try {
       await sendInterestMutation.mutateAsync({ to_user: numericUserId, message: 'Hi, I am interested in your profile.' });
       setIsJustSent(true);
-      showToast(`Interest expression sent to ${profile?.name || 'member'}!`);
+      showToast(`Interest sent to ${profile?.name || 'member'}`);
     } catch (err: any) {
       showToast(err?.message || `Failed to express interest.`);
     }
@@ -353,497 +370,600 @@ export const ViewProfile: React.FC = () => {
   };
 
   const handleBlock = async () => {
-    const confirmed = window.confirm(`Are you sure you want to block this profile?`);
+    const confirmed = window.confirm(`Are you sure you want to block ${profile?.name}?`);
     if (!confirmed) return;
     try {
-      await blockMutation.mutateAsync({ user: numericUserId, reason: 'Blocked from profile page' });
-      showToast(`Profile has been blocked.`);
+      await blockMutation.mutateAsync({ user: numericUserId, reason: 'Blocked by user' });
+      showToast(`${profile?.name} has been blocked.`);
       navigate('/matches');
     } catch (err: any) {
       showToast(err?.message || 'Failed to block profile');
     }
   };
 
+  const handleMessageClick = () => {
+    setActiveChatUserId(numericUserId);
+    navigate(`/messages/${numericUserId}`);
+  };
+
+  // Privacy Report Modal State
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportReason, setReportReason] = useState('Fake Profile / Impersonation');
   const [reportDescription, setReportDescription] = useState('');
+  const createPrivacyReportMutation = useCreatePrivacyReport();
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-  const createReportMutation = useCreatePrivacyReport();
 
   const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmittingReport(true);
     try {
-      setIsSubmittingReport(true);
-      await createReportMutation.mutateAsync({
-        reporter_id: 0,
+      await createPrivacyReportMutation.mutateAsync({
         reported_user_id: numericUserId,
         reason: reportReason,
         description: reportDescription
       });
-      showToast(`✓ Report submitted. Our safety team is reviewing it.`);
+      showToast('Safety report submitted to moderation.');
       setIsReportModalOpen(false);
       setReportDescription('');
     } catch (err: any) {
-      showToast(err?.message || 'Failed to submit report.');
+      showToast(err?.message || 'Failed to submit report');
     } finally {
       setIsSubmittingReport(false);
     }
   };
 
-  const { data: photoRequests } = usePhotoRequests();
+  // Photo Request Access State
   const createPhotoRequestMutation = useCreatePhotoRequest();
-  const [isPhotoReqSent, setIsPhotoReqSent] = useState(false);
-
-  const isPhotoRequestSent =
-    isPhotoReqSent ||
-    (photoRequests || []).some(
-      r => Number(r.profile_owner?.id || (r as any).profile_owner_id) === numericUserId
-    );
+  const { data: photoRequests } = usePhotoRequests();
+  const isPhotoRequestSent = photoRequests?.some(r => r.target_user_id === numericUserId);
 
   const handleRequestPhotoAccess = async () => {
     try {
-      await createPhotoRequestMutation.mutateAsync({
-        requester_id: 0,
-        profile_owner_id: numericUserId
-      });
-      setIsPhotoReqSent(true);
-      showToast(`✓ Photo view request sent to ${profile?.name || 'member'}!`);
+      await createPhotoRequestMutation.mutateAsync({ target_user_id: numericUserId });
+      showToast(`Photo access requested from ${profile?.name}.`);
     } catch (err: any) {
-      showToast(err?.message || `Failed to request photo access.`);
+      showToast(err?.message || 'Failed to request photo access');
     }
   };
 
-  const handleMessageClick = () => {
-    if (profile) {
-      setActiveChatUserId(profile.id);
-      navigate(`/messages/${profile.id}`);
-    }
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(kmId);
+    setCopiedId(true);
+    showToast(`Copied Matrimony ID ${kmId}`);
+    setTimeout(() => setCopiedId(false), 2000);
   };
 
   if (isLoading) {
-    return (
-      <div className="py-20 flex flex-col items-center justify-center">
-        <LoadingScreen title="Member Profile" message="Loading profile details..." />
-      </div>
-    );
+    return <LoadingScreen title="Member Profile" message="Loading profile details..." />;
   }
 
   if (!profile) {
     return (
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 space-y-6 text-center">
-        <div className="h-16 w-16 bg-stone-100 border border-stone-200 rounded-full flex items-center justify-center mx-auto text-stone-400">
-          <UserX className="h-8 w-8" />
-        </div>
-        <div className="space-y-2">
-          <h2 className="font-serif text-2xl font-bold text-stone-900">Profile Not Found</h2>
-          <p className="text-xs text-stone-500 max-w-md mx-auto">
-            The profile you are looking for does not exist or has been removed. Browse other verified matches below.
-          </p>
-        </div>
-        <Button variant="primary" onClick={() => navigate('/matches')} className="font-bold text-xs px-6">
-          Browse Verified Matches
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center space-y-4">
+        <h2 className="text-xl font-bold text-stone-900">Profile Not Found</h2>
+        <p className="text-sm text-stone-500">The profile you are looking for may have been deactivated or removed.</p>
+        <Button onClick={() => navigate('/matches')} variant="primary" className="bg-[#8B1E3F] text-white">
+          Back to Matches
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 font-sans text-stone-900 space-y-6">
       
-      {/* Back Button */}
-      <button
-        onClick={() => navigate(-1)}
-        className="inline-flex items-center text-xs font-semibold text-stone-500 hover:text-stone-900 transition-colors cursor-pointer"
-      >
-        <ArrowLeft className="h-4 w-4 mr-1" /> Back to Matches
-      </button>
+      {/* ── Top Navigation Bar ── */}
+      <div className="flex items-center justify-between gap-4 text-xs">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-1.5 font-semibold text-stone-600 hover:text-stone-900 transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back
+        </button>
 
-      {/* Main Profile Header Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Left Column: Photos & Video Intro */}
-        <div className="lg:col-span-5 space-y-4">
-          <Card className="overflow-hidden border-stone-200/90 shadow-sm rounded-3xl">
-            
-            {/* Main Photo Display */}
-            <div className="relative aspect-4/5 w-full bg-stone-100">
-              <MatchAvatar
-                photo={activePhoto || profile.profileImage}
-                firstName={profile.firstName || profile.name}
-                lastName={profile.lastName}
-                variant="card"
-                imgClassName="w-full h-full object-cover object-top"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 bg-stone-100 px-2.5 py-1 rounded-md text-[11px] font-mono text-stone-700">
+            <span>{profile.kmId}</span>
+            <button
+              type="button"
+              onClick={handleCopyId}
+              title="Copy ID"
+              className="text-stone-500 hover:text-stone-900 cursor-pointer"
+            >
+              {copiedId ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+            </button>
+          </div>
 
-              {/* Overlay Badges */}
-              <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-                {profile.verified && (
-                  <Badge variant="verified" className="bg-white/95 text-emerald-800 backdrop-blur-xs font-bold shadow-xs">
-                    <ShieldCheck className="h-4 w-4 text-emerald-600 fill-emerald-100" /> ID Verified Profile
-                  </Badge>
-                )}
-                {profile.videoIntro && (
-                  <Button
-                    size="sm"
-                    variant="gold"
-                    onClick={() => setIsVideoModalOpen(true)}
-                    className="text-xs font-bold h-8 px-3"
-                  >
-                    <Play className="h-3.5 w-3.5 mr-1 fill-current" /> Video Intro
-                  </Button>
-                )}
-              </div>
-
-              <div className="absolute bottom-4 left-4 text-white">
-                <span className="text-xs font-semibold text-white/90">Profile ID: KM{profile.id}</span>
-              </div>
-            </div>
-
-            {/* Gallery Thumbnails */}
-            {profile.gallery && profile.gallery.length > 1 && (
-              <div className="p-3 bg-stone-50 flex items-center gap-2 overflow-x-auto border-t border-stone-100">
-                {profile.gallery.map((imgUrl, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActivePhoto(imgUrl)}
-                    className={`h-16 w-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
-                      activePhoto === imgUrl ? 'border-[#8B1E3F] ring-2 ring-[#8B1E3F]/30' : 'border-transparent opacity-70 hover:opacity-100'
-                    }`}
-                  >
-                    <img src={imgUrl} alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
-
-          </Card>
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#8B1E3F] bg-[#8B1E3F]/10 px-2 py-0.5 rounded-md">
+            <Sparkles className="h-3 w-3 text-[#8B1E3F]" /> {profile.compatibilityScore}% Match
+          </span>
         </div>
-
-        {/* Right Column: Key Details & Quick Actions */}
-        <div className="lg:col-span-7 space-y-6">
-          <Card className="p-6 sm:p-8 space-y-6 rounded-3xl border-stone-200/90 shadow-xs">
-            
-            {/* Title & Top Meta */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-stone-100">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900">{profile.name}, {profile.age}</h1>
-                  {profile.verified && <ShieldCheck className="h-6 w-6 text-emerald-600 fill-emerald-100 shrink-0" />}
-                </div>
-                <p className="text-xs sm:text-sm font-bold text-[#8B1E3F] mt-1">
-                  {[profile.religion, profile.caste, profile.subcaste].filter(Boolean).join(' • ')} {profile.motherTongue ? `• ${profile.motherTongue}` : ''}
-                </p>
-                <div className="flex items-center gap-1.5 text-xs text-stone-500 font-medium mt-2">
-                  <MapPin className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
-                  <span>{[profile.location.city, profile.location.state, profile.location.country].filter(Boolean).join(', ')}</span>
-                </div>
-              </div>
-
-              {/* Compatibility Pill */}
-              <div className="bg-[#8B1E3F]/10 border border-[#8B1E3F]/20 p-3.5 rounded-2xl text-center shrink-0 min-w-[100px]">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 block">Match Score</span>
-                {isAuthenticated ? (
-                  <span className="font-serif text-2xl sm:text-3xl font-bold text-[#8B1E3F]">{profile.compatibilityScore}%</span>
-                ) : (
-                  <span className="font-bold text-xs text-stone-400 block pt-1">🔒 Locked</span>
-                )}
-              </div>
-            </div>
-
-            {/* Core Info Badges */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-              <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 space-y-0.5">
-                <span className="text-stone-500 block text-[10px] font-bold uppercase tracking-wider">Profession</span>
-                <span className="font-bold text-stone-900 truncate block">{profile.profession}</span>
-              </div>
-              <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 space-y-0.5">
-                <span className="text-stone-500 block text-[10px] font-bold uppercase tracking-wider">Education</span>
-                <span className="font-bold text-stone-900 truncate block">{profile.education}</span>
-              </div>
-              <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 space-y-0.5">
-                <span className="text-stone-500 block text-[10px] font-bold uppercase tracking-wider">Annual Income</span>
-                <span className={`font-bold text-[#8B1E3F] truncate block ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? profile.annualIncome : '₹XX,XX,XXX'}
-                </span>
-              </div>
-              <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 space-y-0.5">
-                <span className="text-stone-500 block text-[10px] font-bold uppercase tracking-wider">Marital Status</span>
-                <span className="font-bold text-stone-900 truncate block">{profile.maritalStatus}</span>
-              </div>
-              <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 space-y-0.5">
-                <span className="text-stone-500 block text-[10px] font-bold uppercase tracking-wider">Height & Weight</span>
-                <span className="font-bold text-stone-900 truncate block">{profile.physicalAttributes.height} • {profile.physicalAttributes.weight}</span>
-              </div>
-              <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 space-y-0.5">
-                <span className="text-stone-500 block text-[10px] font-bold uppercase tracking-wider">Diet</span>
-                <span className="font-bold text-stone-900 truncate block">{profile.lifestyle.diet}</span>
-              </div>
-            </div>
-
-            {/* Profile Action Buttons Toolbar */}
-            {isAuthenticated ? (
-              <div className="flex flex-wrap gap-2.5 pt-4 border-t border-stone-100">
-                {isInterestAccepted ? (
-                  <Button size="md" variant="gold" onClick={handleMessageClick} className="font-bold bg-gradient-to-r from-amber-400 to-amber-500 text-stone-950 shadow-sm rounded-xl">
-                    <MessageSquare className="h-4 w-4 mr-1.5" /> Open Chat
-                  </Button>
-                ) : isInterestDeclined ? (
-                  <Button size="md" variant="secondary" disabled className="text-rose-700 bg-rose-50 border border-rose-200 font-bold rounded-xl">
-                    <XCircle className="h-4 w-4 mr-1.5" /> Interest Declined
-                  </Button>
-                ) : hasSentInterest ? (
-                  <Button size="md" variant="secondary" disabled className="text-emerald-800 bg-emerald-50 border border-emerald-200 font-bold rounded-xl">
-                    <CheckCircle2 className="h-4 w-4 mr-1.5 text-emerald-600" /> Interest Sent
-                  </Button>
-                ) : (
-                  <Button
-                    size="md"
-                    variant="primary"
-                    onClick={handleExpressInterest}
-                    disabled={sendInterestMutation.isPending}
-                    className="bg-[#8B1E3F] hover:bg-[#721733] text-white font-bold rounded-xl shadow-xs"
-                  >
-                    {sendInterestMutation.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin text-white" />
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Heart className="h-4 w-4 mr-1.5 fill-white/30" />
-                        Express Interest
-                      </>
-                    )}
-                  </Button>
-                )}
-
-                <Button
-                  size="md"
-                  variant="outline"
-                  onClick={handleShortlistToggle}
-                  disabled={addShortlistMutation.isPending || removeShortlistMutation.isPending}
-                  className="rounded-xl border-stone-200 font-bold"
-                >
-                  {addShortlistMutation.isPending || removeShortlistMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                  ) : (
-                    <Heart className={`h-4 w-4 mr-1.5 ${isShortlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
-                  )}
-                  {isShortlisted ? 'Shortlisted' : 'Shortlist'}
-                </Button>
-
-                {createPhotoRequestMutation.isPending ? (
-                  <Button
-                    size="md"
-                    variant="outline"
-                    disabled
-                    className="border-stone-200 text-stone-600 font-bold rounded-xl"
-                  >
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin text-stone-600" /> Sending...
-                  </Button>
-                ) : isPhotoRequestSent ? (
-                  <Button
-                    size="md"
-                    variant="secondary"
-                    disabled
-                    className="text-emerald-800 bg-emerald-50 border border-emerald-200 font-bold rounded-xl"
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-1.5 text-emerald-600" /> Photo Requested
-                  </Button>
-                ) : (
-                  <Button
-                    size="md"
-                    variant="outline"
-                    onClick={handleRequestPhotoAccess}
-                    className="rounded-xl border-stone-200 font-bold"
-                  >
-                    <Lock className="h-4 w-4 mr-1.5 text-[#8B1E3F]" /> Request Photo Access
-                  </Button>
-                )}
-
-                <Button
-                  size="md"
-                  variant="outline"
-                  onClick={() => setIsReportModalOpen(true)}
-                  className="border-amber-300 text-amber-900 hover:bg-amber-50 rounded-xl font-bold"
-                >
-                  <Flag className="h-4 w-4 mr-1.5 text-amber-600" /> Report
-                </Button>
-              </div>
-            ) : (
-              <div className="p-6 bg-stone-50 border border-stone-200 rounded-2xl space-y-3 text-center mt-4">
-                <h4 className="font-serif font-bold text-sm text-[#8B1E3F]">
-                  🔒 Unlock Full Details & Contact
-                </h4>
-                <p className="text-xs text-stone-500 font-medium max-w-sm mx-auto leading-relaxed">
-                  Log in to view complete contact info, horoscope alignment, and family background.
-                </p>
-                <div className="flex items-center justify-center gap-3 pt-1">
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={() => navigate(`/login?redirect=/profile/${id}`)}
-                    className="bg-[#8B1E3F] hover:bg-[#721733] text-white px-5 font-bold text-xs rounded-xl"
-                  >
-                    Log In
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => navigate(`/register?redirect=/profile/${id}`)}
-                    className="border-stone-200 text-stone-700 hover:bg-stone-50 px-5 font-bold text-xs rounded-xl"
-                  >
-                    Register Free
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Moderation Controls */}
-            {isAuthenticated && (
-              <div className="flex items-center gap-4 text-xs text-stone-500 pt-2 border-t border-stone-100">
-                <button
-                  onClick={handleIgnore}
-                  disabled={ignoreMutation.isPending}
-                  className="hover:text-amber-700 flex items-center gap-1 font-semibold cursor-pointer"
-                >
-                  <XCircle className="h-3.5 w-3.5" /> Ignore Profile
-                </button>
-                <button
-                  onClick={handleBlock}
-                  disabled={blockMutation.isPending}
-                  className="hover:text-rose-700 flex items-center gap-1 font-semibold cursor-pointer"
-                >
-                  <UserX className="h-3.5 w-3.5" /> Block Profile
-                </button>
-              </div>
-            )}
-
-          </Card>
-        </div>
-
       </div>
 
-      {/* Comprehensive Profile Sections */}
-      <div className="space-y-6">
-        
-        {/* About Me */}
-        <Card className="p-6 space-y-2 rounded-3xl border-stone-200/90 shadow-2xs">
-          <h3 className="font-serif text-lg font-bold text-[#8B1E3F]">About Me</h3>
-          <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-sans">{profile.about}</p>
-        </Card>
+      {/* ─────────────────────────────────────────────────────────────
+          SINGLE UNIFIED PROFILE SHEET (COLORFUL & VIBRANT UI)
+         ───────────────────────────────────────────────────────────── */}
+      <div className="bg-white border border-stone-200/90 rounded-3xl shadow-sm overflow-hidden">
 
-        {/* Detailed Info Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* 1. Colorful Decorative Cover Banner */}
+        <div className="h-36 sm:h-44 w-full bg-gradient-to-r from-[#8B1E3F] via-rose-600 to-amber-500 relative overflow-hidden">
+          {/* Subtle glowing ambient circles */}
+          <div className="absolute -top-12 -right-12 w-56 h-56 bg-white/15 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/4 w-72 h-36 bg-amber-300/25 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute top-1/2 right-1/3 w-32 h-32 bg-rose-400/20 rounded-full blur-xl pointer-events-none" />
           
-          {/* Horoscope & Astrological Info */}
-          <Card className="p-6 space-y-3 rounded-3xl border-stone-200/90 shadow-2xs">
-            <h3 className="font-serif text-lg font-bold text-[#8B1E3F] flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#D4AF37]" /> Horoscope & Astrological Details
-            </h3>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500 font-medium">Rashi (Moon Sign)</span>
-                <span className={`font-bold text-stone-800 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? profile.horoscope.rashi : '🔒 Restricted'}
-                </span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500 font-medium">Nakshatra</span>
-                <span className={`font-bold text-stone-800 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? profile.horoscope.nakshatra : '🔒 Restricted'}
-                </span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500 font-medium">Dosha Status</span>
-                <span className={`font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? profile.horoscope.dosha : '🔒 Restricted'}
-                </span>
-              </div>
-            </div>
-          </Card>
+          <div className="absolute top-4 right-4 sm:right-8 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-white/95 bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/25 shadow-xs">
+              <Sparkles className="h-3.5 w-3.5 text-amber-300" /> Kalyan Matrimony Verified
+            </span>
+          </div>
+        </div>
 
-          {/* Family Background */}
-          <Card className="p-6 space-y-3 rounded-3xl border-stone-200/90 shadow-2xs">
-            <h3 className="font-serif text-lg font-bold text-[#8B1E3F]">Family Details</h3>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500 font-medium">Family Type & Values</span>
-                <span className={`font-bold text-stone-800 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? `${profile.family.type} • ${profile.family.values}` : '🔒 Restricted'}
-                </span>
+        {/* 2. Hero Content Strip (Overlapping Banner) */}
+        <div className="px-6 sm:px-10 pb-8 pt-0 bg-white border-b border-stone-200/80 relative">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 -mt-16 sm:-mt-20">
+            
+            {/* Avatar & Core Headings */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
+              <div className="relative shrink-0">
+                <img
+                  src={activePhoto || profile.profileImage || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400'}
+                  alt={profile.name}
+                  className="h-32 w-32 sm:h-36 sm:w-36 rounded-2xl object-cover border-4 border-white shadow-lg ring-2 ring-rose-200/80"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400';
+                  }}
+                />
+                {profile.videoIntro && (
+                  <button
+                    type="button"
+                    onClick={() => setIsVideoModalOpen(true)}
+                    className="absolute bottom-2 right-2 p-2 bg-gradient-to-r from-[#8B1E3F] to-rose-600 text-white rounded-xl shadow-md hover:scale-105 transition-transform cursor-pointer"
+                    title="Watch Video Introduction"
+                  >
+                    <Play className="h-3.5 w-3.5 fill-white" />
+                  </button>
+                )}
               </div>
-              <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500 font-medium">Family Status</span>
-                <span className={`font-bold text-stone-800 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? profile.family.status : '🔒 Restricted'}
-                </span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500 font-medium">Father's Occupation</span>
-                <span className={`font-bold text-stone-800 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? profile.family.fatherOccupation : '🔒 Restricted'}
-                </span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500 font-medium">Mother's Occupation</span>
-                <span className={`font-bold text-stone-800 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
-                  {isAuthenticated ? profile.family.motherOccupation : '🔒 Restricted'}
-                </span>
-              </div>
-            </div>
-          </Card>
 
-          {/* Lifestyle & Hobbies */}
-          <Card className="p-6 space-y-3 rounded-3xl border-stone-200/90 shadow-2xs">
-            <h3 className="font-serif text-lg font-bold text-[#8B1E3F]">Languages & Hobbies</h3>
-            <div className="space-y-3 text-xs">
-              <div>
-                <span className="text-stone-500 font-medium block mb-1.5">Languages Spoken</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {profile.languages.map((l, idx) => (
-                    <span key={idx} className="px-2.5 py-1 bg-stone-100 text-stone-800 rounded-lg text-xs font-semibold">
-                      {toText(l)}
+              <div className="space-y-2 pt-2 sm:pt-0">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900">
+                    {profile.name}, <span className="text-[#8B1E3F]">{profile.age}</span>
+                  </h1>
+                  {profile.verified && (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-100/90 px-2.5 py-1 rounded-full border border-emerald-300">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> Verified Member
                     </span>
-                  ))}
+                  )}
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-1 rounded-full shadow-xs">
+                    <Sparkles className="h-3 w-3 text-amber-300" /> {profile.compatibilityScore}% Match
+                  </span>
                 </div>
-              </div>
-              <div>
-                <span className="text-stone-500 font-medium block mb-1.5">Hobbies & Interests</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {profile.hobbies.map((h, idx) => (
-                    <span key={idx} className="px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded-lg text-xs font-semibold">
-                      {toText(h)}
-                    </span>
-                  ))}
+
+                {/* Colorful Quick Info Pills */}
+                <div className="flex items-center gap-2 flex-wrap pt-0.5 text-xs">
+                  <span className="inline-flex items-center gap-1 font-semibold text-rose-900 bg-rose-50 border border-rose-200/90 px-3 py-1 rounded-lg">
+                    {[profile.religion, profile.caste, profile.subcaste].filter(Boolean).join(' • ')} {profile.motherTongue ? `(${profile.motherTongue})` : ''}
+                  </span>
+                  <span className="inline-flex items-center gap-1 font-semibold text-emerald-900 bg-emerald-50 border border-emerald-200/90 px-3 py-1 rounded-lg">
+                    <Briefcase className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                    {profile.profession}
+                  </span>
+                  <span className="inline-flex items-center gap-1 font-semibold text-sky-900 bg-sky-50 border border-sky-200/90 px-3 py-1 rounded-lg">
+                    <MapPin className="h-3.5 w-3.5 text-sky-600 shrink-0" />
+                    {[profile.location.city, profile.location.state].filter(Boolean).join(', ')}
+                  </span>
+                  <span className="inline-flex items-center gap-1 font-semibold text-amber-900 bg-amber-50 border border-amber-200/90 px-3 py-1 rounded-lg">
+                    {profile.height} • {profile.maritalStatus} • {profile.physicalAttributes.diet}
+                  </span>
                 </div>
               </div>
             </div>
-          </Card>
 
-          {/* Partner Preferences Summary */}
-          <Card className="p-6 space-y-3 bg-stone-50/60 border-stone-200/90 rounded-3xl shadow-2xs">
-            <h3 className="font-serif text-lg font-bold text-[#8B1E3F]">Desired Partner Preferences</h3>
-            <div className="space-y-2 text-xs text-stone-700">
-              <p>
-                <span className="text-stone-500 font-medium">Age Range:</span>{' '}
-                <span className="font-bold">{profile.partnerPreferences.ageMin} - {profile.partnerPreferences.ageMax} yrs</span>
-              </p>
-              <p>
-                <span className="text-stone-500 font-medium">Height Range:</span>{' '}
-                <span className="font-bold">{profile.partnerPreferences.heightMin} to {profile.partnerPreferences.heightMax}</span>
-              </p>
-              <p>
-                <span className="text-stone-500 font-medium">Religions:</span>{' '}
-                <span className="font-bold">{profile.partnerPreferences.religions.join(', ')}</span>
-              </p>
-              <p>
-                <span className="text-stone-500 font-medium">Education:</span>{' '}
-                <span className="font-bold">{profile.partnerPreferences.educations.join(', ')}</span>
+            {/* Quick Action Buttons */}
+            <div className="flex sm:flex-row lg:flex-col items-center gap-2.5 w-full lg:w-48 shrink-0">
+              {isInterestAccepted ? (
+                <button
+                  type="button"
+                  onClick={handleMessageClick}
+                  className="w-full px-4 py-2.5 text-xs font-bold bg-gradient-to-r from-[#8B1E3F] to-rose-600 hover:from-[#721833] hover:to-rose-700 text-white rounded-xl shadow-md shadow-rose-900/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <MessageSquare className="h-4 w-4" /> Open Chat
+                </button>
+              ) : isInterestDeclined ? (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full px-4 py-2 text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-xl cursor-not-allowed flex items-center justify-center gap-1.5"
+                >
+                  <XCircle className="h-4 w-4" /> Declined
+                </button>
+              ) : hasSentInterest ? (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full px-4 py-2.5 text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Interest Sent
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleExpressInterest}
+                  disabled={sendInterestMutation.isPending}
+                  className="w-full px-4 py-2.5 text-xs font-bold bg-gradient-to-r from-[#8B1E3F] via-rose-600 to-pink-600 hover:from-[#721833] hover:to-pink-700 text-white rounded-xl shadow-md shadow-rose-900/20 transition-all flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg"
+                >
+                  {sendInterestMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Heart className="h-4 w-4 fill-white" />
+                  )}
+                  Express Interest
+                </button>
+              )}
+
+              {/* Shortlist Button (Golden Amber Gradient) */}
+              <button
+                type="button"
+                onClick={handleShortlistToggle}
+                disabled={addShortlistMutation.isPending || removeShortlistMutation.isPending}
+                className={`w-full px-4 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  isShortlisted
+                    ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-stone-950 ring-2 ring-amber-300 shadow-md shadow-amber-400/30'
+                    : 'bg-white hover:bg-amber-50 text-stone-700 border border-stone-300 hover:border-amber-300 hover:text-amber-700'
+                }`}
+              >
+                {addShortlistMutation.isPending || removeShortlistMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Star className={`h-4 w-4 ${isShortlisted ? 'fill-stone-950 text-stone-950' : 'text-amber-500'}`} />
+                )}
+                {isShortlisted ? 'Shortlisted' : 'Shortlist Profile'}
+              </button>
+
+              {/* Request Photo Button */}
+              <button
+                type="button"
+                onClick={handleRequestPhotoAccess}
+                disabled={createPhotoRequestMutation.isPending || isPhotoRequestSent}
+                className="w-full px-4 py-2 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {isPhotoRequestSent ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-600" /> Photo Requested
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-3.5 w-3.5 text-indigo-600" /> Request Photos
+                  </>
+                )}
+              </button>
+            </div>
+
+          </div>
+
+          {/* Photo Gallery Thumbnails Strip */}
+          {profile.gallery && profile.gallery.length > 1 && (
+            <div className="flex items-center gap-3 pt-5 mt-5 border-t border-stone-100 overflow-x-auto pb-1">
+              <span className="text-xs text-stone-700 font-bold shrink-0">Photo Gallery:</span>
+              {profile.gallery.map((imgUrl, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActivePhoto(imgUrl)}
+                  className={`h-14 w-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
+                    activePhoto === imgUrl
+                      ? 'border-[#8B1E3F] ring-2 ring-rose-400 scale-105 shadow-sm'
+                      : 'border-stone-200 opacity-75 hover:opacity-100 hover:border-rose-300'
+                  }`}
+                >
+                  <img src={imgUrl} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 3. Detailed Profile Sections with Distinct Thematic Colors */}
+        <div className="divide-y divide-stone-200/70">
+
+          {/* Section: About Myself (Rose Accent) */}
+          <div className="p-6 sm:p-8 space-y-3 bg-gradient-to-b from-rose-50/20 to-transparent">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-rose-100 text-rose-700 shadow-xs">
+                <User className="h-4 w-4" />
+              </div>
+              <h2 className="text-base font-bold text-stone-900 tracking-tight">
+                About Myself
+              </h2>
+            </div>
+            <div className="bg-gradient-to-br from-rose-50/60 via-white to-amber-50/40 border border-rose-200/70 rounded-2xl p-5 sm:p-6 shadow-xs">
+              <p className="text-sm text-stone-800 leading-relaxed font-normal whitespace-pre-line">
+                {profile.about}
               </p>
             </div>
-          </Card>
+          </div>
+
+          {/* Section: Personal & Basic Details (Violet Accent) */}
+          <div className="p-6 sm:p-8 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-violet-100 text-violet-700 shadow-xs">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <h2 className="text-base font-bold text-stone-900 tracking-tight">
+                Personal & Basic Details
+              </h2>
+            </div>
+
+            <dl className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+              <div className="bg-violet-50/40 hover:bg-violet-50/70 border border-violet-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-violet-800 uppercase tracking-wider">Marital Status</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.maritalStatus}</dd>
+              </div>
+              <div className="bg-violet-50/40 hover:bg-violet-50/70 border border-violet-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-violet-800 uppercase tracking-wider">Height</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.height}</dd>
+              </div>
+              <div className="bg-violet-50/40 hover:bg-violet-50/70 border border-violet-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-violet-800 uppercase tracking-wider">Weight</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.physicalAttributes.weight}</dd>
+              </div>
+              <div className="bg-violet-50/40 hover:bg-violet-50/70 border border-violet-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-violet-800 uppercase tracking-wider">Complexion</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.physicalAttributes.complexion}</dd>
+              </div>
+              <div className="bg-violet-50/40 hover:bg-violet-50/70 border border-violet-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-violet-800 uppercase tracking-wider">Mother Tongue</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.motherTongue}</dd>
+              </div>
+              <div className="bg-violet-50/40 hover:bg-violet-50/70 border border-violet-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-violet-800 uppercase tracking-wider">Physical Status</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.physicalAttributes.physicalStatus}</dd>
+              </div>
+              <div className="bg-violet-50/40 hover:bg-violet-50/70 border border-violet-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-violet-800 uppercase tracking-wider">Diet</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.physicalAttributes.diet}</dd>
+              </div>
+              <div className="bg-violet-50/40 hover:bg-violet-50/70 border border-violet-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-violet-800 uppercase tracking-wider">Smoking / Drinking</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.lifestyle.smoking} / {profile.lifestyle.drinking}</dd>
+              </div>
+            </dl>
+
+            {/* Languages & Hobbies with colorful cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4">
+                <span className="text-xs font-bold text-indigo-900 block mb-1.5 uppercase tracking-wider">Languages Spoken</span>
+                <p className="text-sm font-semibold text-stone-900">
+                  {profile.languages.length > 0 ? profile.languages.join(', ') : 'Telugu, English'}
+                </p>
+              </div>
+              <div className="bg-pink-50/50 border border-pink-100 rounded-xl p-4">
+                <span className="text-xs font-bold text-pink-900 block mb-1.5 uppercase tracking-wider">Hobbies & Interests</span>
+                <p className="text-sm font-semibold text-stone-900">
+                  {profile.hobbies.length > 0 ? profile.hobbies.join(', ') : 'Reading, Music, Travel'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Education & Career (Emerald Accent) */}
+          <div className="p-6 sm:p-8 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-emerald-100 text-emerald-700 shadow-xs">
+                <GraduationCap className="h-4 w-4" />
+              </div>
+              <h2 className="text-base font-bold text-stone-900 tracking-tight">
+                Education & Career
+              </h2>
+            </div>
+
+            <dl className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+              <div className="bg-emerald-50/40 hover:bg-emerald-50/70 border border-emerald-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Highest Degree</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.education}</dd>
+              </div>
+              <div className="bg-emerald-50/40 hover:bg-emerald-50/70 border border-emerald-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Education Details</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.educationDetail}</dd>
+              </div>
+              <div className="bg-emerald-50/40 hover:bg-emerald-50/70 border border-emerald-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Occupation</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.profession}</dd>
+              </div>
+              <div className="bg-emerald-50/40 hover:bg-emerald-50/70 border border-emerald-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Company</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.company}</dd>
+              </div>
+              <div className="bg-gradient-to-br from-emerald-100/90 to-teal-50 border-2 border-emerald-300 rounded-xl p-3.5 transition-all shadow-xs">
+                <dt className="text-[11px] font-extrabold text-emerald-900 uppercase tracking-wider">Annual Income</dt>
+                <dd className={`text-base font-extrabold mt-1 text-emerald-800 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
+                  {isAuthenticated ? profile.annualIncome : '₹XX Lakhs'}
+                </dd>
+              </div>
+              <div className="bg-emerald-50/40 hover:bg-emerald-50/70 border border-emerald-100 rounded-xl p-3.5 transition-all col-span-2 sm:col-span-1">
+                <dt className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Work Location</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{[profile.location.city, profile.location.state, profile.location.country].filter(Boolean).join(', ')}</dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Section: Religion & Horoscope Details (Amber Accent) */}
+          <div className="p-6 sm:p-8 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-100 text-amber-700 shadow-xs">
+                <Sun className="h-4 w-4" />
+              </div>
+              <h2 className="text-base font-bold text-stone-900 tracking-tight">
+                Religion & Horoscope Details
+              </h2>
+            </div>
+
+            <dl className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+              <div className="bg-amber-50/40 hover:bg-amber-50/70 border border-amber-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Religion</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.religion}</dd>
+              </div>
+              <div className="bg-amber-50/40 hover:bg-amber-50/70 border border-amber-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Caste</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.caste}</dd>
+              </div>
+              <div className="bg-amber-50/40 hover:bg-amber-50/70 border border-amber-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Sub-Caste</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.subcaste || 'Not Specified'}</dd>
+              </div>
+              <div className="bg-amber-50/40 hover:bg-amber-50/70 border border-amber-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Gothram</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.gothram}</dd>
+              </div>
+              <div className="bg-amber-50/40 hover:bg-amber-50/70 border border-amber-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Moon Sign (Rashi)</dt>
+                <dd className={`text-sm font-bold text-stone-900 mt-1 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
+                  {isAuthenticated ? profile.horoscope.rashi : 'Restricted'}
+                </dd>
+              </div>
+              <div className="bg-amber-50/40 hover:bg-amber-50/70 border border-amber-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Star (Nakshatra)</dt>
+                <dd className={`text-sm font-bold text-stone-900 mt-1 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
+                  {isAuthenticated ? profile.horoscope.nakshatra : 'Restricted'}
+                </dd>
+              </div>
+              <div className="bg-amber-50/40 hover:bg-amber-50/70 border border-amber-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Dosha Status</dt>
+                <dd className={`text-sm font-bold text-stone-900 mt-1 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
+                  {isAuthenticated ? profile.horoscope.dosha : 'Restricted'}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Section: Family Details (Sky Accent) */}
+          <div className="p-6 sm:p-8 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-sky-100 text-sky-700 shadow-xs">
+                <Users className="h-4 w-4" />
+              </div>
+              <h2 className="text-base font-bold text-stone-900 tracking-tight">
+                Family Details
+              </h2>
+            </div>
+
+            <dl className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+              <div className="bg-sky-50/40 hover:bg-sky-50/70 border border-sky-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-sky-800 uppercase tracking-wider">Family Values</dt>
+                <dd className={`text-sm font-bold text-stone-900 mt-1 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
+                  {isAuthenticated ? profile.family.values : 'Restricted'}
+                </dd>
+              </div>
+              <div className="bg-sky-50/40 hover:bg-sky-50/70 border border-sky-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-sky-800 uppercase tracking-wider">Family Type</dt>
+                <dd className={`text-sm font-bold text-stone-900 mt-1 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
+                  {isAuthenticated ? profile.family.type : 'Restricted'}
+                </dd>
+              </div>
+              <div className="bg-sky-50/40 hover:bg-sky-50/70 border border-sky-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-sky-800 uppercase tracking-wider">Family Status</dt>
+                <dd className={`text-sm font-bold text-stone-900 mt-1 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
+                  {isAuthenticated ? profile.family.status : 'Restricted'}
+                </dd>
+              </div>
+              <div className="bg-sky-50/40 hover:bg-sky-50/70 border border-sky-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-sky-800 uppercase tracking-wider">Father's Occupation</dt>
+                <dd className={`text-sm font-bold text-stone-900 mt-1 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
+                  {isAuthenticated ? profile.family.fatherOccupation : 'Restricted'}
+                </dd>
+              </div>
+              <div className="bg-sky-50/40 hover:bg-sky-50/70 border border-sky-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-sky-800 uppercase tracking-wider">Mother's Occupation</dt>
+                <dd className={`text-sm font-bold text-stone-900 mt-1 ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
+                  {isAuthenticated ? profile.family.motherOccupation : 'Restricted'}
+                </dd>
+              </div>
+              <div className="bg-sky-50/40 hover:bg-sky-50/70 border border-sky-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-sky-800 uppercase tracking-wider">Native Location</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.location.city}, {profile.location.state}</dd>
+              </div>
+            </dl>
+
+            <div className="bg-sky-50/40 border border-sky-100 rounded-xl p-4">
+              <span className="text-xs font-bold text-sky-900 uppercase tracking-wider block mb-1">About Family</span>
+              <p className={`text-sm text-stone-800 leading-relaxed font-normal ${!isAuthenticated ? 'blur-[4px] select-none' : ''}`}>
+                {isAuthenticated ? profile.family.information : 'Sign in to view detailed family background information.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Section: Partner Preferences (Pink/Rose Accent) */}
+          <div className="p-6 sm:p-8 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-pink-100 text-[#8B1E3F] shadow-xs">
+                <HeartHandshake className="h-4 w-4" />
+              </div>
+              <h2 className="text-base font-bold text-stone-900 tracking-tight">
+                Desired Partner Preferences
+              </h2>
+            </div>
+
+            <dl className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+              <div className="bg-pink-50/40 hover:bg-pink-50/70 border border-pink-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-pink-800 uppercase tracking-wider">Preferred Age</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.partnerPreferences.ageMin} - {profile.partnerPreferences.ageMax} Yrs</dd>
+              </div>
+              <div className="bg-pink-50/40 hover:bg-pink-50/70 border border-pink-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-pink-800 uppercase tracking-wider">Preferred Height</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.partnerPreferences.heightMin} - {profile.partnerPreferences.heightMax}</dd>
+              </div>
+              <div className="bg-pink-50/40 hover:bg-pink-50/70 border border-pink-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-pink-800 uppercase tracking-wider">Preferred Religion</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.partnerPreferences.religions.join(', ')}</dd>
+              </div>
+              <div className="bg-pink-50/40 hover:bg-pink-50/70 border border-pink-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-pink-800 uppercase tracking-wider">Preferred Education</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.partnerPreferences.educations.join(', ')}</dd>
+              </div>
+              <div className="bg-pink-50/40 hover:bg-pink-50/70 border border-pink-100 rounded-xl p-3.5 transition-all">
+                <dt className="text-[11px] font-bold text-pink-800 uppercase tracking-wider">Preferred Location</dt>
+                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.partnerPreferences.location}</dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Section: Safety & Moderation Bar */}
+          <div className="p-4 sm:p-6 bg-stone-50/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-stone-500">
+            <div className="flex items-center gap-4 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setIsReportModalOpen(true)}
+                className="hover:text-stone-900 flex items-center gap-1 font-semibold text-stone-600 transition-colors cursor-pointer"
+              >
+                <Flag className="h-3.5 w-3.5 text-stone-400" /> Report Profile
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={handleIgnore}
+                disabled={ignoreMutation.isPending}
+                className="hover:text-amber-700 flex items-center gap-1 font-semibold text-stone-600 transition-colors cursor-pointer"
+              >
+                <XCircle className="h-3.5 w-3.5 text-stone-400" /> Ignore Profile
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={handleBlock}
+                disabled={blockMutation.isPending}
+                className="hover:text-rose-700 flex items-center gap-1 font-semibold text-stone-600 transition-colors cursor-pointer"
+              >
+                <UserX className="h-3.5 w-3.5 text-stone-400" /> Block Profile
+              </button>
+            </div>
+
+            <span className="text-[11px] text-stone-400 font-medium">
+              Verified by Kalyan Matrimony Safety Moderation
+            </span>
+          </div>
 
         </div>
 

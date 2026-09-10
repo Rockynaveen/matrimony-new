@@ -13,7 +13,8 @@ import {
   Ban,
   Loader2,
   CheckCircle2,
-  Lock
+  Lock,
+  Star
 } from 'lucide-react';
 import type { MatchResponseSchema } from '../../types/matching.types';
 import { Button } from '../ui/Button';
@@ -124,7 +125,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
       transition={{ duration: 0.2 }}
       className="h-full"
     >
-      <Card className="h-full flex flex-col justify-between border border-slate-200/90 hover:border-[#C44569]/50 shadow-sm hover:shadow-lg transition-all duration-300 group bg-white rounded-2xl overflow-hidden">
+      <Card className="h-full flex flex-col justify-between border border-stone-200/90 hover:border-[#8B1E3F]/40 shadow-xs hover:shadow-md transition-all duration-300 group bg-white rounded-2xl overflow-hidden">
         <div>
           {/* Card Media Header */}
           <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-50">
@@ -158,17 +159,17 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
                 type="button"
                 onClick={handleShortlistToggle}
                 disabled={addShortlistMutation.isPending || removeShortlistMutation.isPending}
-                className={`p-2 rounded-full backdrop-blur-md transition-all shadow-xs ${
+                className={`p-2 rounded-full backdrop-blur-md transition-all shadow-xs cursor-pointer ${
                   isShortlisted
-                    ? 'bg-[#C44569] text-white shadow-sm'
-                    : 'bg-white/85 text-slate-700 hover:bg-white hover:text-[#C44569]'
+                    ? 'bg-amber-400 text-stone-950 ring-2 ring-amber-300 shadow-sm scale-105'
+                    : 'bg-white/90 text-stone-600 hover:bg-white hover:text-amber-500'
                 }`}
-                title={isShortlisted ? 'Remove from shortlist' : 'Shortlist profile'}
+                title={isShortlisted ? 'Shortlisted (Click to remove)' : 'Shortlist profile'}
               >
                 {addShortlistMutation.isPending || removeShortlistMutation.isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Heart className={`h-3 w-3 ${isShortlisted ? 'fill-white stroke-none' : ''}`} />
+                  <Star className={`h-3.5 w-3.5 ${isShortlisted ? 'fill-stone-950 text-stone-950' : 'text-stone-700'}`} />
                 )}
               </button>
             </div>
@@ -176,7 +177,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
             {/* Bottom Compatibility Badge */}
             <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-white z-10">
               <span className="text-[10px] font-semibold text-white/90 uppercase tracking-wider">ID: {match.user_id}</span>
-              <div className="flex items-center gap-1 bg-gradient-to-r from-[#C83259] to-[#E11D48] text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-xs border border-white/20">
+              <div className="flex items-center gap-1 bg-[#8B1E3F] text-amber-200 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-xs border border-amber-300/30">
                 <Sparkles className="h-2.5 w-2.5 text-amber-300" /> {match.match_percentage}% Match
               </div>
             </div>
@@ -188,12 +189,12 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
               <button
                 type="button"
                 onClick={handleProfileUnlockFlow}
-                className="text-base font-bold text-black hover:text-[#C44569] transition-colors text-left truncate block w-full"
+                className="text-base font-bold text-stone-900 hover:text-[#8B1E3F] transition-colors text-left truncate block w-full"
               >
                 {match.first_name} {match.last_name}{match.age ? `, ${match.age}` : ''}
               </button>
               {Boolean(match.religion || match.caste) && (
-                <p className="text-xs font-semibold text-[#C44569] tracking-wide uppercase mt-0.5 truncate">
+                <p className="text-xs font-semibold text-[#8B1E3F] tracking-wide uppercase mt-0.5 truncate">
                   {[match.religion, match.caste].filter(Boolean).join(' • ')}
                 </p>
               )}
@@ -201,22 +202,22 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 
             {/* Matching parameters fields */}
             {(match.city || match.state || match.occupation || match.education) && (
-              <div className="space-y-1.5 text-xs text-slate-600 pt-1 border-t border-slate-100">
+              <div className="space-y-1.5 text-xs text-stone-600 pt-1 border-t border-stone-100">
                 {(match.city || match.state) && (
                   <div className="flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5 text-[#C44569] shrink-0" />
+                    <MapPin className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
                     <span className="truncate">{[match.city, match.state].filter(Boolean).join(', ')}</span>
                   </div>
                 )}
                 {match.occupation && (
                   <div className="flex items-center gap-1.5">
-                    <Briefcase className="h-3.5 w-3.5 text-[#C44569] shrink-0" />
+                    <Briefcase className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
                     <span className="truncate">{match.occupation}</span>
                   </div>
                 )}
                 {match.education && (
                   <div className="flex items-center gap-1.5">
-                    <GraduationCap className="h-3.5 w-3.5 text-[#C44569] shrink-0" />
+                    <GraduationCap className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
                     <span className="truncate">{match.education}</span>
                   </div>
                 )}
@@ -226,7 +227,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
             {match.matched_fields && match.matched_fields.length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1">
                 {match.matched_fields.slice(0, 2).map((field, i) => (
-                  <span key={i} className="text-[9.5px] font-semibold bg-pink-50 text-[#C44569] px-2 py-0.5 rounded-md border border-pink-100 uppercase tracking-wide">
+                  <span key={i} className="text-[9.5px] font-semibold bg-amber-50 text-amber-900 px-2 py-0.5 rounded-md border border-amber-200 uppercase tracking-wide">
                     ✓ {field.replace('_', ' ')}
                   </span>
                 ))}
@@ -236,14 +237,14 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         </div>
 
         {/* Action Controls */}
-        <div className="p-3.5 pt-0 border-t border-slate-100">
+        <div className="p-3.5 pt-0 border-t border-stone-100">
           <div className="grid grid-cols-2 gap-2 mt-2 mb-1.5">
             {isInterestAccepted ? (
               <Button
                 size="sm"
                 variant="primary"
                 onClick={() => navigate(`/messages/${match.user_id}`)}
-                className="w-full h-9 text-xs font-bold bg-gradient-to-r from-[#C83259] to-[#E11D48] hover:from-[#A82547] hover:to-[#BE123C] text-white flex items-center justify-center gap-1 rounded-xl shadow-xs"
+                className="w-full h-9 text-xs font-bold bg-[#8B1E3F] hover:bg-[#731834] text-white flex items-center justify-center gap-1 rounded-xl shadow-xs"
               >
                 Open Chat
               </Button>
@@ -262,7 +263,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
                 variant="primary"
                 onClick={handleSendInterest}
                 disabled={sendInterestMutation.isPending}
-                className="w-full h-9 text-xs bg-gradient-to-r from-[#C83259] to-[#E11D48] hover:from-[#A82547] hover:to-[#BE123C] text-white font-bold rounded-xl shadow-xs"
+                className="w-full h-9 text-xs bg-[#8B1E3F] hover:bg-[#731834] text-white font-bold rounded-xl shadow-xs"
               >
                 {sendInterestMutation.isPending ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
@@ -287,7 +288,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
                 size="sm"
                 variant="outline"
                 onClick={handleProfileUnlockFlow}
-                className="w-full h-9 text-xs border-2 border-[#C44569] bg-white text-[#C44569] hover:bg-[#C44569] hover:text-white transition-all font-bold rounded-xl shadow-xs"
+                className="w-full h-9 text-xs border border-stone-300 bg-white text-stone-800 hover:bg-stone-50 font-bold rounded-xl shadow-xs"
               >
                 View Profile
               </Button>

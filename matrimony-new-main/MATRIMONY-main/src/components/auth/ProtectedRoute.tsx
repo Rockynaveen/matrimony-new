@@ -4,7 +4,6 @@ import { useApp, getNextPendingRoute } from '../../context/AppContext';
 
 export type StepRequirement =
   | 'authenticated'
-  | 'basic_profile'
   | 'complete_profile'
   | 'partner_preferences'
   | 'verification'
@@ -13,7 +12,6 @@ export type StepRequirement =
 interface ProtectedRouteProps {
   children: React.ReactNode;
   step?: StepRequirement;
-  requireBasicComplete?: boolean;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
@@ -38,30 +36,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   const currentPath = location.pathname;
 
-  // 1. If accessing Basic Profile page:
-  if (currentPath === '/complete-basic-profile' || step === 'basic_profile') {
-    if (onboardingStatus.registration_method !== 'google' || onboardingStatus.basic_profile_completed) {
-      const nextRoute = getNextPendingRoute(onboardingStatus);
-      if (nextRoute !== '/complete-basic-profile') {
-        return <Navigate to={nextRoute} replace />;
-      }
-    }
-    return <>{children}</>;
+  // 1. If accessing legacy Basic Profile page, redirect directly to Complete Profile:
+  if (currentPath === '/complete-basic-profile') {
+    return <Navigate to="/profile/complete" replace />;
   }
 
-  // 2. If Google registration user has NOT completed Basic Profile:
-  if (onboardingStatus.registration_method === 'google' && !onboardingStatus.basic_profile_completed) {
-    if (currentPath !== '/complete-basic-profile') {
-      return <Navigate to="/complete-basic-profile" replace />;
-    }
-  }
-
-  // 3. If accessing Complete Profile page:
+  // 2. If accessing Complete Profile page:
   if (currentPath === '/profile/complete' || step === 'complete_profile') {
     return <>{children}</>;
   }
 
-  // 4. If accessing Partner Preferences page:
+  // 3. If accessing Partner Preferences page:
   if (currentPath === '/preferences' || step === 'partner_preferences') {
     if (!onboardingStatus.complete_profile_completed) {
       return <Navigate to="/profile/complete" replace />;
@@ -69,12 +54,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <>{children}</>;
   }
 
-  // 5. If accessing Verification page:
+  // 4. If accessing Verification page:
   if (currentPath === '/verification' || step === 'verification') {
     return <>{children}</>;
   }
 
-  // 6. For fully onboarded core app routes (Matches, Dashboard, Search, etc.):
+  // 5. For fully onboarded core app routes (Matches, Dashboard, Search, etc.):
   const isSkippedForSession =
     Boolean(onboardingStatus.verification_skipped_for_session) ||
     sessionStorage.getItem('verification_skipped_session') === 'true';
@@ -87,7 +72,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   const isFullyOnboarded =
     onboardingStatus.registration_completed &&
-    (onboardingStatus.registration_method !== 'google' || onboardingStatus.basic_profile_completed) &&
     onboardingStatus.complete_profile_completed &&
     onboardingStatus.partner_preferences_completed &&
     hasPassedVerification;

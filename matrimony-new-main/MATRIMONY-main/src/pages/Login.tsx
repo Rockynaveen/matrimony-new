@@ -5,8 +5,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormData } from '../utils/validationSchemas';
 import { useApp, getStoredOnboardingStatus, getNextPendingRoute, decodeGoogleIdToken, extractNameFromEmail, isGenericName } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { Sparkles, Eye, EyeOff, Loader2, Mail, Lock, Heart, CheckCircle2 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Label } from '../components/ui/Label';
+import { Separator } from '../components/ui/Separator';
+import { Eye, EyeOff, Loader2, Heart, ShieldCheck, Sparkles, Check } from 'lucide-react';
 import { GoogleAuthModal } from '../components/auth/GoogleAuthModal';
 import { motion } from 'framer-motion';
 
@@ -22,6 +25,8 @@ export const Login: React.FC = () => {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors }
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -32,12 +37,13 @@ export const Login: React.FC = () => {
     }
   });
 
+  const rememberMe = watch('remember_me');
+
   const checkOnboardingFlow = (targetEmail?: string) => {
     const email = (targetEmail || localStorage.getItem('logged_in_email') || '').toLowerCase().trim();
     const status = getStoredOnboardingStatus(email);
     const nextRoute = getNextPendingRoute(status);
 
-    // If all onboarding is complete (redirect to matches or requested URL)
     if (nextRoute === '/matches' && redirectUrl) {
       navigate(redirectUrl);
       return;
@@ -101,166 +107,192 @@ export const Login: React.FC = () => {
     }
   };
 
-
-
   return (
-    <div className="h-screen w-full bg-stone-50/60 p-3 sm:p-6 flex items-center justify-center overflow-hidden">
+    <div className="w-full min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 sm:p-6 md:p-10 bg-muted/20">
       <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
+        initial={{ opacity: 0, scale: 0.99 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.35, ease: 'easeOut' }}
-        className="max-w-4xl w-full h-full max-h-[640px] grid grid-cols-1 md:grid-cols-12 bg-white rounded-3xl shadow-2xl overflow-hidden border border-stone-200/80"
+        transition={{ duration: 0.3 }}
+        className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-12 rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
       >
-        {/* Left Side Visual Banner */}
-        <div className="hidden md:flex md:col-span-5 relative overflow-hidden bg-stone-900 flex-col justify-end p-6">
+        {/* Left Side: Visual Image & Brand Showcase */}
+        <div className="hidden md:flex md:col-span-5 relative overflow-hidden bg-stone-900 flex-col justify-end p-6 min-h-[560px]">
           <img
-            src="/images/auth_couple_bg.jpg?v=3"
+            src="/images/auth_couple_bg.jpg"
             alt="Vivah Royal Matrimony"
             className="absolute inset-0 w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20 pointer-events-none" />
 
-          <div className="relative z-10 space-y-3 bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-white/80 shadow-lg">
-            <div className="space-y-2 text-xs font-semibold text-stone-800">
+          <div className="relative z-10 space-y-3 bg-black/50 backdrop-blur-md p-4 rounded-xl border border-white/20 shadow-xl text-white">
+            <div className="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold backdrop-blur-xs text-white border border-white/20">
+              <Sparkles className="h-3 w-3 text-amber-300" />
+              <span>Verified Matrimony</span>
+            </div>
+
+            <h2 className="text-lg font-bold tracking-tight font-serif text-white leading-snug">
+              Find your ideal life partner
+            </h2>
+
+            <p className="text-xs text-white/80 leading-relaxed">
+              Connect with thousands of verified profiles with complete trust, privacy, and traditional family values.
+            </p>
+
+            <div className="space-y-1.5 text-xs text-white/90 pt-0.5">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-[#8B1E3F] shrink-0" />
-                <span>100% Verified Matrimonial Profiles</span>
+                <ShieldCheck className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+                <span>100% ID-verified profiles</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-[#8B1E3F] shrink-0" />
-                <span>Strict Privacy & Contact Controls</span>
+                <ShieldCheck className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+                <span>Granular privacy & contact controls</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-[#8B1E3F] shrink-0" />
-                <span>AI Horoscope & Value Matching</span>
+                <ShieldCheck className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+                <span>Smart community & value matching</span>
               </div>
             </div>
 
-            <div className="pt-2.5 border-t border-stone-200/80 flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-[#8B1E3F] text-amber-300 flex items-center justify-center font-bold text-xs shadow-xs">
-                <Heart className="h-3.5 w-3.5 fill-amber-300 stroke-none" />
+            <div className="pt-2.5 border-t border-white/20 flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center">
+                <Heart className="h-3.5 w-3.5 text-amber-300 fill-amber-300" />
               </div>
               <div>
-                <p className="text-[11px] font-extrabold text-stone-900">45,000+ Happy Unions</p>
-                <p className="text-[10px] text-stone-600 font-medium">Trusted by families across India</p>
+                <p className="text-xs font-semibold text-white">45,000+ Happy Marriages</p>
+                <p className="text-[10px] text-white/70">Trusted across all communities</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right Side Form Panel */}
-        <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto">
-          {/* Header */}
-          <div className="text-left space-y-1.5">
-            <Badge variant="gold" className="px-2.5 py-0.5 text-[10px] uppercase tracking-widest font-extrabold">
-              <Sparkles className="h-3 w-3 mr-1 text-[#8B1E3F]" /> Welcome Back
-            </Badge>
-            <h1 className="font-serif text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
-              Login to Your Account
-            </h1>
-            <p className="text-xs text-stone-500 font-medium">
-              Enter your credentials to access your matrimonial dashboard.
-            </p>
-          </div>
+        {/* Right Side: shadcn Form Card */}
+        <div className="md:col-span-7 flex flex-col justify-between p-4 sm:p-6 md:p-8">
+          <Card className="border-0 shadow-none rounded-none bg-transparent">
+            <CardHeader className="space-y-1.5 pb-4">
+              <CardTitle className="text-2xl font-bold tracking-tight">
+                Welcome back
+              </CardTitle>
+              <CardDescription>
+                Enter your credentials below to log in to your account
+              </CardDescription>
+            </CardHeader>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 my-auto py-2">
-            {/* Email / Phone */}
-            <div>
-              <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block mb-1">
-                Email Address or Phone Number
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-3 h-4 w-4 text-stone-400" />
-                <input
-                  type="text"
-                  placeholder="e.g. ravi@gmail.com or 9876543210"
-                  {...register('email')}
-                  className="w-full text-xs font-semibold bg-stone-50/80 border border-stone-200 rounded-xl p-3 pl-10 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:bg-white transition-all"
-                />
-              </div>
-              {errors.email && (
-                <p className="text-[11px] font-semibold text-rose-500 mt-1">{errors.email.message}</p>
-              )}
-            </div>
-
-            {/* Password */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block">
-                  Password
-                </label>
-                <Link to="/forgot-password" className="text-xs font-bold text-[#8B1E3F] hover:underline">
-                  Forgot Password?
-                </Link>
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-3 h-4 w-4 text-stone-400" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  {...register('password')}
-                  className="w-full text-xs font-semibold bg-stone-50/80 border border-stone-200 rounded-xl p-3 pl-10 pr-10 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:bg-white transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3 text-stone-400 hover:text-stone-700"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-[11px] font-semibold text-rose-500 mt-1">{errors.password.message}</p>
-              )}
-            </div>
-
-            {/* Remember Me */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  {...register('remember_me')}
-                  className="rounded border-stone-300 text-[#8B1E3F] focus:ring-[#8B1E3F]"
-                />
-                <span className="text-xs font-semibold text-stone-600">Remember me on this device</span>
-              </label>
-            </div>
-
-            {/* Submit Buttons */}
-            <div className="space-y-2.5 pt-1">
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                disabled={isSubmitting}
-                className="w-full font-bold shadow-lg bg-[#8B1E3F] hover:bg-[#721733] text-white text-xs h-10.5 uppercase tracking-wider rounded-xl"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Logging in...
-                  </>
-                ) : (
-                  'Login Securely'
-                )}
-              </Button>
-
-              <div className="relative my-2 text-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-stone-200" />
+            <CardContent className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                {/* Email / Mobile Field (NO PLACEHOLDER) */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="login-email">
+                    Email address or mobile number
+                  </Label>
+                  <Input
+                    id="login-email"
+                    type="text"
+                    autoComplete="username"
+                    {...register('email')}
+                    className={errors.email ? 'border-destructive focus-visible:ring-destructive/30' : ''}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Registered email address or 10-digit mobile number
+                  </p>
+                  {errors.email && (
+                    <p className="text-xs font-medium text-destructive">
+                      {errors.email.message}
+                    </p>
+                  )}
                 </div>
-                <span className="relative bg-white px-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest">
-                  Or
-                </span>
+
+                {/* Password Field (NO PLACEHOLDER) */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="login-password">
+                      Password
+                    </Label>
+                    <Link
+                      to="/forgot-password"
+                      className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      id="login-password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      {...register('password')}
+                      className={`pr-10 ${errors.password ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-xs font-medium text-destructive">
+                      {errors.password.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Remember Me Checkbox */}
+                <div className="flex items-center space-x-2 pt-1">
+                  <label className="relative inline-flex items-center cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      id="remember_me"
+                      checked={!!rememberMe}
+                      onChange={(e) => setValue('remember_me', e.target.checked)}
+                      className="peer sr-only"
+                    />
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border border-input bg-background shadow-xs transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground">
+                      <Check className={`h-3 w-3 stroke-[3] text-white transition-opacity ${rememberMe ? 'opacity-100' : 'opacity-0'}`} />
+                    </span>
+                  </label>
+                  <Label htmlFor="remember_me" className="text-xs font-normal text-muted-foreground cursor-pointer">
+                    Remember me on this device
+                  </Label>
+                </div>
+
+                {/* Submit Button */}
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full h-10 font-semibold shadow-xs"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Signing in...
+                    </>
+                  ) : (
+                    'Sign In'
+                  )}
+                </Button>
+              </form>
+
+              {/* Separator Divider */}
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground font-medium tracking-wider">
+                    Or continue with
+                  </span>
+                </div>
               </div>
 
+              {/* Google Auth Button */}
               <Button
                 type="button"
                 variant="outline"
-                size="lg"
                 onClick={() => setIsGoogleModalOpen(true)}
-                className="w-full font-bold border-2 border-stone-200 bg-white text-stone-800 hover:bg-stone-100 hover:text-stone-900 hover:border-stone-300 text-xs h-10.5 flex items-center justify-center gap-2.5 rounded-xl transition-all"
+                className="w-full h-10 font-medium text-foreground bg-background hover:bg-muted/50 border-input shadow-xs flex items-center justify-center gap-2.5"
               >
-                <svg className="h-4 w-4" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -278,18 +310,22 @@ export const Login: React.FC = () => {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                   />
                 </svg>
-                <span className="text-stone-800 font-bold">Continue with Google</span>
+                <span>Google</span>
               </Button>
-            </div>
-          </form>
+            </CardContent>
 
-          {/* Footer Link */}
-          <div className="pt-3 text-center text-xs font-medium text-stone-500 border-t border-stone-100">
-            Don't have a matrimonial account?{' '}
-            <Link to={redirectUrl ? `/register?redirect=${encodeURIComponent(redirectUrl)}` : '/register'} className="font-bold text-[#8B1E3F] hover:underline">
-              Register Free Profile
-            </Link>
-          </div>
+            <CardFooter className="pt-2 pb-6 flex justify-center">
+              <p className="text-xs text-muted-foreground text-center">
+                Don't have an account?{' '}
+                <Link
+                  to={redirectUrl ? `/register?redirect=${encodeURIComponent(redirectUrl)}` : '/register'}
+                  className="font-semibold text-primary underline-offset-4 hover:underline"
+                >
+                  Create free account
+                </Link>
+              </p>
+            </CardFooter>
+          </Card>
         </div>
       </motion.div>
 

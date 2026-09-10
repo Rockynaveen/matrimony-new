@@ -35,6 +35,12 @@ export interface GoogleRegisterRequest {
   last_name: string;
   email: string;
   google_id: string;
+  password?: string;
+  confirm_password?: string;
+  date_of_birth?: string;
+  gender?: string;
+  phone?: string;
+  register_for?: string;
 }
 
 export interface GoogleLoginRequest {

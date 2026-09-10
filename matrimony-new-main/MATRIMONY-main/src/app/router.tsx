@@ -63,6 +63,8 @@ import { SuperAdminDashboard } from '../pages/super-admin/SuperAdminDashboard';
 
 import { LoadingScreen } from '../components/ui/LoadingScreen';
 
+import { ErrorBoundary } from '../components/ui/ErrorBoundary';
+
 const MainLayout: React.FC = () => {
   const { pathname } = useLocation();
 
@@ -74,9 +76,11 @@ const MainLayout: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-transparent text-foreground">
       <Navbar />
       <main className="flex-1">
-        <React.Suspense fallback={<LoadingScreen message="Navigating to page..." />}>
-          <Outlet />
-        </React.Suspense>
+        <ErrorBoundary>
+          <React.Suspense fallback={<LoadingScreen message="Navigating to page..." />}>
+            <Outlet />
+          </React.Suspense>
+        </ErrorBoundary>
       </main>
       <Footer />
       <Toast />

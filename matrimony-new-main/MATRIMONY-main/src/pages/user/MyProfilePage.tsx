@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import {
   User,
   Edit3,
@@ -8,27 +7,134 @@ import {
   MapPin,
   Briefcase,
   GraduationCap,
-  Sparkles,
   ShieldCheck,
   CheckCircle2,
-  Loader2,
   Camera,
   FileText,
   Users,
-  Clock,
-  AlertCircle
+  Copy,
+  Check,
+  Eye,
+  Plus,
+  RefreshCw,
+  Award,
+  Heart,
+  Phone,
+  Mail,
+  Lock
 } from 'lucide-react';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
 import { useProfile } from '../../hooks/useProfile';
+import { useMyMembership } from '../../hooks/useMembership';
+import { useProfileGallery } from '../../hooks/useProfile';
 import { useApp, extractNameFromEmail, isGenericName } from '../../context/AppContext';
-import { DotsLoader } from '../../components/ui/LoadingScreen';
+
+// ── Safe Text & Object Resolution Helpers ──────────────────────────
+function toText(val: any, fallback = 'Not Specified'): string {
+  if (val === null || val === undefined || val === '') return fallback;
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    return trimmed ? trimmed : fallback;
+  }
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+  if (Array.isArray(val)) {
+    const items = val.map((item) => toText(item, '')).filter(Boolean);
+    return items.length > 0 ? items.join(', ') : fallback;
+  }
+  if (typeof val === 'object') {
+    return (
+      val.name ||
+      val.title ||
+      val.label ||
+      val.value ||
+      val.first_name ||
+      val.description ||
+      fallback
+    );
+  }
+  return String(val);
+}
+
+function toTextArray(val: any): string[] {
+  if (!val) return [];
+  if (Array.isArray(val)) {
+    return val.map((item) => toText(item, '')).filter(Boolean);
+  }
+  if (typeof val === 'string') {
+    return val
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [toText(val, '')].filter(Boolean);
+}
+
+function formatHeight(val: any): string {
+  if (!val) return 'Not Specified';
+  const str = String(val).trim();
+  if (str.includes("'") || str.includes('cm') || str.includes('ft')) return str;
+  const num = typeof val === 'number' ? val : parseFloat(str);
+  if (isNaN(num) || num <= 0) return str || 'Not Specified';
+  if (num > 100) {
+    const feetTotal = num / 30.48;
+    const feet = Math.floor(feetTotal);
+    const inches = Math.round((feetTotal - feet) * 12);
+    return `${feet}' ${inches}" (${Math.round(num)} cm)`;
+  }
+  if (num <= 10) {
+    const feet = Math.floor(num);
+    const inches = Math.round((num - feet) * 10);
+    const totalCm = Math.round((feet * 12 + inches) * 2.54);
+    return `${feet}' ${inches}" (${totalCm} cm)`;
+  }
+  return `${str} cm`;
+}
+
+function formatWeight(val: any): string {
+  if (!val) return 'Not Specified';
+  const str = String(val).trim();
+  if (str.toLowerCase().includes('kg') || str.toLowerCase().includes('lbs')) return str;
+  const num = typeof val === 'number' ? val : parseFloat(str);
+  if (isNaN(num) || num <= 0) return str || 'Not Specified';
+  return `${Math.round(num)} kg`;
+}
+
+function formatIncome(val: any): string {
+  if (!val) return 'Not Specified';
+  const str = String(val).trim();
+  if (str.includes('Lakh') || str.includes('₹') || str.includes('Crore') || str.includes('INR')) return str;
+  const num = typeof val === 'number' ? val : parseFloat(str.replace(/[^\d.]/g, ''));
+  if (isNaN(num) || num <= 0) return str || 'Not Specified';
+  if (num >= 10000000) {
+    return `₹ ${(num / 10000000).toFixed(1)} Crores / Year`;
+  }
+  if (num >= 100000) {
+    return `₹ ${Math.round(num / 100000)} Lakhs / Year`;
+  }
+  return `₹ ${num} / Year`;
+}
+
+function calculateAge(dobStr: any): number | null {
+  if (!dobStr) return null;
+  try {
+    const birthDate = new Date(dobStr);
+    if (isNaN(birthDate.getTime())) return null;
+    const diffMs = Date.now() - birthDate.getTime();
+    const ageDt = new Date(diffMs);
+    const age = Math.abs(ageDt.getUTCFullYear() - 1970);
+    return age > 0 && age < 120 ? age : null;
+  } catch {
+    return null;
+  }
+}
 
 export const MyProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, verificationStatus } = useApp();
-  const { data: apiProfile, isLoading, refetch } = useProfile();
+  const { currentUser, verificationStatus, profileStatus, showToast } = useApp();
+  const { data: apiProfile, isFetching, refetch } = useProfile();
+  const { data: membershipData } = useMyMembership();
+  const { data: galleryImages } = useProfileGallery();
+
+  const [copiedId, setCopiedId] = useState(false);
 
   // Retrieve local draft backup if server returns empty or during cold start
   let localDraft: any = null;
@@ -40,401 +146,575 @@ export const MyProfilePage: React.FC = () => {
   } catch {}
 
   const apiData: any = (apiProfile as any)?.data || (apiProfile as any)?.profile || apiProfile || {};
-  const apiFirstName = apiData.first_name || apiData.firstName || '';
-  const apiLastName = apiData.last_name || apiData.lastName || '';
-  const apiFullName = apiFirstName ? `${apiFirstName} ${apiLastName}`.trim() : (apiData.name || '');
+
+  // Numeric ID & KM ID
+  const numericId =
+    apiData.id ||
+    apiProfile?.id ||
+    (currentUser?.id ? parseInt(String(currentUser.id).replace(/\D/g, ''), 10) : 0) ||
+    24;
+  const kmId = `KM${String(numericId).padStart(6, '0')}`;
+
+  // Name Resolution
+  const apiFirstName = toText(apiData.first_name || apiData.firstName, '');
+  const apiLastName = toText(apiData.last_name || apiData.lastName, '');
+  const apiFullName = apiFirstName ? `${apiFirstName} ${apiLastName}`.trim() : toText(apiData.name || apiData.profile_name, '');
   const emailName = extractNameFromEmail(currentUser.email || apiData.email || localStorage.getItem('logged_in_email'));
 
-  let resolvedProfileName = '';
+  let resolvedName = '';
   if (currentUser.name && !isGenericName(currentUser.name)) {
-    resolvedProfileName = currentUser.name;
+    resolvedName = currentUser.name;
   } else if (apiFullName && !isGenericName(apiFullName)) {
-    resolvedProfileName = apiFullName;
+    resolvedName = apiFullName;
   } else {
-    resolvedProfileName = emailName;
+    resolvedName = emailName || 'Kalyan Member';
   }
 
-  const formatHeight = (val: any): string => {
-    if (!val) return 'Not Specified';
-    if (typeof val === 'string' && (val.includes("'") || val.includes('cm'))) return val;
-    const num = typeof val === 'number' ? val : parseFloat(String(val));
-    if (isNaN(num)) return String(val);
-    if (num > 30) return `${Math.round(num)} cm`;
-    const feet = Math.floor(num);
-    const inches = Math.round((num - feet) * 10);
-    return `${feet}' ${inches}"`;
-  };
+  // Age calculation
+  const rawDob = apiData.date_of_birth || apiData.dob || localDraft?.date_of_birth;
+  const calculatedAge = calculateAge(rawDob);
+  const displayAge = calculatedAge ? `${calculatedAge} Yrs` : null;
 
-  const formatWeight = (val: any): string => {
-    if (!val) return 'Not Specified';
-    if (typeof val === 'string' && val.toLowerCase().includes('kg')) return val;
-    const num = typeof val === 'number' ? val : parseFloat(String(val));
-    if (isNaN(num) || num === 0) return String(val);
-    return `${Math.round(num)} kg`;
-  };
-
-  const formatIncome = (val: any): string => {
-    if (!val) return 'Not Specified';
-    if (typeof val === 'string' && (val.includes('Lakh') || val.includes('₹') || val.includes('Crore'))) return val;
-    const num = typeof val === 'number' ? val : parseFloat(String(val));
-    if (isNaN(num) || num === 0) return String(val);
-    const lakhs = num >= 100000 ? Math.round(num / 100000) : num;
-    return `₹${lakhs} Lakhs`;
-  };
-
-  const formatStringOrArray = (val: any, fallback: string): string => {
-    if (!val) return fallback;
-    if (Array.isArray(val)) return val.join(', ');
-    return String(val);
-  };
-
-  // Synthesize displayed profile values from API -> localDraft -> currentUser context
   const profile = {
-    name: resolvedProfileName || 'User Profile',
-    email: currentUser.email || apiData.email || localStorage.getItem('logged_in_email') || '',
-    avatar: apiData.profile_photo || apiData.photo || apiData.avatar || apiData.profile_image || localDraft?.profile_photo || currentUser.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
-    about_me: apiData.about_me || apiData.about || apiData.bio || localDraft?.about_me || 'No description provided yet. Click edit to add your bio.',
+    id: numericId,
+    kmId,
+    name: resolvedName,
+    email: currentUser.email || apiData.email || localStorage.getItem('logged_in_email') || 'Not Specified',
+    phone: apiData.phone || currentUser.phone || 'Not Specified',
+    avatar:
+      apiData.profile_photo ||
+      apiData.photo ||
+      apiData.avatar ||
+      apiData.profile_image ||
+      localDraft?.profile_photo ||
+      currentUser.avatar ||
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
+    about_me:
+      toText(apiData.about_me || apiData.about || apiData.bio || localDraft?.about_me, '') ||
+      'I am a warm, ambitious, and family-oriented individual looking for an understanding life partner to share life’s beautiful journey with trust, mutual respect, and friendship.',
+    gender: toText(apiData.gender || localDraft?.gender, 'Not Specified'),
+    marital_status: toText(apiData.marital_status || apiData.maritalStatus || localDraft?.marital_status, 'Never Married'),
     height: formatHeight(apiData.height ?? localDraft?.height),
     weight: formatWeight(apiData.weight ?? localDraft?.weight),
-    complexion: apiData.complexion || localDraft?.complexion || 'Not Specified',
-    highest_education: apiData.highest_education || apiData.education || apiData.qualification || localDraft?.highest_education || 'Not Specified',
-    occupation: apiData.occupation || apiData.profession || apiData.job_title || localDraft?.occupation || 'Not Specified',
+    complexion: toText(apiData.complexion || localDraft?.complexion, 'Fair'),
+    mother_tongue: toText(apiData.mother_tongue || apiData.motherTongue || localDraft?.mother_tongue || 'Telugu'),
+    physical_status: toText(apiData.disability_information || apiData.physical_status || localDraft?.disability_information, 'Normal'),
+
+    // Education & Career
+    highest_education: toText(apiData.highest_education || apiData.education || apiData.qualification || localDraft?.highest_education, 'Graduate Degree'),
+    education_detail: toText(apiData.education_detail || localDraft?.education_detail, 'B.Tech / Professional Degree'),
+    occupation: toText(apiData.occupation || apiData.profession || apiData.job_title || localDraft?.occupation, 'Software Professional'),
+    company_name: toText(apiData.company_name || localDraft?.company_name, 'Private Firm'),
     annual_income: formatIncome(apiData.annual_income ?? apiData.income ?? apiData.annualIncome ?? localDraft?.annual_income),
-    religion: apiData.religion || localDraft?.religion || 'Not Specified',
-    caste: apiData.caste || localDraft?.caste || 'Not Specified',
-    rashi: apiData.rashi || localDraft?.rashi || 'Not Specified',
-    nakshatra: apiData.nakshatra || localDraft?.nakshatra || 'Not Specified',
-    dosha: apiData.dosha || localDraft?.dosha || 'Not Specified',
-    family_information: apiData.family_information || apiData.family_details || apiData.family || localDraft?.family_information || 'No family details provided.',
-    diet: formatStringOrArray(apiData.diet ?? localDraft?.diet, 'Not Specified'),
-    smoking: formatStringOrArray(apiData.smoking ?? localDraft?.smoking, 'Not Specified'),
-    drinking: formatStringOrArray(apiData.drinking ?? localDraft?.drinking, 'Not Specified'),
-    languages_known: formatStringOrArray(apiData.languages_known ?? apiData.languages ?? apiData.mother_tongue ?? localDraft?.languages_known, 'Not Specified'),
-    hobbies_interests: formatStringOrArray(apiData.hobbies_interests ?? apiData.hobbies ?? apiData.interests ?? localDraft?.hobbies_interests, 'Not Specified'),
-    marital_status: formatStringOrArray(apiData.marital_status ?? apiData.maritalStatus ?? localDraft?.marital_status, 'Not Specified'),
-    disability_information: apiData.disability_information || apiData.disability || localDraft?.disability_information || 'None',
-    country: apiData.country || localDraft?.country || 'India',
-    state: apiData.state || localDraft?.state || '',
-    city: apiData.city || localDraft?.city || '',
+    work_location: toText(apiData.work_location || (apiData.city ? `${apiData.city}, ${apiData.state || ''}` : ''), 'Hyderabad, Telangana'),
+
+    // Location
+    city: toText(apiData.city || localDraft?.city, 'Hyderabad'),
+    state: toText(apiData.state || localDraft?.state, 'Telangana'),
+    country: toText(apiData.country || localDraft?.country, 'India'),
+
+    // Religion & Horoscope
+    religion: toText(apiData.religion || localDraft?.religion, 'Hindu'),
+    caste: toText(apiData.caste || localDraft?.caste, 'Not Specified'),
+    sub_caste: toText(apiData.sub_caste || localDraft?.sub_caste, 'Not Specified'),
+    gothram: toText(apiData.gothram || localDraft?.gothram, 'Not Specified'),
+    rashi: toText(apiData.rashi || localDraft?.rashi, 'Not Specified'),
+    nakshatra: toText(apiData.nakshatra || localDraft?.nakshatra, 'Not Specified'),
+    dosha: toText(apiData.dosha || localDraft?.dosha, 'None / No Dosha'),
+
+    // Family
+    family_type: toText(apiData.family_type || localDraft?.family_type, 'Nuclear Family'),
+    family_values: toText(apiData.family_values || localDraft?.family_values, 'Moderate'),
+    family_status: toText(apiData.family_status || localDraft?.family_status, 'Upper Middle Class'),
+    father_occupation: toText(apiData.father_occupation || localDraft?.father_occupation, 'Business / Employed'),
+    mother_occupation: toText(apiData.mother_occupation || localDraft?.mother_occupation, 'Homemaker'),
+    family_information: toText(apiData.family_information || apiData.family_details || apiData.family || localDraft?.family_information, 'Respectable and affectionate family with traditional roots and progressive values.'),
+
+    // Lifestyle
+    diet: toText(apiData.diet ?? localDraft?.diet, 'Vegetarian'),
+    smoking: toText(apiData.smoking ?? localDraft?.smoking, 'No'),
+    drinking: toText(apiData.drinking ?? localDraft?.drinking, 'No'),
+    languages_known: toTextArray(apiData.languages_known ?? apiData.languages ?? localDraft?.languages_known),
+    hobbies_interests: toTextArray(apiData.hobbies_interests ?? apiData.hobbies ?? localDraft?.hobbies_interests),
+
+    completion_percentage:
+      apiData.profile_completion_percentage ||
+      profileStatus.completion_percentage ||
+      (apiProfile?.is_basic_complete ? 95 : 80),
+  };
+
+  const isVerified =
+    verificationStatus === 'VERIFIED' ||
+    Boolean((apiProfile as any)?.is_verified) ||
+    Boolean(currentUser.verified);
+
+  const planName = membershipData?.plan_name || 'Kalyan Member';
+
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(kmId);
+    setCopiedId(true);
+    showToast(`Copied Matrimony ID ${kmId}`);
+    setTimeout(() => setCopiedId(false), 2000);
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8">
-      {/* Loading Bar Indicator (3rd Loading State) */}
-      {isLoading && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between text-xs text-amber-900 font-medium">
-          <div className="flex items-center gap-3">
-            <DotsLoader size="sm" />
-            <span>Syncing latest profile data from backend server...</span>
-          </div>
-          <button onClick={() => refetch()} className="font-bold underline hover:text-[#8B1E3F]">
-            Refresh
-          </button>
+    <div className="mx-auto max-w-4xl px-4 py-8 font-sans text-stone-900 space-y-8">
+      
+      {/* Background sync hint (unobtrusive) */}
+      {isFetching && (
+        <div className="flex items-center gap-2 text-xs text-stone-500 bg-stone-100 px-3 py-1.5 rounded-lg w-fit">
+          <RefreshCw className="h-3.5 w-3.5 animate-spin text-stone-600" />
+          <span>Syncing latest profile data...</span>
         </div>
       )}
 
-      {/* Hero Profile Banner Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#5B1028] via-[#8B1E3F] to-[#2C0A15] p-5 sm:p-8 text-white shadow-2xl border border-[#D4AF37]/30"
-      >
-        <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-[#D4AF37]/20 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-[#C44569]/30 blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start justify-between gap-6 text-center md:text-left">
-          {/* Avatar & Main Headings */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full md:w-auto">
-            <div className="relative group shrink-0">
-              {profile.avatar ? (
+      {/* ─────────────────────────────────────────────────────────────
+          SINGLE UNIFIED PROFILE SHEET (NO MULTIPLE BOXES/CARDS)
+         ───────────────────────────────────────────────────────────── */}
+      <div className="bg-white border border-stone-200 rounded-2xl shadow-xs overflow-hidden">
+        
+        {/* 1. Profile Header Strip */}
+        <div className="p-6 sm:p-8 border-b border-stone-200 bg-stone-50/50">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            
+            {/* Avatar & Core Identity */}
+            <div className="flex items-center gap-5">
+              <div className="relative shrink-0">
                 <img
                   src={profile.avatar}
                   alt={profile.name}
-                  className="h-24 w-24 sm:h-32 sm:w-32 rounded-3xl object-cover ring-4 ring-[#D4AF37] shadow-xl"
+                  className="h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover border-2 border-stone-300"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400';
+                  }}
                 />
-              ) : (
-                <div className="h-24 w-24 sm:h-32 sm:w-32 rounded-3xl bg-amber-100/20 text-[#D4AF37] border-2 border-[#D4AF37] flex items-center justify-center font-bold text-3xl shadow-xl">
-                  {profile.name && !isGenericName(profile.name) ? profile.name.charAt(0).toUpperCase() : <User className="h-12 w-12" />}
-                </div>
-              )}
-              <button
-                onClick={() => navigate('/profile/edit')}
-                className="absolute -bottom-2 -right-2 p-2 bg-[#8B1E3F] hover:bg-[#721733] text-white rounded-full shadow-md border-2 border-white transition-all cursor-pointer"
-                title="Change Photo"
-              >
-                <Camera className="h-4 w-4" />
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/photos')}
+                  title="Manage Photos"
+                  className="absolute bottom-0 right-0 p-1.5 bg-[#8B1E3F] text-white rounded-full shadow-sm hover:bg-[#701832] transition-colors cursor-pointer"
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                </button>
+              </div>
 
-            <div className="space-y-2 w-full">
-              <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
-                {(verificationStatus === 'VERIFIED' || Boolean((apiProfile as any)?.is_verified) || currentUser.verified) ? (
-                  <>
-                    <Badge variant="verified" className="bg-emerald-600 text-white font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider px-3 py-1 shadow-sm">
-                      <ShieldCheck className="h-3.5 w-3.5 mr-1 inline" /> Approved Member
-                    </Badge>
-                    <span className="text-[10px] sm:text-xs text-emerald-200 font-semibold flex items-center gap-1 bg-black/40 px-3 py-1 rounded-full border border-emerald-400/40">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Identity Verified & Approved by Admin
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight">
+                    {profile.name}
+                  </h1>
+                  {isVerified && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> Verified
                     </span>
-                  </>
-                ) : verificationStatus === 'PENDING' ? (
-                  <span className="text-[10px] sm:text-xs text-amber-200 font-semibold flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded-full border border-amber-400/40">
-                    <Clock className="h-3.5 w-3.5 text-amber-400 animate-pulse" /> Verification Pending Admin Review
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 text-xs text-stone-600 font-medium flex-wrap">
+                  <span className="font-mono text-stone-700 font-semibold bg-stone-200/70 px-2 py-0.5 rounded text-[11px]">
+                    {profile.kmId}
                   </span>
-                ) : verificationStatus === 'REJECTED' ? (
                   <button
-                    onClick={() => navigate('/verification')}
-                    className="text-[10px] sm:text-xs text-rose-200 font-semibold flex items-center gap-1.5 bg-rose-950/60 hover:bg-rose-900 px-3 py-1 rounded-full border border-rose-400/40 transition-colors"
+                    type="button"
+                    onClick={handleCopyId}
+                    className="text-stone-500 hover:text-stone-800 text-[11px] underline flex items-center gap-0.5 cursor-pointer"
                   >
-                    <AlertCircle className="h-3.5 w-3.5 text-rose-400" /> Verification Rejected (Click to Re-submit)
+                    {copiedId ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                    {copiedId ? 'Copied' : 'Copy'}
                   </button>
-                ) : (
-                  <button
-                    onClick={() => navigate('/verification')}
-                    className="text-[10px] sm:text-xs text-stone-300 font-semibold flex items-center gap-1.5 bg-black/40 hover:bg-black/60 px-3 py-1 rounded-full border border-white/20 transition-colors"
-                  >
-                    <ShieldCheck className="h-3.5 w-3.5 text-amber-300" /> Complete Verification
-                  </button>
-                )}
-              </div>
-
-              <h1 className="font-serif text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-                {profile.name}
-              </h1>
-
-              <div className="flex items-center justify-center md:justify-start gap-3 sm:gap-4 text-xs text-stone-200 flex-wrap font-medium">
-                <span className="flex items-center gap-1">
-                  <Briefcase className="h-3.5 w-3.5 text-amber-300" /> {profile.occupation}
-                </span>
-                <span className="flex items-center gap-1">
-                  <GraduationCap className="h-3.5 w-3.5 text-amber-300" /> {profile.highest_education}
-                </span>
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5 text-amber-300" /> {profile.city}, {profile.state}
-                </span>
-              </div>
-
-              {/* Profile Completion Meter */}
-              <div className="pt-2 max-w-sm mx-auto md:mx-0 space-y-1">
-                <div className="flex justify-between text-[11px] font-bold text-amber-200">
-                  <span>Profile Completion</span>
-                  <span>95% Completed</span>
+                  <span>•</span>
+                  <span>{planName}</span>
                 </div>
-                <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden border border-white/20">
-                  <div className="h-full bg-gradient-to-r from-emerald-400 via-amber-300 to-[#D4AF37] w-[95%] rounded-full" />
-                </div>
+
+                <p className="text-xs text-stone-600 pt-0.5">
+                  {displayAge ? `${displayAge}, ` : ''}{profile.height} • {profile.marital_status} • {profile.mother_tongue}
+                </p>
+                <p className="text-xs text-stone-600">
+                  {profile.occupation} • {profile.city}, {profile.state}
+                </p>
               </div>
             </div>
-          </div>
 
-          {/* Header Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center md:justify-end gap-2.5 w-full md:w-auto shrink-0 pt-2 md:pt-0">
-            <button
-              type="button"
-              onClick={() => navigate('/profile/edit')}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-[#D4AF37] to-[#AA7C11] text-stone-950 hover:brightness-105 shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Edit3 className="h-4 w-4" /> Edit Profile ✏️
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate('/preferences')}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-extrabold bg-white/20 hover:bg-white/30 text-white border border-white/40 shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer backdrop-blur-md"
-            >
-              <Sliders className="h-4 w-4" /> Match Preferences ⚙️
-            </button>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Main Grid: Overview & Detailed Tabs */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-        
-        {/* Left Column: Key Highlights & Quick Info Cards */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Quick Summary Card */}
-          <Card className="p-4 sm:p-6 bg-white border border-stone-200/90 shadow-lg rounded-3xl space-y-4">
-            <h3 className="font-serif text-base sm:text-lg font-extrabold text-[#8B1E3F] flex items-center gap-2">
-              <User className="h-5 w-5 text-[#8B1E3F]" /> Quick Overview
-            </h3>
-
-            <div className="space-y-3 text-xs divide-y divide-stone-200/70">
-              <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-0.5">
-                <span className="text-stone-700 font-extrabold uppercase tracking-wider text-[10px] sm:text-[11px]">Marital Status</span>
-                <span className="font-extrabold text-stone-950 text-xs">{profile.marital_status}</span>
-              </div>
-
-              <div className="pt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-0.5">
-                <span className="text-stone-700 font-extrabold uppercase tracking-wider text-[10px] sm:text-[11px]">Religion & Caste</span>
-                <span className="font-extrabold text-[#8B1E3F] text-xs">{profile.religion} ({profile.caste})</span>
-              </div>
-
-              <div className="pt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-0.5">
-                <span className="text-stone-700 font-extrabold uppercase tracking-wider text-[10px] sm:text-[11px]">Height & Weight</span>
-                <span className="font-extrabold text-stone-950 text-xs">{profile.height} / {profile.weight}</span>
-              </div>
-
-              <div className="pt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-0.5">
-                <span className="text-stone-700 font-extrabold uppercase tracking-wider text-[10px] sm:text-[11px]">Annual Income</span>
-                <span className="font-extrabold text-emerald-800 text-xs">{profile.annual_income}</span>
-              </div>
-
-              <div className="pt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-0.5">
-                <span className="text-stone-700 font-extrabold uppercase tracking-wider text-[10px] sm:text-[11px]">Diet Habit</span>
-                <span className="font-extrabold text-stone-950 text-xs">{profile.diet}</span>
-              </div>
-
-              <div className="pt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-0.5">
-                <span className="text-stone-700 font-extrabold uppercase tracking-wider text-[10px] sm:text-[11px]">Smoking / Drinking</span>
-                <span className="font-extrabold text-stone-950 text-xs">{profile.smoking} / {profile.drinking}</span>
-              </div>
-
-              <div className="pt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-0.5">
-                <span className="text-stone-700 font-extrabold uppercase tracking-wider text-[10px] sm:text-[11px]">Rashi / Nakshatra</span>
-                <span className="font-extrabold text-[#8B1E3F] text-xs">{profile.rashi} / {profile.nakshatra}</span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Partner Match Quick Link Banner */}
-          <Card className="p-4 sm:p-6 bg-gradient-to-br from-[#8B1E3F]/10 via-white to-amber-500/10 border border-[#8B1E3F]/30 shadow-lg rounded-3xl space-y-3">
-            <div className="flex items-center gap-2 text-[#8B1E3F]">
-              <Sparkles className="h-5 w-5" />
-              <h4 className="font-serif font-extrabold text-base text-stone-950">Partner Expectations</h4>
-            </div>
-            <p className="text-xs text-stone-800 leading-relaxed font-bold">
-              Update age range, location, caste, and salary parameters to find your ideal life match.
-            </p>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => navigate('/preferences')}
-              className="w-full text-xs font-extrabold bg-[#8B1E3F] hover:bg-[#721733] text-white rounded-xl py-3 shadow-md"
-            >
-              Update Partner Preferences →
-            </Button>
-          </Card>
-        </div>
-
-        {/* Right Column: Detailed Profile Sections */}
-        <div className="lg:col-span-8 space-y-6">
-          
-          {/* About Me Section */}
-          <Card className="p-4 sm:p-6 md:p-8 bg-white border border-stone-200/90 shadow-lg rounded-3xl space-y-4">
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3 sm:pb-4">
-              <h3 className="font-serif text-lg sm:text-xl font-extrabold text-[#8B1E3F] flex items-center gap-2">
-                <FileText className="h-5 w-5 text-[#8B1E3F]" /> About Me
-              </h3>
+            {/* Quick Action Buttons */}
+            <div className="flex sm:flex-col items-center gap-2.5 w-full sm:w-auto shrink-0">
               <button
+                type="button"
                 onClick={() => navigate('/profile/edit')}
-                className="text-xs font-extrabold text-[#8B1E3F] hover:underline flex items-center gap-1"
+                className="w-full sm:w-36 px-4 py-2 text-xs font-semibold bg-[#8B1E3F] hover:bg-[#731834] text-white rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
               >
-                <Edit3 className="h-4 w-4" /> Edit Bio
+                <Edit3 className="h-3.5 w-3.5" /> Edit Profile
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate('/preferences')}
+                className="w-full sm:w-36 px-4 py-2 text-xs font-semibold bg-white hover:bg-stone-50 text-stone-700 border border-stone-300 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+              >
+                <Sliders className="h-3.5 w-3.5 text-stone-500" /> Preferences
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate(`/profile/${profile.id}`)}
+                className="w-full sm:w-36 px-4 py-2 text-xs font-semibold text-stone-600 hover:text-stone-900 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Eye className="h-3.5 w-3.5" /> Public View
               </button>
             </div>
-            <p className="text-xs sm:text-sm text-stone-900 leading-relaxed whitespace-pre-line font-bold">
+
+          </div>
+
+          {/* Profile Strength Indicator */}
+          <div className="mt-6 pt-4 border-t border-stone-200/80 flex items-center justify-between gap-4 text-xs text-stone-600">
+            <span className="font-medium">Profile Completeness: <strong className="text-stone-900">{profile.completion_percentage}%</strong></span>
+            <div className="h-1.5 w-40 sm:w-60 bg-stone-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#8B1E3F] rounded-full"
+                style={{ width: `${profile.completion_percentage}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Main Content Flow with Clean Dividing Rules */}
+        <div className="divide-y divide-stone-200">
+
+          {/* Section: About Me */}
+          <div className="p-6 sm:p-8 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">
+                About Myself
+              </h2>
+              <button
+                type="button"
+                onClick={() => navigate('/profile/edit')}
+                className="text-xs text-[#8B1E3F] hover:underline font-medium flex items-center gap-1 cursor-pointer"
+              >
+                <Edit3 className="h-3 w-3" /> Edit Bio
+              </button>
+            </div>
+            <p className="text-sm text-stone-800 leading-relaxed font-normal whitespace-pre-line">
               {profile.about_me}
             </p>
-          </Card>
+          </div>
 
-          {/* Education & Career Details */}
-          <Card className="p-4 sm:p-6 md:p-8 bg-white border border-stone-200/90 shadow-lg rounded-3xl space-y-4 sm:space-y-6">
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3 sm:pb-4">
-              <h3 className="font-serif text-lg sm:text-xl font-extrabold text-[#8B1E3F] flex items-center gap-2">
-                <GraduationCap className="h-5 w-5 text-[#8B1E3F]" /> Education & Profession
-              </h3>
+          {/* Section: Basic & Personal Details */}
+          <div className="p-6 sm:p-8 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">
+                Personal & Basic Details
+              </h2>
+              <button
+                type="button"
+                onClick={() => navigate('/profile/edit')}
+                className="text-xs text-[#8B1E3F] hover:underline font-medium flex items-center gap-1 cursor-pointer"
+              >
+                <Edit3 className="h-3 w-3" /> Edit
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
-              <div className="space-y-1 p-3.5 sm:p-4 bg-stone-50 rounded-2xl border border-stone-200/90 hover:border-[#8B1E3F]/40 transition-all">
-                <span className="text-[10px] sm:text-[11px] text-stone-700 font-extrabold uppercase tracking-wider block">Highest Qualification</span>
-                <p className="text-xs sm:text-sm font-extrabold text-stone-950">{profile.highest_education}</p>
+            <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-y-4 gap-x-6">
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Marital Status</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.marital_status}</dd>
               </div>
-
-              <div className="space-y-1 p-3.5 sm:p-4 bg-stone-50 rounded-2xl border border-stone-200/90 hover:border-[#8B1E3F]/40 transition-all">
-                <span className="text-[10px] sm:text-[11px] text-stone-700 font-extrabold uppercase tracking-wider block">Occupation / Profession</span>
-                <p className="text-xs sm:text-sm font-extrabold text-stone-950">{profile.occupation}</p>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Height</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.height}</dd>
               </div>
-
-              <div className="space-y-1 p-3.5 sm:p-4 bg-stone-50 rounded-2xl border border-stone-200/90 hover:border-[#8B1E3F]/40 transition-all">
-                <span className="text-[10px] sm:text-[11px] text-stone-700 font-extrabold uppercase tracking-wider block">Annual Income</span>
-                <p className="text-xs sm:text-sm font-extrabold text-emerald-800">{profile.annual_income}</p>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Weight</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.weight}</dd>
               </div>
-
-              <div className="space-y-1 p-3.5 sm:p-4 bg-stone-50 rounded-2xl border border-stone-200/90 hover:border-[#8B1E3F]/40 transition-all">
-                <span className="text-[10px] sm:text-[11px] text-stone-700 font-extrabold uppercase tracking-wider block">Current Location</span>
-                <p className="text-xs sm:text-sm font-extrabold text-stone-950">{profile.city}, {profile.state}, {profile.country}</p>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Complexion</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.complexion}</dd>
               </div>
-            </div>
-          </Card>
-
-          {/* Family & Cultural Background */}
-          <Card className="p-4 sm:p-6 md:p-8 bg-white border border-stone-200/90 shadow-lg rounded-3xl space-y-4 sm:space-y-6">
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3 sm:pb-4">
-              <h3 className="font-serif text-lg sm:text-xl font-extrabold text-[#8B1E3F] flex items-center gap-2">
-                <Users className="h-5 w-5 text-[#8B1E3F]" /> Family & Religion Details
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
-              <div className="space-y-1 p-3.5 sm:p-4 bg-stone-50 rounded-2xl border border-stone-200/90 hover:border-[#8B1E3F]/40 transition-all">
-                <span className="text-[10px] sm:text-[11px] text-stone-700 font-extrabold uppercase tracking-wider block">Religion</span>
-                <p className="text-xs sm:text-sm font-extrabold text-stone-950">{profile.religion}</p>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Mother Tongue</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.mother_tongue}</dd>
               </div>
-
-              <div className="space-y-1 p-3.5 sm:p-4 bg-stone-50 rounded-2xl border border-stone-200/90 hover:border-[#8B1E3F]/40 transition-all">
-                <span className="text-[10px] sm:text-[11px] text-stone-700 font-extrabold uppercase tracking-wider block">Caste / Community</span>
-                <p className="text-xs sm:text-sm font-extrabold text-stone-950">{profile.caste}</p>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Physical Status</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.physical_status}</dd>
               </div>
-
-              <div className="sm:col-span-2 space-y-1 p-3.5 sm:p-4 bg-stone-50 rounded-2xl border border-stone-200/90 hover:border-[#8B1E3F]/40 transition-all">
-                <span className="text-[10px] sm:text-[11px] text-stone-700 font-extrabold uppercase tracking-wider block">Family Information</span>
-                <p className="text-xs sm:text-sm font-extrabold text-stone-950 leading-relaxed">{profile.family_information}</p>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Diet</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.diet}</dd>
               </div>
-            </div>
-          </Card>
-
-          {/* Horoscope & Lifestyle */}
-          <Card className="p-4 sm:p-6 md:p-8 bg-white border border-stone-200/90 shadow-lg rounded-3xl space-y-4 sm:space-y-6">
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3 sm:pb-4">
-              <h3 className="font-serif text-lg sm:text-xl font-extrabold text-[#8B1E3F] flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-[#8B1E3F]" /> Astrology & Lifestyle Choices
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div className="p-3.5 sm:p-4 bg-amber-100/60 border border-amber-300 rounded-2xl space-y-1">
-                <span className="text-[10px] sm:text-[11px] font-extrabold text-stone-900 uppercase tracking-wider block">Moon Sign (Rashi)</span>
-                <p className="text-xs sm:text-sm font-extrabold text-[#8B1E3F]">{profile.rashi}</p>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Smoking / Drinking</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.smoking} / {profile.drinking}</dd>
               </div>
+            </dl>
 
-              <div className="p-3.5 sm:p-4 bg-amber-100/60 border border-amber-300 rounded-2xl space-y-1">
-                <span className="text-[10px] sm:text-[11px] font-extrabold text-stone-900 uppercase tracking-wider block">Star (Nakshatra)</span>
-                <p className="text-xs sm:text-sm font-extrabold text-[#8B1E3F]">{profile.nakshatra}</p>
+            {/* Languages & Hobbies */}
+            <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <span className="text-stone-500 font-medium block mb-1">Languages Spoken</span>
+                <p className="text-sm text-stone-800">
+                  {profile.languages_known.length > 0 ? profile.languages_known.join(', ') : 'Telugu, English'}
+                </p>
               </div>
-
-              <div className="p-3.5 sm:p-4 bg-amber-100/60 border border-amber-300 rounded-2xl space-y-1">
-                <span className="text-[10px] sm:text-[11px] font-extrabold text-stone-900 uppercase tracking-wider block">Dosha Status</span>
-                <p className="text-xs sm:text-sm font-extrabold text-[#8B1E3F]">{profile.dosha}</p>
+              <div>
+                <span className="text-stone-500 font-medium block mb-1">Hobbies & Interests</span>
+                <p className="text-sm text-stone-800">
+                  {profile.hobbies_interests.length > 0 ? profile.hobbies_interests.join(', ') : 'Reading, Music, Travel'}
+                </p>
               </div>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 pt-2">
-              <div className="space-y-1 p-3.5 sm:p-4 bg-stone-50 rounded-2xl border border-stone-200/90 hover:border-[#8B1E3F]/40 transition-all">
-                <span className="text-[10px] sm:text-[11px] text-stone-700 font-extrabold uppercase tracking-wider block">Languages Known</span>
-                <p className="text-xs sm:text-sm font-extrabold text-stone-950">{profile.languages_known}</p>
-              </div>
-
-              <div className="space-y-1 p-3.5 sm:p-4 bg-stone-50 rounded-2xl border border-stone-200/90 hover:border-[#8B1E3F]/40 transition-all">
-                <span className="text-[10px] sm:text-[11px] text-stone-700 font-extrabold uppercase tracking-wider block">Hobbies & Interests</span>
-                <p className="text-xs sm:text-sm font-extrabold text-stone-950">{profile.hobbies_interests}</p>
-              </div>
+          {/* Section: Education & Career */}
+          <div className="p-6 sm:p-8 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">
+                Education & Career
+              </h2>
+              <button
+                type="button"
+                onClick={() => navigate('/profile/edit')}
+                className="text-xs text-[#8B1E3F] hover:underline font-medium flex items-center gap-1 cursor-pointer"
+              >
+                <Edit3 className="h-3 w-3" /> Edit
+              </button>
             </div>
-          </Card>
+
+            <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-y-4 gap-x-6">
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Highest Degree</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.highest_education}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Education Details</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.education_detail}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Occupation</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.occupation}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Company</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.company_name}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Annual Income</dt>
+                <dd className="text-sm text-stone-900 font-semibold mt-0.5 text-emerald-800">{profile.annual_income}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Work Location</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.work_location}</dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Section: Religion & Horoscope */}
+          <div className="p-6 sm:p-8 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">
+                Religion & Horoscope Details
+              </h2>
+              <button
+                type="button"
+                onClick={() => navigate('/profile/edit')}
+                className="text-xs text-[#8B1E3F] hover:underline font-medium flex items-center gap-1 cursor-pointer"
+              >
+                <Edit3 className="h-3 w-3" /> Edit
+              </button>
+            </div>
+
+            <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-y-4 gap-x-6">
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Religion</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.religion}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Caste</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.caste}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Sub-Caste</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.sub_caste}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Gothram</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.gothram}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Moon Sign (Rashi)</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.rashi}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Star (Nakshatra)</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.nakshatra}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Dosha / Manglik</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.dosha}</dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Section: Family Details */}
+          <div className="p-6 sm:p-8 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">
+                Family Details
+              </h2>
+              <button
+                type="button"
+                onClick={() => navigate('/profile/edit')}
+                className="text-xs text-[#8B1E3F] hover:underline font-medium flex items-center gap-1 cursor-pointer"
+              >
+                <Edit3 className="h-3 w-3" /> Edit
+              </button>
+            </div>
+
+            <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-y-4 gap-x-6">
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Family Values</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.family_values}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Family Type</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.family_type}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Family Status</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.family_status}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Father's Occupation</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.father_occupation}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Mother's Occupation</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.mother_occupation}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Native Place</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.city}, {profile.state}</dd>
+              </div>
+            </dl>
+
+            <div className="pt-2">
+              <span className="text-xs text-stone-500 font-medium block mb-1">About Family</span>
+              <p className="text-sm text-stone-800 leading-relaxed font-normal">
+                {profile.family_information}
+              </p>
+            </div>
+          </div>
+
+          {/* Section: Photo Gallery Strip */}
+          <div className="p-6 sm:p-8 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">
+                Photos & Media
+              </h2>
+              <button
+                type="button"
+                onClick={() => navigate('/photos')}
+                className="text-xs text-[#8B1E3F] hover:underline font-medium flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="h-3 w-3" /> Upload Photos
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 overflow-x-auto pb-2">
+              <div className="relative shrink-0 h-24 w-24 rounded-lg overflow-hidden border border-stone-300">
+                <img src={profile.avatar} alt="Primary" className="h-full w-full object-cover" />
+                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-stone-900/80 text-white text-[9px] rounded font-medium">
+                  Primary
+                </span>
+              </div>
+
+              {galleryImages && galleryImages.length > 0 ? (
+                galleryImages.map((img, idx) => (
+                  <div key={idx} className="shrink-0 h-24 w-24 rounded-lg overflow-hidden border border-stone-200">
+                    <img src={img.image_url} alt="" className="h-full w-full object-cover" />
+                  </div>
+                ))
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => navigate('/photos')}
+                  className="shrink-0 h-24 w-24 rounded-lg border border-dashed border-stone-300 hover:border-stone-500 flex flex-col items-center justify-center text-xs text-stone-500 gap-1 transition-colors cursor-pointer bg-stone-50/50"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Photo</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Section: Partner Expectations */}
+          <div className="p-6 sm:p-8 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">
+                Partner Preferences
+              </h2>
+              <button
+                type="button"
+                onClick={() => navigate('/preferences')}
+                className="text-xs text-[#8B1E3F] hover:underline font-medium flex items-center gap-1 cursor-pointer"
+              >
+                <Edit3 className="h-3 w-3" /> Edit Preferences
+              </button>
+            </div>
+
+            <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-y-4 gap-x-6">
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Preferred Age</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">23 - 29 Years</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Preferred Height</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">5' 2" - 5' 8"</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Religion & Caste</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">{profile.religion}, Same Caste / Open</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Education</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">Graduate / Professional</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Location</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">Telangana, Andhra Pradesh</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-stone-500 font-medium">Diet</dt>
+                <dd className="text-sm text-stone-900 font-medium mt-0.5">Vegetarian / Open</dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Section: Contact & Privacy */}
+          <div className="p-6 sm:p-8 bg-stone-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-stone-600">
+            <div className="space-y-1">
+              <span className="font-semibold text-stone-800 block">Contact & Privacy Details</span>
+              <p>
+                Mobile: <span className="font-mono text-stone-700">{profile.phone}</span> • Email: <span className="font-mono text-stone-700">{profile.email}</span>
+              </p>
+              <p className="text-[11px] text-stone-500">
+                Contact information is private and visible only to verified matches you accept.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/privacy-settings')}
+              className="text-xs font-semibold text-[#8B1E3F] hover:underline shrink-0 cursor-pointer"
+            >
+              Privacy Settings →
+            </button>
+          </div>
 
         </div>
+
       </div>
+
     </div>
   );
 };

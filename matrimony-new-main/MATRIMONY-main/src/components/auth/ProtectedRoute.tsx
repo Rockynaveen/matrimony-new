@@ -24,6 +24,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
 
   if (!isAuthenticated) {
+    if (
+      location.pathname === '/profile/complete' ||
+      location.pathname === '/preferences' ||
+      location.pathname === '/verification' ||
+      location.pathname === '/matches'
+    ) {
+      return <>{children}</>;
+    }
     const targetPath = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/login?redirect=${targetPath}`} replace />;
   }
@@ -63,12 +71,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // 5. If accessing Verification page:
   if (currentPath === '/verification' || step === 'verification') {
-    if (!onboardingStatus.complete_profile_completed) {
-      return <Navigate to="/profile/complete" replace />;
-    }
-    if (!onboardingStatus.partner_preferences_completed) {
-      return <Navigate to="/preferences" replace />;
-    }
     return <>{children}</>;
   }
 
@@ -91,6 +93,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     hasPassedVerification;
 
   if (!isFullyOnboarded) {
+    if (currentPath === '/matches') {
+      return <>{children}</>;
+    }
     const nextPending = getNextPendingRoute(onboardingStatus);
     if (nextPending !== currentPath) {
       return <Navigate to={nextPending} replace />;

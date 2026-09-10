@@ -1,6 +1,24 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Upload, Video, Link as LinkIcon, Check, Trash2, Play, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
-import { useUploadProfileVideo, useUpdateProfileVideo, useDeleteProfileVideo } from '../../hooks/useProfile';
+import {
+  Camera,
+  Video,
+  Check,
+  Trash2,
+  Play,
+  Loader2,
+  Image as ImageIcon,
+  Plus
+} from 'lucide-react';
+import {
+  useUploadProfilePhoto,
+  useUploadProfileVideo,
+  useUpdateProfileVideo,
+  useDeleteProfileVideo,
+  useLinkProfileVideo,
+  useProfileGallery,
+  useUploadGalleryImage,
+  useDeleteGalleryImage,
+} from '../../hooks/useProfile';
 import { useApp } from '../../context/AppContext';
 
 interface MediaUploadSectionProps {
@@ -16,18 +34,35 @@ export const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
   videoUrl,
   onVideoChange,
 }) => {
-  const { showToast } = useApp();
-  const [photoInputMode, setPhotoInputMode] = useState<'url' | 'file' | 'camera'>('url');
+  const { showToast, updateCurrentUserAvatar } = useApp();
+  const [photoInputMode, setPhotoInputMode] = useState<'url' | 'file' | 'camera'>('file');
   const [videoInputMode, setVideoInputMode] = useState<'url' | 'file'>('file');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showVideoPreview, setShowVideoPreview] = useState(false);
+  const [externalVideoLink, setExternalVideoLink] = useState('');
+  const [isLinkingVideo, setIsLinkingVideo] = useState(false);
 
-  // TanStack Query Mutations
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Gallery State
+  const [galleryCaption, setGalleryCaption] = useState('');
+  const [deletingGalleryId, setDeletingGalleryId] = useState<number | null>(null);
+
+  // TanStack Query Mutations & Queries
+  const uploadPhotoMutation = useUploadProfilePhoto();
   const uploadVideoMutation = useUploadProfileVideo();
   const updateVideoMutation = useUpdateProfileVideo();
   const deleteVideoMutation = useDeleteProfileVideo();
+  const linkVideoMutation = useLinkProfileVideo();
 
+  const { data: galleryImages = [] } = useProfileGallery();
+  const uploadGalleryMutation = useUploadGalleryImage();
+  const deleteGalleryMutation = useDeleteGalleryImage();
+
+  const isPhotoUploading = uploadPhotoMutation.isPending;
   const isVideoUploading = uploadVideoMutation.isPending || updateVideoMutation.isPending;
   const isVideoDeleting = deleteVideoMutation.isPending;
+  const isGalleryUploading = uploadGalleryMutation.isPending;
 
   // Camera Stream States
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -40,14 +75,16 @@ export const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     try {
       setCameraError(null);
       setPhotoInputMode('camera');
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: 480, height: 360 }
+      });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-    } catch (err: any) {
-      setCameraError('Unable to access camera. Please allow camera permissions or upload an image file.');
+    } catch {
+      setCameraError('Unable to access camera. Please allow camera permissions.');
     }
   };
 
@@ -59,44 +96,118 @@ export const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     }
   };
 
-  // Snap Photo from Video Stream
-  const snapPhoto = () => {
+  // Snap Photo from Video Stream & upload to API
+  const snapPhoto = async () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
+      canvas.width = video.videoWidth || 480;
+      canvas.height = video.videoHeight || 360;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg');
-        onPhotoChange(dataUrl);
         stopCamera();
-        setPhotoInputMode('url');
+        setPhotoInputMode('file');
+
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            try {
+              const res = await uploadPhotoMutation.mutateAsync(blob);
+              const newUrl = res.photo_url || canvas.toDataURL('image/jpeg');
+              onPhotoChange(newUrl);
+              updateCurrentUserAvatar(newUrl);
+              showToast('Profile photo updated successfully!');
+            } catch {
+              const fallbackUrl = canvas.toDataURL('image/jpeg');
+              onPhotoChange(fallbackUrl);
+              updateCurrentUserAvatar(fallbackUrl);
+              showToast('Photo captured.');
+            }
+          }
+        }, 'image/jpeg', 0.9);
       }
     }
   };
 
   // File Upload Handler for Photo
-  const handlePhotoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('Profile photo size must be less than 10MB.');
+      return;
+    }
+
+    try {
+      const res = await uploadPhotoMutation.mutateAsync(file);
+      const newUrl = res.photo_url;
+      if (newUrl) {
+        onPhotoChange(newUrl);
+        updateCurrentUserAvatar(newUrl);
+        showToast('Profile photo uploaded successfully!');
+      } else {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            onPhotoChange(reader.result);
+            updateCurrentUserAvatar(reader.result);
+          }
+        };
+        reader.readAsDataURL(file);
+        showToast('Profile photo updated.');
+      }
+    } catch {
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
           onPhotoChange(reader.result);
+          updateCurrentUserAvatar(reader.result);
         }
       };
       reader.readAsDataURL(file);
+      showToast('Photo attached.');
     }
   };
 
-  // File Upload Handler for Video (POST /api/upload/profile/video or PUT /api/update/profile/video)
+  // Gallery File Upload Handler
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('Gallery image size must be less than 10MB.');
+      return;
+    }
+
+    try {
+      await uploadGalleryMutation.mutateAsync({ file, caption: galleryCaption.trim() });
+      setGalleryCaption('');
+      showToast('Gallery image added!');
+      e.target.value = '';
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to upload gallery image.');
+    }
+  };
+
+  // Gallery Image Delete Handler
+  const handleDeleteGalleryItem = async (imageId: number) => {
+    try {
+      setDeletingGalleryId(imageId);
+      await deleteGalleryMutation.mutateAsync(imageId);
+      showToast('Gallery image removed.');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to delete gallery image.');
+    } finally {
+      setDeletingGalleryId(null);
+    }
+  };
+
+  // File Upload Handler for Video
   const handleVideoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate size (max 50MB)
     if (file.size > 50 * 1024 * 1024) {
       showToast('Video file size must be less than 50MB.');
       return;
@@ -105,18 +216,15 @@ export const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     try {
       let res;
       if (videoUrl) {
-        // Replacing existing video
         res = await updateVideoMutation.mutateAsync(file);
       } else {
-        // New upload
         res = await uploadVideoMutation.mutateAsync(file);
       }
 
       if (res?.video_url) {
         onVideoChange(res.video_url);
-        showToast(res.message || 'Profile video uploaded successfully! 🎥');
+        showToast('Video uploaded successfully!');
       } else {
-        // Local preview fallback
         const reader = new FileReader();
         reader.onloadend = () => {
           if (typeof reader.result === 'string') {
@@ -124,10 +232,32 @@ export const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
           }
         };
         reader.readAsDataURL(file);
-        showToast('Profile video selected! Click Save to apply.');
+        showToast('Video selected.');
       }
     } catch (err: any) {
-      showToast(err?.message || 'Failed to upload profile video. Please try again.');
+      showToast(err?.message || 'Failed to upload video.');
+    }
+  };
+
+  // Link Video
+  const handleLinkVideoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!externalVideoLink.trim()) return;
+
+    try {
+      setIsLinkingVideo(true);
+      const res = await linkVideoMutation.mutateAsync({
+        videoUrl: externalVideoLink.trim(),
+        videoType: externalVideoLink.includes('youtube.com') || externalVideoLink.includes('youtu.be') ? 'YOUTUBE' : 'EXTERNAL'
+      });
+      onVideoChange(res.video_url || externalVideoLink.trim());
+      setExternalVideoLink('');
+      showToast('Video linked successfully!');
+    } catch {
+      onVideoChange(externalVideoLink.trim());
+      showToast('Video URL saved.');
+    } finally {
+      setIsLinkingVideo(false);
     }
   };
 
@@ -136,283 +266,319 @@ export const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     try {
       await deleteVideoMutation.mutateAsync();
       onVideoChange('');
-      setShowDeleteConfirm(false);
-      showToast('Profile video removed successfully! 🗑️');
-    } catch (err: any) {
+      setShowVideoPreview(false);
+      showToast('Video removed successfully.');
+    } catch {
       onVideoChange('');
-      setShowDeleteConfirm(false);
-      showToast(err?.message || 'Profile video removed.');
+      setShowVideoPreview(false);
+      showToast('Video removed.');
     }
   };
 
   return (
-    <div className="space-y-8 p-6 bg-gradient-to-br from-stone-50 to-white border border-stone-200 rounded-3xl shadow-sm">
-      
-      {/* 📸 SECTION 1: PROFILE PHOTO UPLOAD / CAMERA */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-          <label className="text-sm font-extrabold text-[#8B1E3F] flex items-center gap-2">
-            <Camera className="h-4 w-4 text-[#8B1E3F]" /> Profile Photo Upload & Live Camera Access
-          </label>
+    <div className="space-y-4">
+      {/* 2-COLUMN COMPACT MEDIA ROW: PHOTO & VIDEO */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-          <div className="flex items-center gap-1.5 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => { stopCamera(); setPhotoInputMode('url'); }}
-              className={`px-3 py-1 rounded-lg transition-all ${photoInputMode === 'url' ? 'bg-[#8B1E3F] text-white font-bold' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}
-            >
-              <LinkIcon className="h-3.5 w-3.5 inline mr-1" /> Image URL
-            </button>
-            <button
-              type="button"
-              onClick={() => { stopCamera(); setPhotoInputMode('file'); }}
-              className={`px-3 py-1 rounded-lg transition-all ${photoInputMode === 'file' ? 'bg-[#8B1E3F] text-white font-bold' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}
-            >
-              <Upload className="h-3.5 w-3.5 inline mr-1" /> Upload File
-            </button>
-            <button
-              type="button"
-              onClick={startPhotoCamera}
-              className={`px-3 py-1 rounded-lg transition-all ${photoInputMode === 'camera' ? 'bg-[#8B1E3F] text-white font-bold' : 'bg-amber-600 text-white hover:bg-amber-700 font-bold'}`}
-            >
-              <Camera className="h-3.5 w-3.5 inline mr-1" /> Live Camera 📷
-            </button>
-          </div>
-        </div>
-
-        {/* Option A: Image URL Input */}
-        {photoInputMode === 'url' && (
-          <div className="space-y-2">
-            <input
-              type="text"
-              placeholder="Paste image URL (e.g. https://images.unsplash.com/... or cloud link)"
-              value={photoUrl}
-              onChange={e => onPhotoChange(e.target.value)}
-              className="w-full bg-white border border-stone-300 rounded-xl p-3 text-xs font-semibold text-stone-900 focus:ring-2 focus:ring-[#8B1E3F]/40"
-            />
-          </div>
-        )}
-
-        {/* Option B: Local File Input */}
-        {photoInputMode === 'file' && (
-          <div className="p-4 bg-stone-100/70 border-2 border-dashed border-stone-300 rounded-2xl text-center space-y-2">
-            <Upload className="h-6 w-6 text-stone-400 mx-auto" />
-            <p className="text-xs font-extrabold text-stone-900">Choose a high quality profile photo from your device</p>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoFileUpload}
-              className="text-xs text-stone-900 font-medium file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#8B1E3F] file:text-white hover:file:bg-[#721733] cursor-pointer"
-            />
-          </div>
-        )}
-
-        {/* Option C: Live Camera Stream View */}
-        {photoInputMode === 'camera' && (
-          <div className="p-4 bg-stone-950 rounded-2xl text-center space-y-4 relative overflow-hidden border-2 border-amber-400">
-            {cameraError ? (
-              <p className="text-xs text-rose-400 font-semibold p-4">{cameraError}</p>
-            ) : (
-              <div className="relative max-w-sm mx-auto overflow-hidden rounded-xl bg-black">
-                <video ref={videoRef} autoPlay playsInline className="w-full h-56 object-cover rounded-xl" />
-                <canvas ref={canvasRef} className="hidden" />
-
-                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-3">
-                  <button
-                    type="button"
-                    onClick={snapPhoto}
-                    className="px-5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-stone-950 font-extrabold text-xs rounded-full shadow-lg flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Camera className="h-4 w-4" /> Snap Photo 📸
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { stopCamera(); setPhotoInputMode('url'); }}
-                    className="px-3 py-2 bg-black/60 hover:bg-black/80 text-white font-bold text-xs rounded-full cursor-pointer"
-                  >
-                    Cancel
-                  </button>
+        {/* 📸 COMPACT PROFILE PHOTO CARD */}
+        <div className="rounded-xl border border-border bg-card p-4 shadow-2xs space-y-3">
+          <div className="flex items-center gap-4">
+            {/* Avatar Thumbnail */}
+            <div className="relative shrink-0">
+              {photoUrl ? (
+                <img
+                  src={photoUrl}
+                  alt="Profile"
+                  className="h-16 w-16 rounded-full object-cover ring-2 ring-primary/25"
+                />
+              ) : (
+                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center text-muted-foreground border border-border">
+                  <Camera className="h-6 w-6" />
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Photo Preview Thumbnail */}
-        {photoUrl && (
-          <div className="flex items-center gap-4 p-3 bg-stone-50 border border-stone-200 rounded-2xl">
-            <img src={photoUrl} alt="Profile Preview" className="h-16 w-16 rounded-xl object-cover ring-2 ring-[#8B1E3F]" />
-            <div className="text-xs space-y-1">
-              <span className="font-bold text-stone-900 block">Current Selected Profile Photo</span>
-              <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-                <Check className="h-3.5 w-3.5 text-emerald-600" /> Photo attached & ready to save
-              </span>
-              <button
-                type="button"
-                onClick={() => onPhotoChange('')}
-                className="text-[11px] font-bold text-rose-600 hover:underline block cursor-pointer"
-              >
-                Remove Photo
-              </button>
+              )}
+              {isPhotoUploading && (
+                <div className="absolute inset-0 bg-background/80 rounded-full flex items-center justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                </div>
+              )}
             </div>
-          </div>
-        )}
-      </div>
 
-
-      {/* 📹 SECTION 2: VIDEO INTRODUCTION UPLOAD / PREVIEW */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-          <label className="text-sm font-extrabold text-[#8B1E3F] flex items-center gap-2">
-            <Video className="h-4 w-4 text-[#8B1E3F]" /> Profile Video Introduction
-          </label>
-
-          <div className="flex items-center gap-1.5 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => setVideoInputMode('file')}
-              className={`px-3 py-1 rounded-lg transition-all ${videoInputMode === 'file' ? 'bg-[#8B1E3F] text-white font-bold' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}
-            >
-              <Upload className="h-3.5 w-3.5 inline mr-1" /> Video File
-            </button>
-            <button
-              type="button"
-              onClick={() => setVideoInputMode('url')}
-              className={`px-3 py-1 rounded-lg transition-all ${videoInputMode === 'url' ? 'bg-[#8B1E3F] text-white font-bold' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}
-            >
-              <LinkIcon className="h-3.5 w-3.5 inline mr-1" /> Video URL
-            </button>
-          </div>
-        </div>
-
-        {/* Video Upload Info Banner */}
-        <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-2xl flex items-start gap-2.5 text-xs text-amber-900 font-medium">
-          <Video className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-bold text-amber-950">Add a short 30-60 second introduction video</p>
-            <p className="text-[11px] text-amber-800">Supported Formats: MP4, WebM, MOV (Max size: 50MB). Railway APIs: <code className="bg-amber-100 px-1 py-0.2 rounded text-[10px]">POST /api/upload/profile/video</code>, <code className="bg-amber-100 px-1 py-0.2 rounded text-[10px]">PUT /api/update/profile/video</code>, <code className="bg-amber-100 px-1 py-0.2 rounded text-[10px]">DELETE /api/delete/profile/video</code></p>
-          </div>
-        </div>
-
-        {/* State A: Upload Video File */}
-        {videoInputMode === 'file' && !videoUrl && (
-          <div className="p-6 bg-stone-100/70 border-2 border-dashed border-stone-300 rounded-2xl text-center space-y-3 relative">
-            {isVideoUploading ? (
-              <div className="py-6 flex flex-col items-center justify-center space-y-3">
-                <Loader2 className="h-8 w-8 text-[#8B1E3F] animate-spin" />
-                <p className="text-xs font-extrabold text-[#8B1E3F]">Uploading video to Railway backend...</p>
-                <p className="text-[11px] text-stone-500">Please wait while the file is processed.</p>
+            {/* Photo Info & Action Buttons */}
+            <div className="space-y-1.5 flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Camera className="h-3.5 w-3.5 text-primary" /> Profile Photo
+                </span>
+                {photoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => onPhotoChange('')}
+                    className="text-[11px] text-destructive hover:underline cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
-            ) : (
-              <>
-                <div className="h-12 w-12 rounded-full bg-[#8B1E3F]/10 text-[#8B1E3F] flex items-center justify-center mx-auto">
-                  <Video className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-xs font-extrabold text-stone-900">Upload Video Introduction File</p>
-                  <p className="text-[11px] text-stone-500 mt-0.5">Drag & drop or select an MP4, WebM, or MOV video file</p>
-                </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                Clear portrait photo (JPG, PNG)
+              </p>
+
+              <div className="flex items-center gap-2 pt-0.5">
                 <input
                   type="file"
-                  accept="video/mp4,video/webm,video/quicktime,video/*"
-                  onChange={handleVideoFileUpload}
-                  disabled={isVideoUploading}
-                  className="text-xs text-stone-600 file:mr-3 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#8B1E3F] file:text-white hover:file:bg-[#721733] cursor-pointer disabled:opacity-50"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handlePhotoFileUpload}
+                  className="hidden"
                 />
-              </>
-            )}
-          </div>
-        )}
-
-        {/* State B: Video URL Input */}
-        {videoInputMode === 'url' && !videoUrl && (
-          <div className="space-y-2">
-            <input
-              type="text"
-              placeholder="Paste direct video URL (e.g. https://.../video.mp4 or Cloudinary link)"
-              value={videoUrl}
-              onChange={e => onVideoChange(e.target.value)}
-              className="w-full bg-white border border-stone-300 rounded-xl p-3 text-xs font-semibold text-stone-900 focus:ring-2 focus:ring-[#8B1E3F]/40"
-            />
-          </div>
-        )}
-
-        {/* State C: Video Exists — Player & Controls */}
-        {videoUrl && (
-          <div className="p-4 bg-stone-900 border border-stone-800 rounded-3xl space-y-3 text-white">
-            <div className="flex items-center justify-between text-xs font-bold pb-1 border-b border-stone-800">
-              <span className="flex items-center gap-1.5 text-amber-400">
-                <Play className="h-4 w-4" /> Active Video Introduction
-              </span>
-
-              <div className="flex items-center gap-2">
-                {/* Replace/Update Button */}
-                <label className={`px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-white/20 transition-all ${isVideoUploading ? 'opacity-50 pointer-events-none' : ''}`}>
-                  {isVideoUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 text-amber-300" />}
-                  Replace Video
-                  <input
-                    type="file"
-                    accept="video/mp4,video/webm,video/quicktime,video/*"
-                    onChange={handleVideoFileUpload}
-                    className="hidden"
-                  />
-                </label>
-
-                {/* Delete Button */}
                 <button
                   type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={isVideoDeleting}
-                  className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/40 text-rose-200 border border-rose-400/30 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all disabled:opacity-50"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isPhotoUploading}
+                  className="px-2.5 py-1 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer"
                 >
-                  {isVideoDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 text-rose-300" />}
-                  Delete
+                  Upload
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (photoInputMode === 'camera') {
+                      stopCamera();
+                      setPhotoInputMode('file');
+                    } else {
+                      startPhotoCamera();
+                    }
+                  }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-md border border-input bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
+                >
+                  Camera
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPhotoInputMode(photoInputMode === 'url' ? 'file' : 'url')}
+                  className="px-2.5 py-1 text-xs font-medium rounded-md border border-input bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
+                >
+                  URL
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* Video Player */}
-            {videoUrl.startsWith('data:video') || videoUrl.includes('.mp4') || videoUrl.includes('.webm') || videoUrl.includes('.mov') || videoUrl.startsWith('blob:') || videoUrl.startsWith('http') ? (
-              <video src={videoUrl} controls controlsList="nodownload" className="w-full h-56 object-cover rounded-2xl bg-black border border-stone-800 shadow-inner" />
-            ) : (
-              <div className="p-3 bg-stone-800 rounded-2xl text-xs font-mono text-amber-200 truncate">
-                Video Link: <a href={videoUrl} target="_blank" rel="noreferrer" className="text-amber-400 underline">{videoUrl}</a>
-              </div>
-            )}
+          {/* Inline URL Input */}
+          {photoInputMode === 'url' && (
+            <div className="pt-2 border-t border-border flex gap-2">
+              <input
+                type="text"
+                value={photoUrl}
+                onChange={e => onPhotoChange(e.target.value)}
+                className="flex-1 text-xs bg-background border border-input rounded-md px-3 py-1.5 text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+              <button
+                type="button"
+                onClick={() => setPhotoInputMode('file')}
+                className="px-2.5 py-1 text-xs rounded-md bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          )}
 
-            {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && (
-              <div className="p-4 bg-rose-950/90 border border-rose-700/60 rounded-2xl space-y-3 animate-in fade-in duration-200">
-                <div className="flex items-center gap-2 text-xs font-bold text-rose-200">
-                  <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0" />
-                  <span>Are you sure you want to delete your profile video?</span>
+          {/* Inline Live Camera Stream */}
+          {photoInputMode === 'camera' && (
+            <div className="pt-2 border-t border-border space-y-2">
+              {cameraError ? (
+                <p className="text-xs text-destructive">{cameraError}</p>
+              ) : (
+                <div className="relative rounded-lg overflow-hidden bg-black max-w-[260px] mx-auto">
+                  <video ref={videoRef} autoPlay playsInline className="w-full h-36 object-cover" />
+                  <canvas ref={canvasRef} className="hidden" />
+                  <div className="absolute bottom-2 inset-x-0 flex justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={snapPhoto}
+                      disabled={isPhotoUploading}
+                      className="px-3 py-1 bg-primary text-primary-foreground text-xs font-semibold rounded-md shadow-xs cursor-pointer"
+                    >
+                      Snap Photo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { stopCamera(); setPhotoInputMode('file'); }}
+                      className="px-3 py-1 bg-black/70 text-white text-xs rounded-md cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-                <p className="text-[11px] text-rose-300">This action calls <code className="bg-black/40 px-1 py-0.5 rounded">DELETE /api/delete/profile/video</code> and removes the video permanently.</p>
-                <div className="flex items-center justify-end gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs cursor-pointer"
-                  >
-                    Cancel
-                  </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 📹 COMPACT VIDEO CARD */}
+        <div className="rounded-xl border border-border bg-card p-4 shadow-2xs space-y-3">
+          <div className="flex items-center gap-4">
+            {/* Video Status Icon */}
+            <div className="relative shrink-0">
+              {videoUrl ? (
+                <div className="h-16 w-16 rounded-xl bg-muted border border-border flex items-center justify-center text-primary relative overflow-hidden">
+                  <Play className="h-6 w-6" />
+                </div>
+              ) : (
+                <div className="h-16 w-16 rounded-xl bg-muted flex items-center justify-center text-muted-foreground border border-border">
+                  <Video className="h-6 w-6" />
+                </div>
+              )}
+              {isVideoUploading && (
+                <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                </div>
+              )}
+            </div>
+
+            {/* Video Content & Action Buttons */}
+            <div className="space-y-1.5 flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Video className="h-3.5 w-3.5 text-primary" /> Video Intro <span className="text-[10px] text-muted-foreground font-normal">(Optional)</span>
+                </span>
+                {videoUrl && (
                   <button
                     type="button"
                     onClick={handleDeleteVideo}
                     disabled={isVideoDeleting}
-                    className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    className="text-[11px] text-destructive hover:underline cursor-pointer"
                   >
-                    {isVideoDeleting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                    Confirm Delete 🗑️
+                    Delete
                   </button>
-                </div>
+                )}
               </div>
-            )}
+              <p className="text-[11px] text-muted-foreground truncate">
+                {videoUrl ? 'Video introduction attached' : 'Short clip (max 50MB) or link'}
+              </p>
+
+              <div className="flex items-center gap-2 pt-0.5">
+                <input
+                  type="file"
+                  ref={videoFileInputRef}
+                  accept="video/mp4,video/webm,video/quicktime,video/*"
+                  onChange={handleVideoFileUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => videoFileInputRef.current?.click()}
+                  disabled={isVideoUploading}
+                  className="px-2.5 py-1 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer"
+                >
+                  Upload
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVideoInputMode(videoInputMode === 'url' ? 'file' : 'url')}
+                  className="px-2.5 py-1 text-xs font-medium rounded-md border border-input bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
+                >
+                  Link URL
+                </button>
+                {videoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setShowVideoPreview(!showVideoPreview)}
+                    className="px-2.5 py-1 text-xs font-medium rounded-md border border-input bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
+                  >
+                    {showVideoPreview ? 'Hide' : 'Preview'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Inline Video URL Input */}
+          {videoInputMode === 'url' && !videoUrl && (
+            <form onSubmit={handleLinkVideoSubmit} className="pt-2 border-t border-border flex gap-2">
+              <input
+                type="text"
+                value={externalVideoLink}
+                onChange={e => setExternalVideoLink(e.target.value)}
+                className="flex-1 text-xs bg-background border border-input rounded-md px-3 py-1.5 text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+              <button
+                type="submit"
+                disabled={!externalVideoLink.trim() || isLinkingVideo}
+                className="px-2.5 py-1 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+              >
+                Link
+              </button>
+            </form>
+          )}
+
+          {/* Inline Video Player Preview */}
+          {videoUrl && showVideoPreview && (
+            <div className="pt-2 border-t border-border">
+              <div className="rounded-lg overflow-hidden bg-black">
+                {videoUrl.startsWith('data:video') || videoUrl.includes('.mp4') || videoUrl.includes('.webm') || videoUrl.includes('.mov') || videoUrl.startsWith('blob:') ? (
+                  <video src={videoUrl} controls controlsList="nodownload" className="w-full h-36 object-cover" />
+                ) : (
+                  <iframe
+                    src={videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                    title="Profile Video"
+                    className="w-full h-36"
+                    allowFullScreen
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 🖼️ COMPACT OPTIONAL GALLERY STRIP */}
+      <div className="rounded-xl border border-border bg-card p-3 shadow-2xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="h-4 w-4 text-primary" />
+            <span className="text-xs font-semibold text-foreground">Profile Gallery</span>
+            <span className="text-[11px] text-muted-foreground">
+              ({galleryImages.length} {galleryImages.length === 1 ? 'photo' : 'photos'} added)
+            </span>
+          </div>
+
+          <label className={`px-2.5 py-1 text-xs font-medium rounded-md bg-muted hover:bg-muted/80 text-foreground cursor-pointer flex items-center gap-1 transition-colors ${isGalleryUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+            {isGalleryUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+            <span>Add Photo</span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleGalleryUpload}
+              disabled={isGalleryUploading}
+              className="hidden"
+            />
+          </label>
+        </div>
+
+        {galleryImages.length > 0 && (
+          <div className="flex items-center gap-2 pt-2.5 overflow-x-auto">
+            {galleryImages.map((img) => (
+              <div key={img.id} className="relative group shrink-0 h-14 w-14 rounded-lg overflow-hidden border border-border">
+                <img src={img.image} alt="" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => handleDeleteGalleryItem(img.id)}
+                  disabled={deletingGalleryId === img.id}
+                  title="Remove image"
+                  className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity cursor-pointer"
+                >
+                  {deletingGalleryId === img.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5 text-rose-300" />
+                  )}
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>
-
     </div>
   );
 };
-

@@ -17,7 +17,9 @@ import { profileApi } from '../api/profileApi';
 import { matchingApi } from '../api/matchingApi';
 import { notificationApi } from '../api/notificationApi';
 import { verificationService } from '../services/verification.service';
+import { partnerPreferencesService } from '../services/partnerPreferences.service';
 import { queryClient } from '../lib/queryClient';
+import { isAtLeast18YearsOld } from '../utils/validationSchemas';
 
 // Import Focused Domain Stores
 import { useAuthStore } from '../store/useAuthStore';
@@ -646,7 +648,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const res = await profileApi.getProfile();
       const isBasicDone = Boolean(res.is_basic_complete) || storedStatus.basic_profile_completed || (storedStatus.registration_method === 'manual');
       const isDetailedDone = Boolean(res.is_detailed_complete) || storedStatus.complete_profile_completed;
-      const isPreferencesDone = Boolean((res as any).is_preferences_complete) || storedStatus.partner_preferences_completed;
+      const isPreferencesDone = Boolean(storedStatus.partner_preferences_completed);
 
       let mappedVStatus: VerificationState = storedStatus.verification_status || (storedStatus.verification_completed ? 'PENDING' : 'NOT_SUBMITTED');
       let vRejectionReason: string | null = storedStatus.rejection_reason || null;
@@ -835,6 +837,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const registerUser = async (payload: RegisterRequest) => {
+    if (payload.date_of_birth && !isAtLeast18YearsOld(payload.date_of_birth)) {
+      throw new Error('You must be 18 years or older to register.');
+    }
     clearUserStateAndCache();
     const res = await authApi.register(payload);
     if (res.access_token) {
@@ -975,6 +980,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const patchBasicProfile = async (payload: PatchBasicProfileRequest) => {
+    if (payload.date_of_birth && !isAtLeast18YearsOld(payload.date_of_birth)) {
+      throw new Error('You must be 18 years or older to proceed.');
+    }
     await profileApi.patchBasicProfile(payload);
     markBasicProfileCompleted();
     await checkProfileStatus();

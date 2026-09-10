@@ -1,5 +1,47 @@
 import { z } from 'zod';
 
+/**
+ * Validates that the provided date of birth string (YYYY-MM-DD)
+ * corresponds to an age of at least 18 years (and realistically under 120 years).
+ */
+export const isAtLeast18YearsOld = (dobString: string): boolean => {
+  if (!dobString) return false;
+  const parts = dobString.split('-');
+  if (parts.length !== 3) return false;
+
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return false;
+
+  const dob = new Date(year, month, day);
+  if (dob.getFullYear() !== year || dob.getMonth() !== month || dob.getDate() !== day) {
+    return false;
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+
+  return age >= 18 && age <= 120;
+};
+
+/**
+ * Returns the maximum allowed date of birth string (YYYY-MM-DD) for an input[type=date],
+ * which is exactly 18 years ago from today.
+ */
+export const getMaxDobDateString = (): string => {
+  const today = new Date();
+  const year = today.getFullYear() - 18;
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const registerSchema = z
   .object({
     register_for: z.enum(['SELF', 'SON', 'DAUGHTER', 'BROTHER', 'SISTER', 'FRIEND', 'RELATIVE'], {
@@ -10,7 +52,15 @@ export const registerSchema = z
     gender: z.enum(['Male', 'Female'], {
       required_error: 'Please select a gender'
     }),
-    date_of_birth: z.string().min(10, 'Please enter a valid date of birth (YYYY-MM-DD)'),
+    date_of_birth: z
+      .string()
+      .min(1, 'Date of birth is required')
+      .refine(val => val.length >= 10, {
+        message: 'Please enter a valid date of birth (YYYY-MM-DD)'
+      })
+      .refine(isAtLeast18YearsOld, {
+        message: 'You must be 18 years or older to register'
+      }),
     email: z.string().email('Please enter a valid email address'),
     phone: z
       .string()
@@ -41,7 +91,15 @@ export const basicProfileSchema = z.object({
   gender: z.enum(['Male', 'Female'], {
     required_error: 'Gender selection is required'
   }),
-  date_of_birth: z.string().min(10, 'Date of birth is required'),
+  date_of_birth: z
+    .string()
+    .min(1, 'Date of birth is required')
+    .refine(val => val.length >= 10, {
+      message: 'Please enter a valid date of birth (YYYY-MM-DD)'
+    })
+    .refine(isAtLeast18YearsOld, {
+      message: 'You must be 18 years or older to register'
+    }),
   phone: z
     .string()
     .min(10, 'Phone number must be at least 10 digits')

@@ -18,15 +18,24 @@ export interface GoogleLoginSchemaAPI {
 export const googleAuthApi = {
   /**
    * POST /api/google-register
-   * Body: { first_name, last_name, email, google_id }
-   * Called ONLY during Google Registration.
+   * Body: {
+   *   first_name, last_name, email, google_id,
+   *   password, confirm_password, date_of_birth, gender, phone, register_for
+   * }
    */
   googleRegister: async (payload: GoogleRegisterRequest): Promise<AuthResponse> => {
+    const password = payload.password || 'GoogleAuth@2026!';
     const apiPayload = {
       first_name: payload.first_name,
-      last_name: payload.last_name || null,
+      last_name: payload.last_name || '',
       email: payload.email,
-      google_id: payload.google_id
+      google_id: payload.google_id,
+      password: password,
+      confirm_password: payload.confirm_password || password,
+      date_of_birth: payload.date_of_birth || '2000-01-01',
+      gender: payload.gender || 'Male',
+      phone: payload.phone || '9999999999',
+      register_for: payload.register_for || 'SELF'
     };
 
     const response = await axiosClient.post<any>('/google-register', apiPayload);

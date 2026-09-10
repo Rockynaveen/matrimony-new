@@ -75,6 +75,27 @@ export interface ProfileCreateRequest {
   country?: string;
   state?: string;
   city?: string;
+  profile_name?: string;
+  education_id?: number | null;
+  education_detail?: string | null;
+  profession_id?: number | null;
+  job_title?: string | null;
+  employment_type?: string | null;
+  company_name?: string | null;
+  work_location?: string | null;
+  religion_id?: number | null;
+  caste_id?: number | null;
+  sub_caste?: string | null;
+  gothram?: string | null;
+  country_id?: number | null;
+  state_id?: number | null;
+  district_id?: number | null;
+  mandal_id?: number | null;
+  village_id?: number | null;
+  language_ids?: number[] | null;
+  hobby_ids?: number[] | null;
+  pincode?: string | null;
+  address_line?: string | null;
 }
 
 /** PUT /api/profile/ → ProfileUpdate  (all fields optional, numbers nullable) */
@@ -104,6 +125,28 @@ export interface ProfileUpdateRequest {
   country?: string | null;
   state?: string | null;
   city?: string | null;
+  // Extended fields for master data and location hierarchy
+  profile_name?: string | null;
+  education_id?: number | null;
+  education_detail?: string | null;
+  profession_id?: number | null;
+  job_title?: string | null;
+  employment_type?: string | null;
+  company_name?: string | null;
+  work_location?: string | null;
+  religion_id?: number | null;
+  caste_id?: number | null;
+  sub_caste?: string | null;
+  gothram?: string | null;
+  country_id?: number | null;
+  state_id?: number | null;
+  district_id?: number | null;
+  mandal_id?: number | null;
+  village_id?: number | null;
+  language_ids?: number[] | null;
+  hobby_ids?: number[] | null;
+  pincode?: string | null;
+  address_line?: string | null;
 }
 
 /** PATCH /api/profile/basic → BasicProfileUpdateSchema */
@@ -140,5 +183,101 @@ export interface ProfileVideoUploadResponse {
 export interface ProfileVideoDeleteResponse {
   success: boolean;
   message: string;
+}
+
+// ──────────────────────────────────────────────────────────────
+// Master Data API Types
+// ──────────────────────────────────────────────────────────────
+
+export interface IncomeRangeItem {
+  id: number;
+  label: string;
+  min_value: string;
+  max_value: string;
+  currency: string;
+}
+
+export interface EducationItem {
+  id: number;
+  name: string;
+  code?: string | null;
+  degree_level?: string | null;
+}
+
+export interface ProfessionItem {
+  id: number;
+  name: string;
+  code?: string | null;
+  category?: string | null;
+}
+
+export interface ReligionItem {
+  id: number;
+  name: string;
+  code?: string | null;
+}
+
+export interface CasteItem {
+  id: number;
+  religion_id: number;
+  name: string;
+  code?: string | null;
+}
+
+export interface LanguageItem {
+  id: number;
+  name: string;
+  code?: string | null;
+}
+
+export interface HobbyItem {
+  id: number;
+  name: string;
+  category?: string | null;
+  icon?: string | null;
+}
+
+export interface CountryItem {
+  id: number;
+  name: string;
+  code?: string | null;
+  phone_code?: string | null;
+}
+
+export interface StateItem {
+  id: number;
+  country_id: number;
+  name: string;
+  code?: string | null;
+}
+
+export interface DistrictItem {
+  id: number;
+  state_id: number;
+  name: string;
+  code?: string | null;
+}
+
+export interface MandalItem {
+  id: number;
+  district_id: number;
+  name: string;
+  code?: string | null;
+}
+
+export interface VillageItem {
+  id: number;
+  mandal_id: number;
+  name: string;
+  pincode?: string | null;
+}
+
+export interface ProfileGalleryImage {
+  id: number;
+  image: string;
+  caption?: string | null;
+  display_order?: number;
+  is_primary?: boolean;
+  created_at: string;
 }
 

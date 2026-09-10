@@ -1,32 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useRecommendations, useShortlist, useSentInterests, useReceivedInterests, useIgnoredProfiles } from '../../hooks/useMatching';
 import { RecommendationCard } from '../../components/matching/RecommendationCard';
-import { Badge } from '../../components/ui/Badge';
-import { Card } from '../../components/ui/Card';
-import { Sparkles, Heart, Compass, Clock, Star, AlertCircle, RefreshCw } from 'lucide-react';
+import {
+  Sparkles,
+  AlertCircle,
+  RefreshCw,
+  Search,
+  X,
+  SlidersHorizontal
+} from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { LoadingScreen } from '../../components/ui/LoadingScreen';
-
-import { ProfileCreditsBanner } from '../../components/membership/ProfileCreditsBanner';
+import type { MatchResponseSchema } from '../../types/matching.types';
 
 export const MatchesPage: React.FC = () => {
-  const { currentUser, profiles } = useApp();
-  const [matchTab, setMatchTab] = useState<'recommended' | 'compatible' | 'new' | 'nearby' | 'horoscope'>('recommended');
+  const { currentUser } = useApp();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'match' | 'age_asc' | 'age_desc'>('match');
 
   const { data: recommendations, isLoading, isError, refetch, isFetching } = useRecommendations();
   const { data: shortlist } = useShortlist();
   const { data: sentInterests } = useSentInterests();
   const { data: receivedInterests } = useReceivedInterests();
   const { data: ignoredList } = useIgnoredProfiles();
-
-  const localSentList: any[] = (() => {
-    try {
-      return JSON.parse(localStorage.getItem('local_sent_interest_user_ids') || '[]');
-    } catch {
-      return [];
-    }
-  })();
 
   const shortlistedIds = shortlist?.map(s => s.user_id) || [];
   const sentInterestUserIds = (sentInterests || []).map(i => Number(i.to_user || (i as any).user_id));
@@ -37,140 +34,211 @@ export const MatchesPage: React.FC = () => {
     ...(sentInterests || []).filter(i => i.status?.toLowerCase() === 'accepted').map(i => i.to_user)
   ]);
 
-  const userGender = (currentUser.gender || localStorage.getItem('logged_in_gender') || '').toLowerCase();
+  const userGender = (currentUser?.gender || localStorage.getItem('logged_in_gender') || '').toLowerCase();
   const targetGender = (userGender === 'male' || userGender === 'm') ? 'female' : ((userGender === 'female' || userGender === 'f') ? 'male' : '');
 
-  const rawList = recommendations || [];
+  // Live recommendations from the backend matching API
+  const rawList: (MatchResponseSchema & { gender?: string })[] = (recommendations || []) as (MatchResponseSchema & { gender?: string })[];
 
-  const getFilteredMatches = () => {
-    switch (matchTab) {
-      case 'compatible':
-        return [...rawList].sort((a, b) => (b.match_percentage || 0) - (a.match_percentage || 0));
-      case 'new':
-        return rawList.slice(0, 6);
-      case 'nearby':
-        return rawList.filter(p => Boolean(p.city || p.state));
-      case 'horoscope':
-        return rawList.filter(p =>
-          p.matched_fields?.some((f: string) => ['horoscope', 'rashi', 'nakshatra', 'dosha', 'astrology'].includes(f.toLowerCase()))
-        );
-      default:
-        return rawList;
+  // Filter out ignored profiles, wrong gender, and duplicates
+  const cleanedList = useMemo(() => {
+    return rawList
+      .filter(item => !ignoredUserIds.includes(item.user_id))
+      .filter(item => {
+        if (!targetGender || !item.gender) return true;
+        const itemGender = item.gender.toLowerCase();
+        if (targetGender === 'female') return itemGender.startsWith('f') || itemGender === 'woman' || itemGender === 'female';
+        if (targetGender === 'male') return itemGender.startsWith('m') || itemGender === 'man' || itemGender === 'male';
+        return true;
+      })
+      .filter((item, index, self) =>
+        index === self.findIndex(t => t.user_id === item.user_id)
+      );
+  }, [rawList, ignoredUserIds, targetGender]);
+
+  // Search and Sort Filtering
+  const finalMatches = useMemo(() => {
+    let result = cleanedList;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(p => {
+        const fullName = `${p.first_name || ''} ${p.last_name || ''}`.toLowerCase();
+        const loc = `${p.city || ''} ${p.state || ''}`.toLowerCase();
+        const occ = (p.occupation || '').toLowerCase();
+        const edu = (p.education || '').toLowerCase();
+        const relCaste = `${p.religion || ''} ${p.caste || ''}`.toLowerCase();
+        return fullName.includes(q) || loc.includes(q) || occ.includes(q) || edu.includes(q) || relCaste.includes(q);
+      });
     }
-  };
 
-  // Filter out ignored profiles, wrong gender, and duplicates by user_id
-  const matchesList = getFilteredMatches()
-    .filter(item => !ignoredUserIds.includes(item.user_id))
-    .filter(item => {
-      if (!targetGender || !item.gender) return true;
-      const itemGender = item.gender.toLowerCase();
-      if (targetGender === 'female') return itemGender.startsWith('f') || itemGender === 'woman' || itemGender === 'female';
-      if (targetGender === 'male') return itemGender.startsWith('m') || itemGender === 'man' || itemGender === 'male';
-      return true;
-    })
-    .filter((item, index, self) =>
-      index === self.findIndex(t => t.user_id === item.user_id)
-    );
+    if (sortBy === 'match') {
+      result = [...result].sort((a, b) => (b.match_percentage || 0) - (a.match_percentage || 0));
+    } else if (sortBy === 'age_asc') {
+      result = [...result].sort((a, b) => (a.age || 0) - (b.age || 0));
+    } else if (sortBy === 'age_desc') {
+      result = [...result].sort((a, b) => (b.age || 0) - (a.age || 0));
+    }
+
+    return result;
+  }, [cleanedList, searchQuery, sortBy]);
 
   return (
-    <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5">
-      
-      {/* Profile Credit Unlocks Banner */}
-      <ProfileCreditsBanner />
-
-      {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-        <div>
-          <Badge variant="gold" className="mb-0.5 text-[10px]">AI Match Engine</Badge>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-foreground">Intelligent Match Recommendations</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Profiles handpicked based on your partner preferences & horoscope score</p>
-        </div>
-
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => refetch()}
-          disabled={isLoading || isFetching}
-          className="border-stone-200 hover:bg-stone-50 font-bold text-xs flex items-center gap-1.5 h-9 px-3.5 rounded-xl"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-          Refresh Recommendations
-        </Button>
-      </div>
-
-      {/* Matches Category Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1.5 border-b border-border/60">
-        {[
-          { id: 'recommended', label: 'Recommended', icon: Sparkles },
-          { id: 'compatible', label: 'Most Compatible (90%+)', icon: Star },
-          { id: 'new', label: 'New Matches', icon: Clock },
-          { id: 'nearby', label: 'Nearby Matches', icon: Compass },
-          { id: 'horoscope', label: 'Horoscope Matches', icon: Heart }
-        ].map(tab => {
-          const Icon = tab.icon;
-          const isActive = matchTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setMatchTab(tab.id as any)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                isActive
-                  ? 'bg-[#8B1E3F] text-white shadow-sm'
-                  : 'bg-white text-muted-foreground hover:bg-muted border border-border/60'
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" /> {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Grid of Profile Cards */}
-      {isLoading ? (
-        <LoadingScreen title="AI Match Engine" message="Finding compatibility match recommendations based on your preferences..." />
-      ) : isError ? (
-        <Card className="p-10 text-center border-stone-200/80 rounded-3xl space-y-4 max-w-xl mx-auto bg-white shadow-2xs">
-          <div className="h-12 w-12 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mx-auto text-rose-600">
-            <AlertCircle className="h-6 w-6" />
+    <div className="min-h-screen bg-transparent text-black pb-16 font-sans antialiased">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+        
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-2">
+          <div className="flex items-start gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-[#C44569] flex items-center justify-center text-white shadow-xs shrink-0 mt-0.5">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#C44569] bg-pink-50 border border-pink-200/80 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                  AI Match Engine
+                </span>
+                {cleanedList.length > 0 && (
+                  <span className="text-xs text-slate-500 font-medium">
+                    {cleanedList.length} Verified Recommendations
+                  </span>
+                )}
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-black tracking-tight mt-1">
+                Intelligent Match Recommendations
+              </h1>
+              <p className="text-sm text-slate-600 mt-0.5">
+                Live compatibility recommendations from our AI engine based on your partner preferences and horoscope profile.
+              </p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <h3 className="font-serif font-bold text-lg text-stone-900">Failed to Load Recommendations</h3>
-            <p className="text-xs text-stone-500">We encountered an issue communicating with the live matching engine. Please verify your credentials or try again.</p>
-          </div>
+
           <Button
             size="sm"
-            variant="primary"
+            variant="outline"
             onClick={() => refetch()}
-            className="bg-[#8B1E3F] hover:bg-[#721733] text-white px-6 font-bold"
+            disabled={isLoading || isFetching}
+            className="w-full sm:w-auto bg-white border border-slate-300 hover:bg-slate-50 text-black font-bold text-xs flex items-center justify-center gap-2 h-10 px-4 rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
           >
-            Retry Fetching
+            <RefreshCw className={`h-4 w-4 text-[#C44569] ${isFetching ? 'animate-spin' : ''}`} />
+            Refresh Matches
           </Button>
-        </Card>
-      ) : matchesList.length === 0 ? (
-        <Card className="p-12 text-center border-stone-200/80 rounded-3xl space-y-3 max-w-xl mx-auto bg-white shadow-2xs">
-          <div className="h-12 w-12 bg-amber-50 border border-amber-100 rounded-full flex items-center justify-center mx-auto text-amber-600">
-            <Sparkles className="h-6 w-6" />
-          </div>
-          <div>
-            <h3 className="font-serif font-bold text-lg text-stone-900">No Recommendations Available</h3>
-            <p className="text-xs text-stone-500 mt-1">There are no live match recommendations matching your criteria currently.</p>
-          </div>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
-          {matchesList.map(match => (
-            <RecommendationCard
-              key={match.user_id}
-              match={match}
-              isShortlisted={shortlistedIds.includes(match.user_id)}
-              isInterestSent={sentInterestUserIds.includes(match.user_id)}
-              isInterestAccepted={acceptedUserIds.has(match.user_id)}
-            />
-          ))}
         </div>
-      )}
 
+        {/* Single Integrated Matches Toolbar Bar */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-3.5 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          
+          {/* Left: Live Match Count and Status */}
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <span className="text-xs font-bold text-slate-700">
+              Showing <strong className="text-black font-bold">{finalMatches.length}</strong> matching profiles
+            </span>
+            {searchQuery && (
+              <span className="text-[11px] font-semibold text-[#C44569] bg-pink-50 border border-pink-100 px-2 py-0.5 rounded-md">
+                Filtered
+              </span>
+            )}
+          </div>
+
+          {/* Right: Search Input & Sort Filter */}
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Filter by name, city, caste..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full h-9 pl-9 pr-8 text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#C44569]/30 focus:border-[#C44569] text-black placeholder:text-slate-400"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-black p-0.5 rounded-full"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 shrink-0">
+              <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" />
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value as any)}
+                className="text-xs font-bold text-black bg-transparent border-none focus:outline-hidden cursor-pointer"
+              >
+                <option value="match">Highest Match</option>
+                <option value="age_asc">Age (Younger First)</option>
+                <option value="age_desc">Age (Older First)</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Grid of Profile Cards / Loading / Error / Empty */}
+        {isLoading ? (
+          <LoadingScreen title="AI Match Engine" message="Finding live compatibility match recommendations based on your preferences..." />
+        ) : isError ? (
+          <div className="p-10 text-center border border-slate-200/90 rounded-2xl space-y-4 max-w-md mx-auto bg-white shadow-sm">
+            <div className="h-12 w-12 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-center mx-auto text-rose-600">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-bold text-lg text-black">Failed to Load Recommendations</h3>
+              <p className="text-xs text-slate-600">
+                We encountered an issue communicating with the live matching engine. Please try again.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => refetch()}
+              className="bg-gradient-to-r from-[#C83259] to-[#E11D48] hover:from-[#A82547] hover:to-[#BE123C] text-white px-6 font-bold rounded-xl shadow-xs"
+            >
+              Retry Fetching
+            </Button>
+          </div>
+        ) : finalMatches.length === 0 ? (
+          <div className="p-12 text-center border border-slate-200/90 rounded-2xl space-y-3.5 max-w-md mx-auto bg-white shadow-sm">
+            <div className="h-12 w-12 bg-pink-50 border border-pink-200 rounded-xl flex items-center justify-center mx-auto text-[#C44569]">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-black">No Matches Available</h3>
+              <p className="text-xs text-slate-600 mt-1">
+                {searchQuery
+                  ? `No profiles matched "${searchQuery}". Try clearing the search filter.`
+                  : 'There are no match recommendations matching your criteria currently.'}
+              </p>
+            </div>
+            {searchQuery && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSearchQuery('')}
+                className="border-slate-300 text-black font-bold text-xs rounded-xl"
+              >
+                Clear Filter
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {finalMatches.map(match => (
+              <RecommendationCard
+                key={match.user_id}
+                match={match}
+                isShortlisted={shortlistedIds.includes(match.user_id)}
+                isInterestSent={sentInterestUserIds.includes(match.user_id)}
+                isInterestAccepted={acceptedUserIds.has(match.user_id)}
+              />
+            ))}
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };

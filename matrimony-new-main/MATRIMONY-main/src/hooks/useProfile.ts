@@ -19,13 +19,17 @@ import type {
   ProfileVideoAPI,
   ProfileVideoUploadResponse,
   ProfileVideoDeleteResponse,
+  ProfileGalleryImage,
 } from '../types/profile.types';
 
 /** Consistent query-key factory */
 export const profileKeys = {
   all: ['profile'] as const,
   detail: () => [...profileKeys.all, 'detail'] as const,
+  byId: (id?: string | number | null) => [...profileKeys.all, 'byId', id] as const,
+  byMemberId: (memberId?: string | number | null) => [...profileKeys.all, 'byMemberId', memberId] as const,
   video: () => [...profileKeys.all, 'video'] as const,
+  gallery: () => [...profileKeys.all, 'gallery'] as const,
 };
 
 // ─── GET /api/profile/get/ ──────────────────────────────────────
@@ -133,6 +137,96 @@ export function useDeleteProfileVideo() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: profileKeys.all });
     },
+  });
+}
+
+// ─── POST /api/link/profile/video ───────────────────────────
+
+export function useLinkProfileVideo() {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ success: boolean; message?: string; video_url?: string }, Error, { videoUrl: string; videoType?: string }>({
+    mutationFn: ({ videoUrl, videoType }) => profileService.linkProfileVideo(videoUrl, videoType),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.all });
+    },
+  });
+}
+
+// ─── POST /api/upload/profile/photo ─────────────────────────
+
+export function useUploadProfilePhoto() {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ photo_url?: string; message?: string }, Error, File | Blob>({
+    mutationFn: (file) => profileService.uploadProfilePhoto(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.all });
+    },
+  });
+}
+
+// ─── GET /api/profile/gallery ───────────────────────────────
+
+export function useProfileGallery(
+  options?: Omit<UseQueryOptions<ProfileGalleryImage[], Error>, 'queryKey' | 'queryFn'>,
+) {
+  return useQuery<ProfileGalleryImage[], Error>({
+    queryKey: profileKeys.gallery(),
+    queryFn: () => profileService.getGallery(),
+    staleTime: 2 * 60 * 1000,
+    retry: false,
+    ...options,
+  });
+}
+
+// ─── POST /api/upload/profile/gallery ───────────────────────
+
+export function useUploadGalleryImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation<ProfileGalleryImage, Error, { file: File | Blob; caption?: string }>({
+    mutationFn: ({ file, caption }) => profileService.uploadGalleryImage(file, caption),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.gallery() });
+    },
+  });
+}
+
+// ─── DELETE /api/profile/gallery/{image_id} ─────────────────
+
+export function useDeleteGalleryImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ success: boolean; message?: string }, Error, number>({
+    mutationFn: (imageId) => profileService.deleteGalleryImage(imageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.gallery() });
+    },
+  });
+}
+
+// ─── GET /api/profile/{userId}/ ─────────────────────────────
+
+export function useProfileById(userId?: string | number | null) {
+  return useQuery<ProfileOutAPI | null, Error>({
+    queryKey: profileKeys.byId(userId),
+    queryFn: () => (userId ? profileService.getProfileById(userId) : Promise.resolve(null)),
+    enabled: Boolean(userId),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+}
+
+// ─── GET /api/profile/by-member-id/{memberId}/ ──────────────
+
+export function useProfileByMemberId(memberId?: string | number | null) {
+  return useQuery<ProfileOutAPI | null, Error>({
+    queryKey: profileKeys.byMemberId(memberId),
+    queryFn: () => (memberId ? profileService.getProfileByMemberId(memberId) : Promise.resolve(null)),
+    enabled: Boolean(memberId),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
   });
 }
 

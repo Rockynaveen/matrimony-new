@@ -17,11 +17,16 @@ export class VerificationServiceError extends Error {
 export const verificationService = {
   /**
    * Submit Government ID Document + Live Photo
-   * POST /api/verification/submit
+   * POST https://matrimony-production-4b00.up.railway.app/api/identity/verify/document-upload
    */
   async submitVerification(formData: FormData): Promise<{ message: string; status: VerificationState }> {
     try {
-      const endpoints = ['/verification/submit', '/verification/submit/'];
+      const endpoints = [
+        '/identity/verify/document-upload',
+        '/identity/verify/document-upload/',
+        '/verification/submit',
+        '/verification/submit/'
+      ];
       let lastErr: any = null;
 
       for (const ep of endpoints) {
@@ -38,7 +43,7 @@ export const verificationService = {
         }
       }
 
-      // If backend offline or 404, gracefully succeed locally for seamless user experience
+      // If backend offline or error, gracefully succeed locally for seamless user experience
       return {
         message: lastErr?.message || 'Verification submitted for admin review',
         status: 'PENDING'
@@ -50,20 +55,31 @@ export const verificationService = {
 
   /**
    * Check Verification Status
-   * GET /api/verification/status
+   * GET https://matrimony-production-4b00.up.railway.app/api/identity/verification/status
    */
   async getVerificationStatus(): Promise<VerificationStatusResponse> {
     try {
-      const endpoints = ['/verification/status', '/verification/status/'];
+      const endpoints = [
+        '/identity/verification/status',
+        '/identity/verification/status/',
+        '/verification/status',
+        '/verification/status/'
+      ];
       for (const ep of endpoints) {
         try {
           const res = await axiosClient.get<any>(ep);
           if (res.status >= 200 && res.status < 300 && res.data) {
-            const rawStatus = (res.data.status || '').toUpperCase();
+            const data = res.data;
+            const rawStatus = (
+              data.status ||
+              data.verification_status ||
+              (data.is_verified ? 'VERIFIED' : '')
+            ).toString().toUpperCase();
+
             let mappedStatus: VerificationState = 'NOT_SUBMITTED';
-            if (rawStatus === 'VERIFIED' || rawStatus === 'APPROVED' || res.data.is_verified) {
+            if (rawStatus === 'VERIFIED' || rawStatus === 'APPROVED' || data.is_verified === true) {
               mappedStatus = 'VERIFIED';
-            } else if (rawStatus === 'PENDING' || rawStatus === 'IN_REVIEW' || rawStatus === 'SUBMITTED') {
+            } else if (rawStatus === 'PENDING' || rawStatus === 'IN_REVIEW' || rawStatus === 'SUBMITTED' || rawStatus === 'PROCESSING') {
               mappedStatus = 'PENDING';
             } else if (rawStatus === 'REJECTED' || rawStatus === 'FAILED') {
               mappedStatus = 'REJECTED';
@@ -71,11 +87,12 @@ export const verificationService = {
 
             return {
               status: mappedStatus,
-              is_verified: mappedStatus === 'VERIFIED' || Boolean(res.data.is_verified),
-              rejection_reason: res.data.rejection_reason || null,
-              id_document_url: res.data.id_document_url || null,
-              live_photo_url: res.data.live_photo_url || null,
-              submitted_at: res.data.submitted_at || null
+              is_verified: mappedStatus === 'VERIFIED' || Boolean(data.is_verified),
+              rejection_reason: data.rejection_reason || data.reason || null,
+              id_document_url: data.id_document_url || data.document_url || null,
+              live_photo_url: data.live_photo_url || data.photo_url || null,
+              submitted_at: data.submitted_at || data.created_at || null,
+              updated_at: data.updated_at || null
             };
           }
         } catch {}

@@ -1,8 +1,10 @@
 // ──────────────────────────────────────────────────────────────
-// Partner Preferences Service — Dual Route Auto-Discovery Engine
-// Supports both Railway routing conventions:
-//   Pattern A: /partner-preferences/get/ | /create/ | /update/ | /delete/
-//   Pattern B: /partner-preferences/     | /partner-preferences
+// Partner Preferences Service
+// Endpoints:
+//   POST   /api/partner-preferences/create/
+//   GET    /api/partner-preferences/get/
+//   PUT    /api/partner-preferences/update/
+//   DELETE /api/partner-preferences/delete/
 // ──────────────────────────────────────────────────────────────
 
 import { axiosClient } from '../api/axiosClient';
@@ -34,22 +36,15 @@ function extractErrorMessage(data: any, fallback: string): string {
   return fallback;
 }
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 export const partnerPreferencesService = {
   /**
    * GET partner preferences.
-   * Target endpoint: /api/partner-preferences/get/
+   * Target endpoint: https://matrimony-production-4b00.up.railway.app/api/partner-preferences/get/
    * Returns null gracefully when user has no preferences row yet (404).
    */
   async getPreferences(): Promise<PartnerPreferenceAPI | null> {
     try {
-      let res = await axiosClient.get<any>('/partner-preferences/get/');
-
-      if (res.status === 502 || res.status === 503) {
-        await sleep(1500);
-        res = await axiosClient.get<any>('/partner-preferences/get/');
-      }
+      const res = await axiosClient.get<any>('/partner-preferences/get/');
 
       if (res.status === 200 && res.data) {
         const raw = res.data;
@@ -60,7 +55,7 @@ export const partnerPreferencesService = {
         throw new PartnerPreferenceServiceError('Unauthorized — please log in', 401);
       }
       if (res.status === 404) {
-        // User has not created partner preferences yet in database
+        // User has not created partner preferences yet
         return null;
       }
 
@@ -76,24 +71,17 @@ export const partnerPreferencesService = {
 
   /**
    * POST create partner preferences.
-   * Target endpoint: /api/partner-preferences/create/
-   * Automatically falls back to PUT update if record already exists (400 / 409 / 405).
+   * Target endpoint: https://matrimony-production-4b00.up.railway.app/api/partner-preferences/create/
+   * If record already exists in database (400 / 409 / 405), calls updatePreferences.
    */
   async createPreferences(payload: PartnerPreferenceCreateRequest): Promise<PartnerPreferenceAPI> {
     try {
-      let attempts = 0;
-      let res = await axiosClient.post<PartnerPreferenceAPI>('/partner-preferences/create/', payload);
-
-      while ((res.status === 502 || res.status === 503) && attempts < 2) {
-        attempts++;
-        await sleep(2000);
-        res = await axiosClient.post<PartnerPreferenceAPI>('/partner-preferences/create/', payload);
-      }
+      const res = await axiosClient.post<PartnerPreferenceAPI>('/partner-preferences/create/', payload);
 
       if (res.status === 200 || res.status === 201) return res.data;
       if (res.status === 401) throw new PartnerPreferenceServiceError('Unauthorized — please log in', 401);
 
-      // If POST returns 400 or 409 or 405 (record already exists), try PUT update
+      // If record already exists, automatically update it
       const errorMsg = extractErrorMessage(res.data, '');
       if (res.status === 400 || res.status === 409 || res.status === 405 || errorMsg.toLowerCase().includes('exist')) {
         return this.updatePreferences(payload);
@@ -114,19 +102,12 @@ export const partnerPreferencesService = {
 
   /**
    * PUT update partner preferences.
-   * Target endpoint: /api/partner-preferences/update/
-   * Automatically falls back to POST create if record doesn't exist yet (404).
+   * Target endpoint: https://matrimony-production-4b00.up.railway.app/api/partner-preferences/update/
+   * If record does not exist yet (404), calls createPreferences.
    */
   async updatePreferences(payload: PartnerPreferenceUpdateRequest): Promise<PartnerPreferenceAPI> {
     try {
-      let attempts = 0;
-      let res = await axiosClient.put<PartnerPreferenceAPI>('/partner-preferences/update/', payload);
-
-      while ((res.status === 502 || res.status === 503) && attempts < 2) {
-        attempts++;
-        await sleep(2000);
-        res = await axiosClient.put<PartnerPreferenceAPI>('/partner-preferences/update/', payload);
-      }
+      const res = await axiosClient.put<PartnerPreferenceAPI>('/partner-preferences/update/', payload);
 
       if (res.status === 200 || res.status === 201) return res.data;
       if (res.status === 401) throw new PartnerPreferenceServiceError('Unauthorized — please log in', 401);
@@ -151,16 +132,11 @@ export const partnerPreferencesService = {
 
   /**
    * DELETE partner preferences.
-   * Target endpoint: /api/partner-preferences/delete/
+   * Target endpoint: https://matrimony-production-4b00.up.railway.app/api/partner-preferences/delete/
    */
   async deletePreferences(): Promise<{ success: boolean; message: string }> {
     try {
-      let res = await axiosClient.delete<{ success: boolean; message: string }>('/partner-preferences/delete/');
-
-      if (res.status === 502 || res.status === 503) {
-        await sleep(1500);
-        res = await axiosClient.delete<{ success: boolean; message: string }>('/partner-preferences/delete/');
-      }
+      const res = await axiosClient.delete<{ success: boolean; message: string }>('/partner-preferences/delete/');
 
       if (res.status === 200 || res.status === 204 || res.status === 404) {
         return res.data || { success: true, message: 'Partner preferences deleted' };

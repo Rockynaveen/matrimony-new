@@ -21,6 +21,25 @@ export const profileApi = {
         const raw: any = dbProfile;
         const normalized = raw.data || raw.profile || raw.user_profile || raw.result || raw;
         const userObj = raw.user || {};
+
+        const hasDetailedFields = Boolean(
+          (normalized.highest_education || userObj.highest_education) &&
+          (normalized.occupation || userObj.occupation) &&
+          (normalized.about_me || normalized.religion || userObj.religion || normalized.city || userObj.city || normalized.marital_status || userObj.marital_status)
+        );
+
+        const isBasic = typeof normalized.is_basic_complete === 'boolean'
+          ? normalized.is_basic_complete
+          : (typeof userObj.is_basic_complete === 'boolean'
+              ? userObj.is_basic_complete
+              : Boolean((normalized.first_name || userObj.first_name) && (normalized.gender || userObj.gender || normalized.date_of_birth || userObj.date_of_birth)));
+
+        const isDetailed = typeof normalized.is_detailed_complete === 'boolean'
+          ? normalized.is_detailed_complete
+          : (typeof userObj.is_detailed_complete === 'boolean'
+              ? userObj.is_detailed_complete
+              : hasDetailedFields);
+
         return {
           ...normalized,
           id: String(normalized.id || userObj.id || ''),
@@ -30,22 +49,13 @@ export const profileApi = {
           phone: normalized.phone || userObj.phone || '',
           gender: normalized.gender || userObj.gender || '',
           date_of_birth: normalized.date_of_birth || userObj.date_of_birth || '',
-          is_basic_complete: Boolean(normalized.is_basic_complete || userObj.is_basic_complete || true),
-          is_detailed_complete: Boolean(normalized.is_detailed_complete || userObj.is_detailed_complete || true),
-          profile_completion_percentage: normalized.profile_completion_percentage || 100
+          is_basic_complete: isBasic,
+          is_detailed_complete: isDetailed,
+          profile_completion_percentage: normalized.profile_completion_percentage || (isDetailed ? 100 : (isBasic ? 30 : 15))
         };
       }
     } catch {}
 
-    let response = await axiosClient.get<ProfileApiResponse>('/profile/get/');
-    if (response.status >= 200 && response.status < 300 && response.data) {
-      return response.data;
-    }
-    if (response.status === 401) {
-      const err: any = new Error('Unauthorized');
-      err.status = 401;
-      throw err;
-    }
     const storedName = localStorage.getItem('logged_in_name');
     const storedEmail = localStorage.getItem('logged_in_email');
     const emailName = extractNameFromEmail(storedEmail);

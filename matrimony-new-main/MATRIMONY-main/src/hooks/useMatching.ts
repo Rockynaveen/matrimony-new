@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { matchingApi } from '../api/matchingApi';
 import type {
+  MatchResponseSchema,
+  InterestResponseSchema,
   InterestSendSchema,
   InterestUpdateSchema,
   ShortlistCreateSchema,

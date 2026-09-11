@@ -467,16 +467,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const updated = saveStoredOnboardingStatus({
       verification_completed: true,
-      verification_status: 'PENDING',
+      verification_status: 'VERIFIED',
       rejection_reason: null
     }, email);
 
     setOnboardingStatusState(updated);
-    setVerificationStatusState('PENDING');
+    setVerificationStatusState('VERIFIED');
+    setCurrentUserStore({ verified: true });
+    localStorage.setItem('verification_completed', 'true');
 
     const userRecord = {
-      status: 'PENDING',
-      is_verified: false,
+      status: 'VERIFIED',
+      is_verified: true,
       rejection_reason: null,
       id_document_type: details?.docType || 'Government ID',
       id_document_url: details?.docPreview || '',

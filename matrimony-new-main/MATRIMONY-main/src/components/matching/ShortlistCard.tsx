@@ -69,7 +69,7 @@ export const ShortlistCard: React.FC<ShortlistCardProps> = ({ profile }) => {
               variant="card"
               imgClassName={`h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ${isLocked ? 'filter blur-[3px] opacity-85' : ''}`}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent pointer-events-none" />
             
             {isLocked && (
               <div className="absolute top-3 left-3 bg-amber-500 text-stone-950 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-amber-400/40 backdrop-blur-xs flex items-center gap-1">

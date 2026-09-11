@@ -91,6 +91,22 @@ function formatHeight(val: any): string {
   return `${str} cm`;
 }
 
+const RAILWAY_BASE_ORIGIN = 'https://matrimony-production-4b00.up.railway.app';
+
+function formatMediaUrl(url?: string | null): string {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('/images/') || trimmed.startsWith('images/')) {
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  }
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${RAILWAY_BASE_ORIGIN}${cleanPath}`;
+}
+
 function formatWeight(val: any): string {
   if (!val) return 'Not Specified';
   const str = String(val).trim();
@@ -184,13 +200,14 @@ export const MyProfilePage: React.FC = () => {
     email: currentUser.email || apiData.email || localStorage.getItem('logged_in_email') || 'Not Specified',
     phone: apiData.phone || currentUser.phone || 'Not Specified',
     avatar:
-      apiData.profile_photo ||
-      apiData.photo ||
-      apiData.avatar ||
-      apiData.profile_image ||
-      localDraft?.profile_photo ||
-      currentUser.avatar ||
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
+      formatMediaUrl(
+        apiData.profile_photo ||
+        apiData.photo ||
+        apiData.avatar ||
+        apiData.profile_image ||
+        localDraft?.profile_photo ||
+        currentUser.avatar
+      ) || (currentUser.gender?.toLowerCase() === 'female' ? '/images/profiles/recommended_bride.jpg' : '/images/profiles/recommended_groom.jpg'),
     about_me:
       toText(apiData.about_me || apiData.about || apiData.bio || localDraft?.about_me, '') ||
       'I am a warm, ambitious, and family-oriented individual looking for an understanding life partner to share life’s beautiful journey with trust, mutual respect, and friendship.',
@@ -281,12 +298,6 @@ export const MyProfilePage: React.FC = () => {
           <div className="absolute -top-12 -right-12 w-56 h-56 bg-white/15 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute bottom-0 left-1/4 w-72 h-36 bg-amber-300/25 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute top-1/2 right-1/3 w-32 h-32 bg-rose-400/20 rounded-full blur-xl pointer-events-none" />
-          
-          <div className="absolute top-4 right-4 sm:right-8 flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-white/95 bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/25 shadow-xs">
-              <Sparkles className="h-3.5 w-3.5 text-amber-300" /> Kalyan Matrimony Profile
-            </span>
-          </div>
         </div>
 
         {/* 2. Profile Header Strip (Overlapping Banner) */}
@@ -301,8 +312,12 @@ export const MyProfilePage: React.FC = () => {
                   alt={profile.name}
                   className="h-32 w-32 sm:h-36 sm:w-36 rounded-2xl object-cover border-4 border-white shadow-lg ring-2 ring-rose-200/80"
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src =
-                      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400';
+                    const fallback = currentUser.gender?.toLowerCase() === 'female'
+                      ? '/images/profiles/recommended_bride.jpg'
+                      : '/images/profiles/recommended_groom.jpg';
+                    if ((e.currentTarget as HTMLImageElement).src !== window.location.origin + fallback) {
+                      (e.currentTarget as HTMLImageElement).src = fallback;
+                    }
                   }}
                 />
                 <button

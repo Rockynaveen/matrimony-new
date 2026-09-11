@@ -120,7 +120,7 @@
   text-rendering: optimizeLegibility;
 }
 
-body, button, input, select, textarea {
+body {
   font-family: Roboto, sans-serif !important;
   background-color: #FAF6F0;
   background-image: 
@@ -133,6 +133,10 @@ body, button, input, select, textarea {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+button, input, select, textarea {
+  font-family: Roboto, sans-serif !important;
 }
 
 /* ================= UNIFIED HEADING FONT SIZES ACROSS WEBSITE ================= */

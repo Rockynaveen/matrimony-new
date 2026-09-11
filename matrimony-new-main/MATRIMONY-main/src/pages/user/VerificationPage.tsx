@@ -201,28 +201,6 @@ export const VerificationPage: React.FC = () => {
     showToast(`✓ Selected ${idType}: ${file.name}`);
   };
 
-  const handlePhotoUploadFallback = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      showToast('Please upload a valid image file (JPG/PNG)');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      showToast('File size must be under 10MB');
-      return;
-    }
-
-    setPhotoFile(file);
-    const reader = new FileReader();
-    reader.onload = () => setPhotoPreview(reader.result as string);
-    reader.readAsDataURL(file);
-    stopCamera();
-    showToast('✓ Live photo uploaded successfully!');
-  };
-
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -673,7 +651,7 @@ export const VerificationPage: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4 max-w-md mx-auto text-center">
+                  <div className="space-y-4 max-w-md mx-auto text-center py-2">
                     {cameraError && (
                       <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2 text-left font-medium">
                         <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
@@ -681,27 +659,24 @@ export const VerificationPage: React.FC = () => {
                       </div>
                     )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col items-center justify-center p-6 sm:p-8 border-2 border-dashed border-slate-200 bg-slate-50/60 rounded-2xl space-y-4">
+                      <div className="h-16 w-16 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-[#C44569] shadow-xs">
+                        <Camera className="h-8 w-8" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-bold text-black">Take Live Camera Selfie</h4>
+                        <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                          Click below to activate your live camera and capture a real-time selfie.
+                        </p>
+                      </div>
                       <button
                         type="button"
                         onClick={startCamera}
-                        className="bg-gradient-to-r from-[#C83259] to-[#E11D48] hover:from-[#A82547] hover:to-[#BE123C] text-white font-bold py-4 rounded-xl text-xs flex flex-col items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer transition-all"
+                        className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-[#C83259] to-[#E11D48] hover:from-[#A82547] hover:to-[#BE123C] text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg cursor-pointer transition-all flex items-center justify-center gap-2"
                       >
-                        <Camera className="h-6 w-6" />
+                        <Camera className="h-4 w-4" />
                         <span>Open Live Camera</span>
                       </button>
-
-                      <label className="border-2 border-dashed border-slate-300 hover:border-[#C44569] bg-slate-50/50 hover:bg-slate-50 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors text-center space-y-1">
-                        <Upload className="h-5 w-5 text-[#C44569]" />
-                        <span className="text-xs font-bold text-black">Upload Selfie</span>
-                        <span className="text-[10px] text-slate-500 font-medium">If camera unavailable</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handlePhotoUploadFallback}
-                          className="hidden"
-                        />
-                      </label>
                     </div>
                   </div>
                 )}
@@ -719,21 +694,13 @@ export const VerificationPage: React.FC = () => {
 
               <div className="flex items-center gap-3 w-full sm:w-auto shrink-0 justify-end">
                 <button
-                  type="button"
-                  onClick={handleSkipVerification}
-                  className="px-6 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-bold text-black hover:bg-slate-100 transition-all cursor-pointer shadow-xs"
-                >
-                  Skip for now
-                </button>
-
-                <button
                   type="submit"
                   disabled={!idFile || !photoFile || isSubmitting}
-                  className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-[#C83259] to-[#E11D48] hover:from-[#A82547] hover:to-[#BE123C] disabled:opacity-50 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full sm:w-auto px-8 py-2.5 rounded-xl bg-gradient-to-r from-[#C83259] to-[#E11D48] hover:from-[#A82547] hover:to-[#BE123C] disabled:opacity-50 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
-                      <RefreshCw className="h-4 w-4 animate-spin" /> Submitting...
+                      <RefreshCw className="h-4 w-4 animate-spin" /> Verifying...
                     </>
                   ) : (
                     <>

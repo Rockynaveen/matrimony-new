@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useApp, getNextPendingRoute } from '../../context/AppContext';
+import { useApp } from '../../context/AppContext';
 
 export type StepRequirement =
   | 'authenticated'
@@ -22,14 +22,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
 
   if (!isAuthenticated) {
-    if (
-      location.pathname === '/profile/complete' ||
-      location.pathname === '/preferences' ||
-      location.pathname === '/verification' ||
-      location.pathname === '/matches'
-    ) {
-      return <>{children}</>;
-    }
     const targetPath = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/login?redirect=${targetPath}`} replace />;
   }
@@ -55,37 +47,40 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // 4. If accessing Verification page:
-  if (currentPath === '/verification' || step === 'verification') {
+  if (
+    currentPath === '/verification' ||
+    currentPath === '/profile/identity-verification' ||
+    step === 'verification'
+  ) {
+    if (!onboardingStatus.complete_profile_completed) {
+      return <Navigate to="/profile/complete" replace />;
+    }
+    if (!onboardingStatus.partner_preferences_completed) {
+      return <Navigate to="/preferences" replace />;
+    }
     return <>{children}</>;
   }
 
-  // 5. For fully onboarded core app routes (Matches, Dashboard, Search, etc.):
-  const isSkippedForSession =
-    Boolean(onboardingStatus.verification_skipped_for_session) ||
-    sessionStorage.getItem('verification_skipped_session') === 'true';
-
-  const hasPassedVerification =
-    onboardingStatus.verification_completed ||
-    onboardingStatus.verification_status === 'PENDING' ||
+  // 5. Verification check: ONLY after verification is complete then only go to matching!
+  const isVerificationCompleted =
+    Boolean(onboardingStatus.verification_completed) ||
     onboardingStatus.verification_status === 'VERIFIED' ||
-    isSkippedForSession;
+    localStorage.getItem('verification_completed') === 'true';
 
-  const isFullyOnboarded =
-    onboardingStatus.registration_completed &&
-    onboardingStatus.complete_profile_completed &&
-    onboardingStatus.partner_preferences_completed &&
-    hasPassedVerification;
+  if (!onboardingStatus.complete_profile_completed) {
+    return <Navigate to="/profile/complete" replace />;
+  }
 
-  if (!isFullyOnboarded) {
-    if (currentPath === '/matches') {
-      return <>{children}</>;
-    }
-    const nextPending = getNextPendingRoute(onboardingStatus);
-    if (nextPending !== currentPath) {
-      return <Navigate to={nextPending} replace />;
-    }
+  if (!onboardingStatus.partner_preferences_completed) {
+    return <Navigate to="/preferences" replace />;
+  }
+
+  // If verification is not completed, redirect strictly to verification
+  if (!isVerificationCompleted) {
+    return <Navigate to="/verification" replace />;
   }
 
   return <>{children}</>;
 };
+
 

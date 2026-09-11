@@ -95,6 +95,8 @@ class AxiosClient {
 
         // 2. Discover working refresh endpoint
         const refreshEndpoints = [
+          '/refresh',
+          '/refresh/',
           '/token/refresh',
           '/token/refresh/',
           '/token/pair/refresh',
@@ -102,9 +104,7 @@ class AxiosClient {
           '/auth/token/refresh',
           '/auth/token/refresh/',
           '/auth/token/pair/refresh',
-          '/auth/token/pair/refresh/',
-          '/refresh',
-          '/refresh/'
+          '/auth/token/pair/refresh/'
         ];
 
         const payloadKeys = ['refresh', 'refresh_token', 'token'];
@@ -286,11 +286,8 @@ class AxiosClient {
   }
 }
 
-// In dev → '/api' (proxied by Vite)
-// In production (Vercel) → direct Railway backend URL (Railway handles CORS natively)
-const RAILWAY_API_URL = 'https://matrimony-production-4b00.up.railway.app/api';
-const API_BASE_URL = import.meta.env.DEV
-  ? '/api'
-  : (import.meta.env.VITE_API_BASE_URL || RAILWAY_API_URL);
+// Direct Railway backend URL (Railway handles CORS natively for localhost and production)
+export const RAILWAY_API_URL = 'https://matrimony-production-4b00.up.railway.app/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || RAILWAY_API_URL;
 
 export const axiosClient = new AxiosClient(API_BASE_URL);

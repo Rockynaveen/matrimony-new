@@ -41,7 +41,7 @@ import { ShortlistPage } from '../pages/user/Shortlist';
 import { IgnoredProfilesPage } from '../pages/user/IgnoredProfiles';
 import { BlockedProfilesPage } from '../pages/user/BlockedProfiles';
 import { PhotosPage } from '../pages/user/PhotosPage';
-import { VerificationPage } from '../pages/user/VerificationPage';
+import { IdentityVerificationPage } from '../pages/user/IdentityVerificationPage';
 import { CheckoutPage } from '../pages/user/CheckoutPage';
 import { PaymentHistoryPage } from '../pages/user/PaymentHistoryPage';
 import { NotificationsPage } from '../pages/user/NotificationsPage';
@@ -145,7 +145,8 @@ export const AppRouter: React.FC = () => (
         <Route path="/membership" element={<ProtectedRoute><MembershipPage /></ProtectedRoute>} />
         <Route path="/profile/:id" element={<ProtectedRoute><ViewProfile /></ProtectedRoute>} />
         <Route path="/photos" element={<ProtectedRoute><PhotosPage /></ProtectedRoute>} />
-        <Route path="/verification" element={<ProtectedRoute><VerificationPage /></ProtectedRoute>} />
+        <Route path="/verification" element={<ProtectedRoute><IdentityVerificationPage /></ProtectedRoute>} />
+        <Route path="/profile/identity-verification" element={<ProtectedRoute><IdentityVerificationPage /></ProtectedRoute>} />
         <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
         <Route path="/payment-history" element={<ProtectedRoute><PaymentHistoryPage /></ProtectedRoute>} />
 

@@ -10,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Separator } from '../components/ui/Separator';
-import { Eye, EyeOff, Loader2, Check, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Check, CheckCircle2, Sparkles, ShieldCheck, Heart, User, Users, Mail, Lock, Phone, Calendar, Send } from 'lucide-react';
 import { GoogleAuthModal } from '../components/auth/GoogleAuthModal';
 import { motion } from 'framer-motion';
 
@@ -40,17 +40,22 @@ export const Register: React.FC = () => {
     return () => clearTimeout(timer);
   }, [otpCooldown]);
 
-  const handleSendOtp = async (phoneValue: string) => {
-    if (!phoneValue || phoneValue.length < 10) {
-      showToast('Please enter a valid 10-digit mobile number.');
-      return;
-    }
+  const handleSendOtp = async (inputPhone?: string) => {
+    const rawPhone = inputPhone 
+      || (document.getElementById('register-phone') as HTMLInputElement)?.value 
+      || getValues('phone') 
+      || currentPhone 
+      || '';
+    const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+    console.log('[Register] handleSendOtp calling Railway API with phone:', cleanPhone);
+
     try {
       setIsSendingOtp(true);
-      await authApi.sendMobileOtp(phoneValue);
+      const res = await authApi.sendMobileOtp(cleanPhone);
       setOtpSent(true);
       setOtpCooldown(30);
-      showToast('OTP sent to your mobile number.');
+      setOtpCode(['', '', '', '', '', '']);
+      showToast('OTP sent successfully to your mobile number.');
       setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
     } catch (err: any) {
       showToast(err.message || 'Failed to send OTP. Please try again.');
@@ -59,17 +64,22 @@ export const Register: React.FC = () => {
     }
   };
 
-  const handleVerifyOtp = async (phoneValue: string) => {
+  const handleVerifyOtp = async (inputPhone?: string) => {
+    const rawPhone = inputPhone 
+      || (document.getElementById('register-phone') as HTMLInputElement)?.value 
+      || getValues('phone') 
+      || currentPhone 
+      || '';
+    const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
     const code = otpCode.join('');
-    if (code.length < 6) {
-      showToast('Please enter the complete 6-digit OTP.');
-      return;
-    }
+    console.log('[Register] handleVerifyOtp calling Railway API with phone:', cleanPhone, 'otp:', code);
+
     try {
       setIsVerifyingOtp(true);
-      await authApi.verifyMobileOtp(phoneValue, code);
+      const res = await authApi.verifyMobileOtp(cleanPhone, code);
       setOtpVerified(true);
-      showToast('Mobile number verified successfully.');
+      lastVerifiedPhoneRef.current = cleanPhone;
+      showToast(res.message || 'Mobile number verified successfully.');
     } catch (err: any) {
       showToast(err.message || 'Invalid OTP. Please try again.');
     } finally {
@@ -134,13 +144,24 @@ export const Register: React.FC = () => {
   const acceptTerms = watch('accept_terms');
   const currentPhone = watch('phone');
 
+  // Reset OTP verification if user edits their phone number
+  const lastVerifiedPhoneRef = useRef<string>('');
+  useEffect(() => {
+    const clean = (currentPhone || '').replace(/\D/g, '').slice(-10);
+    if (lastVerifiedPhoneRef.current && clean !== lastVerifiedPhoneRef.current) {
+      setOtpVerified(false);
+      setOtpSent(false);
+      setOtpCode(['', '', '', '', '', '']);
+    }
+  }, [currentPhone]);
+
   const onSubmit = async (data: RegisterFormData) => {
     if (!isAtLeast18YearsOld(data.date_of_birth)) {
       showToast('You must be 18 years or older to register.');
       return;
     }
-    if (otpSent && !otpVerified) {
-      showToast('Please verify the OTP sent to your mobile number.');
+    if (!otpVerified) {
+      showToast('Please verify your mobile number with OTP before completing registration.');
       return;
     }
     try {
@@ -235,15 +256,15 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-10 bg-muted/20">
+    <div className="w-full min-h-[calc(100vh-4rem)] flex items-center justify-center p-3 sm:p-4 bg-muted/20">
       <motion.div
         initial={{ opacity: 0, scale: 0.99 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
+        className="w-full max-w-[820px] grid grid-cols-1 lg:grid-cols-12 rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
       >
         {/* Left Side: Visual Image */}
-        <div className="hidden lg:block lg:col-span-5 relative overflow-hidden bg-stone-900 min-h-[650px]">
+        <div className="hidden lg:block lg:col-span-5 relative overflow-hidden bg-stone-900 min-h-[460px]">
           <img
             src="/images/auth_couple_bg.jpg"
             alt="Vivah Royal Matrimony"
@@ -252,38 +273,41 @@ export const Register: React.FC = () => {
         </div>
 
         {/* Right Side: shadcn Form Card */}
-        <div className="lg:col-span-7 flex flex-col justify-between p-6 sm:p-8 md:p-10">
+        <div className="lg:col-span-7 flex flex-col justify-between p-3.5 sm:p-5">
           <Card className="border-0 shadow-none rounded-none bg-transparent">
-            <CardHeader className="space-y-1.5 pb-4">
-              <CardTitle className="text-2xl font-bold tracking-tight">
+            <CardHeader className="space-y-1 pb-2">
+              <CardTitle className="text-xl font-bold tracking-tight">
                 Create an account
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs">
                 Fill out the required information below to register your matrimonial profile
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-5">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <CardContent className="space-y-3">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-2.5">
 
                 {/* Profile For */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="register-for">
+                <div className="space-y-1">
+                  <Label htmlFor="register-for" className="text-xs">
                     Creating profile for
                   </Label>
-                  <select
-                    id="register-for"
-                    {...register('register_for')}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-xs ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
-                  >
-                    <option value="SELF">Myself</option>
-                    <option value="SON">Son</option>
-                    <option value="DAUGHTER">Daughter</option>
-                    <option value="BROTHER">Brother</option>
-                    <option value="SISTER">Sister</option>
-                    <option value="FRIEND">Friend</option>
-                    <option value="RELATIVE">Relative</option>
-                  </select>
+                  <div className="relative">
+                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    <select
+                      id="register-for"
+                      {...register('register_for')}
+                      className="flex h-9 w-full rounded-md border border-input bg-background pl-10 pr-3 py-1.5 text-xs sm:text-sm text-foreground shadow-xs ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                    >
+                      <option value="SELF">Myself</option>
+                      <option value="SON">Son</option>
+                      <option value="DAUGHTER">Daughter</option>
+                      <option value="BROTHER">Brother</option>
+                      <option value="SISTER">Sister</option>
+                      <option value="FRIEND">Friend</option>
+                      <option value="RELATIVE">Relative</option>
+                    </select>
+                  </div>
                   {errors.register_for && (
                     <p className="text-xs font-medium text-destructive">
                       {errors.register_for.message}
@@ -292,18 +316,21 @@ export const Register: React.FC = () => {
                 </div>
 
                 {/* Name Row (First Name, Last Name) - NO PLACEHOLDERS */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="first-name">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="first-name" className="text-xs">
                       First name
                     </Label>
-                    <Input
-                      id="first-name"
-                      type="text"
-                      autoComplete="given-name"
-                      {...register('first_name')}
-                      className={errors.first_name ? 'border-destructive focus-visible:ring-destructive/30' : ''}
-                    />
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="first-name"
+                        type="text"
+                        autoComplete="given-name"
+                        {...register('first_name')}
+                        className={`pl-10 h-9 text-sm ${errors.first_name ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
+                      />
+                    </div>
                     {errors.first_name && (
                       <p className="text-xs font-medium text-destructive">
                         {errors.first_name.message}
@@ -311,17 +338,20 @@ export const Register: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="last-name">
+                  <div className="space-y-1">
+                    <Label htmlFor="last-name" className="text-xs">
                       Last name
                     </Label>
-                    <Input
-                      id="last-name"
-                      type="text"
-                      autoComplete="family-name"
-                      {...register('last_name')}
-                      className={errors.last_name ? 'border-destructive focus-visible:ring-destructive/30' : ''}
-                    />
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="last-name"
+                        type="text"
+                        autoComplete="family-name"
+                        {...register('last_name')}
+                        className={`pl-10 h-9 text-sm ${errors.last_name ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
+                      />
+                    </div>
                     {errors.last_name && (
                       <p className="text-xs font-medium text-destructive">
                         {errors.last_name.message}
@@ -331,19 +361,22 @@ export const Register: React.FC = () => {
                 </div>
 
                 {/* Gender and Date of Birth Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="gender">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="gender" className="text-xs">
                       Gender
                     </Label>
-                    <select
-                      id="gender"
-                      {...register('gender')}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-xs ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
-                    >
-                      <option value="Male">Male (Groom)</option>
-                      <option value="Female">Female (Bride)</option>
-                    </select>
+                    <div className="relative">
+                      <Heart className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <select
+                        id="gender"
+                        {...register('gender')}
+                        className="flex h-9 w-full rounded-md border border-input bg-background pl-10 pr-3 py-1.5 text-xs sm:text-sm text-foreground shadow-xs ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                      >
+                        <option value="Male">Male (Groom)</option>
+                        <option value="Female">Female (Bride)</option>
+                      </select>
+                    </div>
                     {errors.gender && (
                       <p className="text-xs font-medium text-destructive">
                         {errors.gender.message}
@@ -351,18 +384,21 @@ export const Register: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="dob">
+                  <div className="space-y-1">
+                    <Label htmlFor="dob" className="text-xs">
                       Date of birth
                     </Label>
-                    <Input
-                      id="dob"
-                      type="date"
-                      max={maxAllowedDob}
-                      {...register('date_of_birth')}
-                      className={errors.date_of_birth ? 'border-destructive focus-visible:ring-destructive/30' : ''}
-                    />
-                    <p className="text-[11px] text-muted-foreground">
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="dob"
+                        type="date"
+                        max={maxAllowedDob}
+                        {...register('date_of_birth')}
+                        className={`pl-10 h-9 text-sm ${errors.date_of_birth ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
                       Must be 18 years or older
                     </p>
                     {errors.date_of_birth && (
@@ -374,18 +410,21 @@ export const Register: React.FC = () => {
                 </div>
 
                 {/* Email and Mobile Number Row - NO PLACEHOLDERS */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="register-email">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="register-email" className="text-xs">
                       Email address
                     </Label>
-                    <Input
-                      id="register-email"
-                      type="email"
-                      autoComplete="email"
-                      {...register('email')}
-                      className={errors.email ? 'border-destructive focus-visible:ring-destructive/30' : ''}
-                    />
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="register-email"
+                        type="email"
+                        autoComplete="email"
+                        {...register('email')}
+                        className={`pl-10 h-9 text-sm ${errors.email ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
+                      />
+                    </div>
                     {errors.email && (
                       <p className="text-xs font-medium text-destructive">
                         {errors.email.message}
@@ -393,25 +432,26 @@ export const Register: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="register-phone">
+                      <Label htmlFor="register-phone" className="text-xs">
                         Mobile number
                       </Label>
                       {otpVerified && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Verified
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                          <CheckCircle2 className="h-3 w-3" /> Verified
                         </span>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="relative w-full">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                       <Input
                         id="register-phone"
                         type="tel"
                         autoComplete="tel"
                         disabled={otpVerified}
                         {...register('phone')}
-                        className={`flex-1 ${
+                        className={`pl-10 pr-10 h-9 text-sm w-full ${
                           otpVerified
                             ? 'border-emerald-500 bg-emerald-50/50 text-emerald-950 font-medium'
                             : errors.phone
@@ -419,25 +459,31 @@ export const Register: React.FC = () => {
                             : ''
                         }`}
                       />
-                      {!otpVerified && (
-                        <Button
+                      {otpVerified ? (
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        </div>
+                      ) : (
+                        <button
                           type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleSendOtp(currentPhone)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleSendOtp();
+                          }}
                           disabled={isSendingOtp || otpCooldown > 0}
-                          className="shrink-0 h-10 px-3 text-xs font-medium border-input"
+                          title={otpCooldown > 0 ? `Resend in ${otpCooldown}s` : otpSent ? 'Resend OTP' : 'Send OTP'}
+                          aria-label={otpCooldown > 0 ? `Resend in ${otpCooldown}s` : otpSent ? 'Resend OTP' : 'Send OTP'}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-md flex items-center justify-center text-primary hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isSendingOtp ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
                           ) : otpCooldown > 0 ? (
-                            `${otpCooldown}s`
-                          ) : otpSent ? (
-                            'Resend'
+                            <span className="text-[10px] font-bold text-muted-foreground">{otpCooldown}s</span>
                           ) : (
-                            'Send OTP'
+                            <Send className="h-3.5 w-3.5 text-primary" />
                           )}
-                        </Button>
+                        </button>
                       )}
                     </div>
                     {errors.phone && (
@@ -450,7 +496,7 @@ export const Register: React.FC = () => {
 
                 {/* OTP Verification Box if OTP was sent and not verified */}
                 {otpSent && !otpVerified && (
-                  <div className="rounded-lg border border-border bg-muted/40 p-3.5 space-y-2.5">
+                  <div className="rounded-lg border border-border bg-muted/40 p-2.5 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-foreground">
                         Enter 6-digit OTP code sent to mobile
@@ -471,16 +517,20 @@ export const Register: React.FC = () => {
                             onChange={(e) => handleOtpChange(idx, e.target.value)}
                             onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                             onPaste={idx === 0 ? handleOtpPaste : undefined}
-                            className="h-10 w-9 text-center text-base font-semibold border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                            className="h-9 w-8 text-center text-sm font-semibold border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
                           />
                         ))}
                       </div>
                       <Button
                         type="button"
                         size="sm"
-                        onClick={() => handleVerifyOtp(currentPhone)}
-                        disabled={isVerifyingOtp || otpCode.join('').length < 6}
-                        className="h-10 px-4 text-xs font-semibold"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleVerifyOtp();
+                        }}
+                        disabled={isVerifyingOtp}
+                        className="h-9 px-3 text-xs font-semibold"
                       >
                         {isVerifyingOtp ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
@@ -494,29 +544,30 @@ export const Register: React.FC = () => {
                 )}
 
                 {/* Password & Confirm Password Row - NO PLACEHOLDERS */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="register-password">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="register-password" className="text-xs">
                       Password
                     </Label>
                     <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                       <Input
                         id="register-password"
                         type={showPassword ? 'text' : 'password'}
                         autoComplete="new-password"
                         {...register('password')}
-                        className={`pr-10 ${errors.password ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
+                        className={`pl-10 pr-10 h-9 text-sm ${errors.password ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-[10px] text-muted-foreground">
                       Minimum 6 characters
                     </p>
                     {errors.password && (
@@ -526,22 +577,23 @@ export const Register: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="register-confirm-password">
+                  <div className="space-y-1">
+                    <Label htmlFor="register-confirm-password" className="text-xs">
                       Confirm password
                     </Label>
                     <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                       <Input
                         id="register-confirm-password"
                         type={showConfirmPassword ? 'text' : 'password'}
                         autoComplete="new-password"
                         {...register('confirm_password')}
-                        className={`pr-10 ${errors.confirm_password ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
+                        className={`pl-10 pr-10 h-9 text-sm ${errors.confirm_password ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                       >
                         {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -556,8 +608,8 @@ export const Register: React.FC = () => {
                 </div>
 
                 {/* Accept Terms Checkbox */}
-                <div className="space-y-1 pt-1">
-                  <div className="flex items-start space-x-2.5">
+                <div className="space-y-0.5 pt-0.5">
+                  <div className="flex items-start space-x-2">
                     <label className="relative inline-flex items-center cursor-pointer select-none mt-0.5">
                       <input
                         type="checkbox"
@@ -566,11 +618,11 @@ export const Register: React.FC = () => {
                         onChange={(e) => setValue('accept_terms', e.target.checked)}
                         className="peer sr-only"
                       />
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border border-input bg-background shadow-xs transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground">
-                        <Check className={`h-3 w-3 stroke-[3] text-white transition-opacity ${acceptTerms ? 'opacity-100' : 'opacity-0'}`} />
+                      <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border border-input bg-background shadow-xs transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground">
+                        <Check className={`h-2.5 w-2.5 stroke-[3] text-white transition-opacity ${acceptTerms ? 'opacity-100' : 'opacity-0'}`} />
                       </span>
                     </label>
-                    <Label htmlFor="accept_terms" className="text-xs font-normal text-muted-foreground leading-relaxed cursor-pointer">
+                    <Label htmlFor="accept_terms" className="text-xs font-normal text-muted-foreground leading-snug cursor-pointer">
                       I agree to the{' '}
                       <span className="font-semibold text-foreground underline underline-offset-2">
                         Terms of Service
@@ -593,7 +645,7 @@ export const Register: React.FC = () => {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full h-11 text-sm font-semibold shadow-sm"
+                  className="w-full h-9 text-sm font-semibold shadow-xs"
                 >
                   {isSubmitting ? (
                     <>
@@ -606,23 +658,22 @@ export const Register: React.FC = () => {
               </form>
 
               {/* Separator Divider */}
-              <div className="relative my-3">
+              <div className="relative my-2">
                 <div className="absolute inset-0 flex items-center">
                   <Separator />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground font-medium tracking-wider">
+                  <span className="bg-card px-2 text-muted-foreground font-medium tracking-wider text-[11px]">
                     Or continue with
                   </span>
                 </div>
               </div>
 
               {/* Google Register Button */}
-              <Button
+              <button
                 type="button"
-                variant="outline"
                 onClick={() => setIsGoogleModalOpen(true)}
-                className="w-full h-10 font-medium text-foreground bg-background hover:bg-muted/50 border-input shadow-xs flex items-center justify-center gap-2.5"
+                className="w-full h-9 text-sm font-medium text-foreground hover:text-foreground bg-background hover:bg-muted border border-input rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
                   <path
@@ -642,11 +693,11 @@ export const Register: React.FC = () => {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                   />
                 </svg>
-                <span>Google</span>
-              </Button>
+                <span className="text-foreground font-medium">Continue with Google</span>
+              </button>
             </CardContent>
 
-            <CardFooter className="pt-2 pb-6 flex justify-center">
+            <CardFooter className="pt-1 pb-1 flex justify-center">
               <p className="text-xs text-muted-foreground text-center">
                 Already have a matrimonial account?{' '}
                 <Link

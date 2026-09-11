@@ -7,26 +7,39 @@ import { axiosClient } from './axiosClient';
 import type { RegisterRequest, LoginRequest, AuthResponse } from '../types/apiTypes';
 import type { ForgotPasswordResetRequest } from '../types/auth.types';
 
+const BASE_AUTH_URL = 'https://matrimony-production-4b00.up.railway.app/api';
+
 export const authApi = {
-  // POST /api/register
+  // 1. POST https://matrimony-production-4b00.up.railway.app/api/register
   register: async (payload: RegisterRequest): Promise<AuthResponse> => {
+    const cleanPhone = (payload.phone || '').replace(/\D/g, '').slice(-10);
     const apiPayload = {
-      register_for: payload.register_for,
+      register_for: payload.register_for || 'SELF',
       first_name: payload.first_name,
       last_name: payload.last_name || null,
       gender: payload.gender,
       date_of_birth: payload.date_of_birth,
       email: payload.email || null,
-      phone: payload.phone,
+      phone: cleanPhone,
       password: payload.password,
       confirm_password: payload.confirm_password,
-      accept_terms: payload.accept_terms,
+      accept_terms: Boolean(payload.accept_terms),
     };
 
-    const response = await axiosClient.post<any>('/register', apiPayload);
+    const targetUrl = `${BASE_AUTH_URL}/register`;
+    console.log('[authApi] Calling register directly:', targetUrl, apiPayload);
 
-    if (response.status >= 200 && response.status < 300) {
-      const resData = response.data;
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(apiPayload)
+    });
+
+    const resData = await response.json().catch(() => ({}));
+    if (response.ok && resData?.success !== false) {
       const accessToken = resData?.data?.access_token || resData?.access_token;
       const refreshToken = resData?.data?.refresh_token || resData?.refresh_token;
 
@@ -44,7 +57,7 @@ export const authApi = {
       if (refreshToken) {
         localStorage.setItem('refresh_token', refreshToken);
       }
-      const rawUser = resData?.data || resData?.user;
+      const rawUser = resData?.data?.user || resData?.data || resData?.user;
       const explicitUid = rawUser?.id || rawUser?.user_id || resData?.user_id;
       if (explicitUid) {
         localStorage.setItem('user_id', String(explicitUid));
@@ -56,23 +69,38 @@ export const authApi = {
       };
     }
 
-    const errMsg = (response.data as any)?.message
-      || (response.data as any)?.detail
-      || 'Registration failed. Please try again.';
-    throw new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
+    let errMsg = 'Registration failed. Please try again.';
+    if (typeof resData?.message === 'string') {
+      errMsg = resData.message;
+    } else if (typeof resData?.detail === 'string') {
+      errMsg = resData.detail;
+    } else if (Array.isArray(resData?.detail) && resData.detail.length > 0) {
+      errMsg = resData.detail[0]?.msg || resData.detail[0]?.message || 'Invalid registration details';
+    }
+    throw new Error(errMsg);
   },
 
-  // POST /api/login
+  // 2. POST https://matrimony-production-4b00.up.railway.app/api/login
   login: async (payload: LoginRequest): Promise<AuthResponse> => {
     const apiPayload = {
       phone_or_email: payload.email,
       password: payload.password,
     };
 
-    const response = await axiosClient.post<any>('/login', apiPayload);
+    const targetUrl = `${BASE_AUTH_URL}/login`;
+    console.log('[authApi] Calling login directly:', targetUrl, apiPayload);
 
-    if (response.status >= 200 && response.status < 300) {
-      const resData = response.data;
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(apiPayload)
+    });
+
+    const resData = await response.json().catch(() => ({}));
+    if (response.ok && resData?.success !== false) {
       const accessToken = resData?.data?.access_token || resData?.access_token;
       const refreshToken = resData?.data?.refresh_token || resData?.refresh_token;
 
@@ -90,7 +118,7 @@ export const authApi = {
       if (refreshToken) {
         localStorage.setItem('refresh_token', refreshToken);
       }
-      const rawUser = resData?.data || resData?.user;
+      const rawUser = resData?.data?.user || resData?.data || resData?.user;
       const explicitUid = rawUser?.id || rawUser?.user_id || resData?.user_id;
       if (explicitUid) {
         localStorage.setItem('user_id', String(explicitUid));
@@ -102,40 +130,125 @@ export const authApi = {
       };
     }
 
-    const errMsg = (response.data as any)?.message
-      || (response.data as any)?.detail
-      || 'Login failed. Please check your credentials.';
-    throw new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
+    let errMsg = 'Login failed. Please check your credentials.';
+    if (typeof resData?.message === 'string') {
+      errMsg = resData.message;
+    } else if (typeof resData?.detail === 'string') {
+      errMsg = resData.detail;
+    } else if (Array.isArray(resData?.detail) && resData.detail.length > 0) {
+      errMsg = resData.detail[0]?.msg || resData.detail[0]?.message || 'Invalid credentials';
+    }
+    throw new Error(errMsg);
   },
 
-  // POST /api/send-mobile-otp
+  // 3. POST https://matrimony-production-4b00.up.railway.app/api/send-mobile-otp
   sendMobileOtp: async (phone: string): Promise<{ success: boolean; message: string }> => {
-    const response = await axiosClient.post<{ success: boolean; message: string }>(
-      '/send-mobile-otp',
-      { phone }
-    );
+    const cleanPhone = (phone || '').replace(/\D/g, '').slice(-10);
+    const targetUrl = `${BASE_AUTH_URL}/send-mobile-otp`;
+    console.log('[authApi] Calling send-mobile-otp directly:', targetUrl, 'phone:', cleanPhone);
 
-    if (response.status >= 200 && response.status < 300) {
-      return response.data;
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ phone: cleanPhone })
+    });
+
+    const resData = await response.json().catch(() => ({}));
+    if (response.ok && resData?.success !== false) {
+      return resData;
     }
 
-    const errMsg = (response.data as any)?.message || 'Failed to send OTP';
-    throw new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
+    let errMsg = 'Failed to send OTP';
+    if (typeof resData?.message === 'string') {
+      errMsg = resData.message;
+    } else if (typeof resData?.detail === 'string') {
+      errMsg = resData.detail;
+    } else if (Array.isArray(resData?.detail) && resData.detail.length > 0) {
+      errMsg = resData.detail[0]?.msg || resData.detail[0]?.message || 'Invalid phone number';
+    }
+    throw new Error(errMsg);
   },
 
-  // POST /api/verify-mobile-otp
-  verifyMobileOtp: async (phone: string, otp: string): Promise<{ success: boolean; message: string }> => {
-    const response = await axiosClient.post<{ success: boolean; message: string }>(
-      '/verify-mobile-otp',
-      { phone, otp }
-    );
+  // 4. POST https://matrimony-production-4b00.up.railway.app/api/verify-mobile-otp
+  verifyMobileOtp: async (phone: string, otp: string): Promise<{ success: boolean; message: string; access_token?: string; refresh_token?: string; user?: any }> => {
+    const cleanPhone = (phone || '').replace(/\D/g, '').slice(-10);
+    const cleanOtp = (otp || '').trim();
+    const targetUrl = `${BASE_AUTH_URL}/verify-mobile-otp`;
+    console.log('[authApi] Calling verify-mobile-otp directly:', targetUrl, 'phone:', cleanPhone, 'otp:', cleanOtp);
 
-    if (response.status >= 200 && response.status < 300) {
-      return response.data;
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ phone: cleanPhone, otp: cleanOtp })
+    });
+
+    const resData = await response.json().catch(() => ({}));
+    if (response.ok && resData?.success !== false) {
+      const accessToken = resData?.data?.access_token || resData?.access_token;
+      const refreshToken = resData?.data?.refresh_token || resData?.refresh_token;
+      if (accessToken) localStorage.setItem('access_token', accessToken);
+      if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
+      return resData;
     }
 
-    const errMsg = (response.data as any)?.message || 'OTP verification failed';
-    throw new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
+    let errMsg = 'OTP verification failed';
+    if (typeof resData?.message === 'string') {
+      errMsg = resData.message;
+    } else if (typeof resData?.detail === 'string') {
+      errMsg = resData.detail;
+    } else if (Array.isArray(resData?.detail) && resData.detail.length > 0) {
+      errMsg = resData.detail[0]?.msg || resData.detail[0]?.message || 'Invalid OTP';
+    }
+    throw new Error(errMsg);
+  },
+
+  // 5. POST https://matrimony-production-4b00.up.railway.app/api/refresh
+  refresh: async (refreshTokenValue?: string): Promise<{ access_token: string; refresh_token?: string }> => {
+    const token = refreshTokenValue || localStorage.getItem('refresh_token') || '';
+    if (!token) throw new Error('No refresh token available');
+
+    const targetUrl = `${BASE_AUTH_URL}/refresh`;
+    console.log('[authApi] Calling refresh directly:', targetUrl);
+
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ refresh: token })
+    });
+
+    const resData = await response.json().catch(() => ({}));
+    if (response.ok && resData?.success !== false) {
+      const newAccess = resData?.access || resData?.access_token || resData?.data?.access_token;
+      const newRefresh = resData?.refresh || resData?.refresh_token || resData?.data?.refresh_token;
+
+      if (newAccess) {
+        localStorage.setItem('access_token', newAccess);
+      }
+      if (newRefresh) {
+        localStorage.setItem('refresh_token', newRefresh);
+      }
+      return {
+        access_token: newAccess || '',
+        refresh_token: newRefresh || token
+      };
+    }
+
+    let errMsg = 'Token refresh failed';
+    if (typeof resData?.message === 'string') {
+      errMsg = resData.message;
+    } else if (typeof resData?.detail === 'string') {
+      errMsg = resData.detail;
+    }
+    throw new Error(errMsg);
   },
 
   // POST /api/forgot-password-send-otp

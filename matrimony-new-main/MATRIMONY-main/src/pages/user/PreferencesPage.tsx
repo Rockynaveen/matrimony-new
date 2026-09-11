@@ -293,7 +293,7 @@ export const PreferencesPage: React.FC = () => {
       if (redirectUrl) {
         navigate(redirectUrl);
       } else {
-        navigate('/matches');
+        navigate('/verification');
       }
     } catch (err: any) {
       showToast(err?.message || 'Failed to save partner preferences.');

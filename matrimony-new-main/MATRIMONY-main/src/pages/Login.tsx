@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormData } from '../utils/validationSchemas';
 import { useApp, getStoredOnboardingStatus, getNextPendingRoute, decodeGoogleIdToken, extractNameFromEmail, isGenericName } from '../context/AppContext';
+import { authApi } from '../api/authApi';
 import { Button } from '../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Separator } from '../components/ui/Separator';
-import { Eye, EyeOff, Loader2, Heart, ShieldCheck, Sparkles, Check } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Heart, ShieldCheck, Sparkles, Check, Smartphone, KeyRound, Mail, Lock, Send } from 'lucide-react';
 import { GoogleAuthModal } from '../components/auth/GoogleAuthModal';
 import { motion } from 'framer-motion';
 
@@ -21,6 +22,22 @@ export const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
+
+  // Login Mode: 'password' or 'otp'
+  const [loginMode, setLoginMode] = useState<'password' | 'otp'>('password');
+  const [otpPhone, setOtpPhone] = useState('');
+  const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = setTimeout(() => setOtpCooldown(c => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [otpCooldown]);
 
   const {
     register,
@@ -50,6 +67,87 @@ export const Login: React.FC = () => {
     }
 
     navigate(nextRoute);
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otpCode];
+    newOtp[index] = value.slice(-1);
+    setOtpCode(newOtp);
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otpCode[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length > 0) {
+      const newOtp = [...otpCode];
+      for (let i = 0; i < pasted.length; i++) {
+        newOtp[i] = pasted[i];
+      }
+      setOtpCode(newOtp);
+      otpInputRefs.current[Math.min(pasted.length, 5)]?.focus();
+    }
+  };
+
+  const handleSendLoginOtp = async () => {
+    const rawPhone = otpPhone || (document.getElementById('login-otp-phone') as HTMLInputElement)?.value || '';
+    const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+    console.log('[Login] handleSendLoginOtp calling Railway API with phone:', cleanPhone);
+
+    try {
+      setIsSendingOtp(true);
+      const res = await authApi.sendMobileOtp(cleanPhone);
+      setOtpSent(true);
+      setOtpCooldown(30);
+      setOtpCode(['', '', '', '', '', '']);
+      showToast('OTP sent successfully to your mobile number.');
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to send OTP. Please try again.');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyLoginOtp = async () => {
+    const rawPhone = otpPhone || (document.getElementById('login-otp-phone') as HTMLInputElement)?.value || '';
+    const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+    const code = otpCode.join('');
+    console.log('[Login] handleVerifyLoginOtp calling Railway API with phone:', cleanPhone, 'otp:', code);
+
+    try {
+      setIsVerifyingOtp(true);
+      const res = await authApi.verifyMobileOtp(cleanPhone, code);
+      showToast(res.message || 'Mobile OTP verified successfully.');
+
+      if (res.access_token) {
+        localStorage.setItem('access_token', res.access_token);
+      }
+      if (res.refresh_token) {
+        localStorage.setItem('refresh_token', res.refresh_token);
+      }
+      const rawUser = res.user;
+      if (rawUser?.id) localStorage.setItem('user_id', String(rawUser.id));
+      if (rawUser?.email) localStorage.setItem('logged_in_email', rawUser.email);
+      if (rawUser?.first_name || rawUser?.name) {
+        localStorage.setItem('logged_in_name', `${rawUser.first_name || ''} ${rawUser.last_name || ''}`.trim() || rawUser.name);
+      }
+
+      checkOnboardingFlow(rawUser?.email);
+    } catch (err: any) {
+      showToast(err.message || 'Invalid or expired OTP. Please try again.');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
   };
 
   const onSubmit = async (data: LoginFormData) => {
@@ -108,189 +206,263 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 sm:p-6 md:p-10 bg-muted/20">
+    <div className="w-full min-h-[calc(100vh-4rem)] flex items-center justify-center p-3 sm:p-4 bg-muted/20">
       <motion.div
         initial={{ opacity: 0, scale: 0.99 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-12 rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
+        className="w-full max-w-[700px] grid grid-cols-1 md:grid-cols-12 rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
       >
-        {/* Left Side: Visual Image & Brand Showcase */}
-        <div className="hidden md:flex md:col-span-5 relative overflow-hidden bg-stone-900 flex-col justify-end p-6 min-h-[560px]">
+        {/* Left Side: Visual Image */}
+        <div className="hidden md:block md:col-span-5 relative overflow-hidden bg-stone-900 min-h-[400px]">
           <img
             src="/images/auth_couple_bg.jpg"
             alt="Vivah Royal Matrimony"
             className="absolute inset-0 w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20 pointer-events-none" />
-
-          <div className="relative z-10 space-y-3 bg-black/50 backdrop-blur-md p-4 rounded-xl border border-white/20 shadow-xl text-white">
-            <div className="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold backdrop-blur-xs text-white border border-white/20">
-              <Sparkles className="h-3 w-3 text-amber-300" />
-              <span>Verified Matrimony</span>
-            </div>
-
-            <h2 className="text-lg font-bold tracking-tight font-serif text-white leading-snug">
-              Find your ideal life partner
-            </h2>
-
-            <p className="text-xs text-white/80 leading-relaxed">
-              Connect with thousands of verified profiles with complete trust, privacy, and traditional family values.
-            </p>
-
-            <div className="space-y-1.5 text-xs text-white/90 pt-0.5">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-3.5 w-3.5 text-amber-300 shrink-0" />
-                <span>100% ID-verified profiles</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-3.5 w-3.5 text-amber-300 shrink-0" />
-                <span>Granular privacy & contact controls</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-3.5 w-3.5 text-amber-300 shrink-0" />
-                <span>Smart community & value matching</span>
-              </div>
-            </div>
-
-            <div className="pt-2.5 border-t border-white/20 flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center">
-                <Heart className="h-3.5 w-3.5 text-amber-300 fill-amber-300" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-white">45,000+ Happy Marriages</p>
-                <p className="text-[10px] text-white/70">Trusted across all communities</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Right Side: shadcn Form Card */}
-        <div className="md:col-span-7 flex flex-col justify-between p-4 sm:p-6 md:p-8">
+        <div className="md:col-span-7 flex flex-col justify-between p-3.5 sm:p-5">
           <Card className="border-0 shadow-none rounded-none bg-transparent">
-            <CardHeader className="space-y-1.5 pb-4">
-              <CardTitle className="text-2xl font-bold tracking-tight">
+            <CardHeader className="space-y-1 pb-2">
+              <CardTitle className="text-xl font-bold tracking-tight">
                 Welcome back
               </CardTitle>
-              <CardDescription>
-                Enter your credentials below to log in to your account
+              <CardDescription className="text-xs">
+                Sign in to your account with password or mobile OTP
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-4">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                {/* Email / Mobile Field (NO PLACEHOLDER) */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="login-email">
-                    Email address or mobile number
-                  </Label>
-                  <Input
-                    id="login-email"
-                    type="text"
-                    autoComplete="username"
-                    {...register('email')}
-                    className={errors.email ? 'border-destructive focus-visible:ring-destructive/30' : ''}
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Registered email address or 10-digit mobile number
-                  </p>
-                  {errors.email && (
-                    <p className="text-xs font-medium text-destructive">
-                      {errors.email.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* Password Field (NO PLACEHOLDER) */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="login-password">
-                      Password
-                    </Label>
-                    <Link
-                      to="/forgot-password"
-                      className="text-xs font-medium text-primary underline-offset-4 hover:underline"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="login-password"
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="current-password"
-                      {...register('password')}
-                      className={`pr-10 ${errors.password ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="text-xs font-medium text-destructive">
-                      {errors.password.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* Remember Me Checkbox */}
-                <div className="flex items-center space-x-2 pt-1">
-                  <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      id="remember_me"
-                      checked={!!rememberMe}
-                      onChange={(e) => setValue('remember_me', e.target.checked)}
-                      className="peer sr-only"
-                    />
-                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border border-input bg-background shadow-xs transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground">
-                      <Check className={`h-3 w-3 stroke-[3] text-white transition-opacity ${rememberMe ? 'opacity-100' : 'opacity-0'}`} />
-                    </span>
-                  </label>
-                  <Label htmlFor="remember_me" className="text-xs font-normal text-muted-foreground cursor-pointer">
-                    Remember me on this device
-                  </Label>
-                </div>
-
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full h-10 font-semibold shadow-xs"
+            <CardContent className="space-y-3">
+              {/* Tab Selector: Password vs Mobile OTP */}
+              <div className="flex rounded-lg bg-muted p-0.5 text-muted-foreground">
+                <button
+                  type="button"
+                  onClick={() => setLoginMode('password')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition-all ${
+                    loginMode === 'password'
+                      ? 'bg-background text-foreground shadow-xs'
+                      : 'hover:text-foreground'
+                  }`}
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Signing in...
-                    </>
-                  ) : (
-                    'Sign In'
+                  <KeyRound className="h-3.5 w-3.5" />
+                  Password Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLoginMode('otp')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition-all ${
+                    loginMode === 'otp'
+                      ? 'bg-background text-foreground shadow-xs'
+                      : 'hover:text-foreground'
+                  }`}
+                >
+                  <Smartphone className="h-3.5 w-3.5" />
+                  Mobile OTP Login
+                </button>
+              </div>
+
+              {loginMode === 'password' ? (
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+                  {/* Email / Mobile Field */}
+                  <div className="space-y-1">
+                    <Label htmlFor="login-email" className="text-xs">
+                      Email address or mobile number
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="login-email"
+                        type="text"
+                        autoComplete="username"
+                        {...register('email')}
+                        className={`pl-10 h-9 text-sm ${errors.email ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      Registered email address or 10-digit mobile number
+                    </p>
+                    {errors.email && (
+                      <p className="text-xs font-medium text-destructive">
+                        {errors.email.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Password Field */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="login-password" className="text-xs">
+                        Password
+                      </Label>
+                      <Link
+                        to="/forgot-password"
+                        className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="login-password"
+                        type={showPassword ? 'text' : 'password'}
+                        autoComplete="current-password"
+                        {...register('password')}
+                        className={`pl-10 pr-10 h-9 text-sm ${errors.password ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <p className="text-xs font-medium text-destructive">
+                        {errors.password.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Remember Me Checkbox */}
+                  <div className="flex items-center space-x-2 pt-0.5">
+                    <label className="relative inline-flex items-center cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        id="remember_me"
+                        checked={!!rememberMe}
+                        onChange={(e) => setValue('remember_me', e.target.checked)}
+                        className="peer sr-only"
+                      />
+                      <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border border-input bg-background shadow-xs transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground">
+                        <Check className={`h-2.5 w-2.5 stroke-[3] text-white transition-opacity ${rememberMe ? 'opacity-100' : 'opacity-0'}`} />
+                      </span>
+                    </label>
+                    <Label htmlFor="remember_me" className="text-xs font-normal text-muted-foreground cursor-pointer">
+                      Remember me on this device
+                    </Label>
+                  </div>
+
+                  {/* Submit Button */}
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full h-9 text-sm font-semibold shadow-xs"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Signing in...
+                      </>
+                    ) : (
+                      'Sign In'
+                    )}
+                  </Button>
+                </form>
+              ) : (
+                /* Mobile OTP Login View */
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="login-otp-phone" className="text-xs">Mobile number</Label>
+                    <div className="relative w-full">
+                      <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="login-otp-phone"
+                        type="tel"
+                        autoComplete="tel"
+                        value={otpPhone}
+                        onChange={(e) => setOtpPhone(e.target.value)}
+                        className="pl-10 pr-10 h-9 text-sm w-full"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSendLoginOtp();
+                        }}
+                        disabled={isSendingOtp || otpCooldown > 0}
+                        title={otpCooldown > 0 ? `Resend in ${otpCooldown}s` : otpSent ? 'Resend OTP' : 'Send OTP'}
+                        aria-label={otpCooldown > 0 ? `Resend in ${otpCooldown}s` : otpSent ? 'Resend OTP' : 'Send OTP'}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-md flex items-center justify-center text-primary hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSendingOtp ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                        ) : otpCooldown > 0 ? (
+                          <span className="text-[10px] font-bold text-muted-foreground">{otpCooldown}s</span>
+                        ) : (
+                          <Send className="h-3.5 w-3.5 text-primary" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      We will send a 6-digit OTP code to this mobile number
+                    </p>
+                  </div>
+
+                  {otpSent && (
+                    <div className="rounded-lg border border-border bg-muted/30 p-2.5 space-y-2">
+                      <Label className="text-xs font-medium text-foreground">
+                        Enter 6-digit OTP code
+                      </Label>
+                      <div className="flex justify-between gap-1.5">
+                        {otpCode.map((digit, idx) => (
+                          <input
+                            key={idx}
+                            ref={(el) => {
+                              otpInputRefs.current[idx] = el;
+                            }}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handleOtpChange(idx, e.target.value)}
+                            onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                            onPaste={idx === 0 ? handleOtpPaste : undefined}
+                            className="h-9 w-9 text-center text-base font-bold border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                          />
+                        ))}
+                      </div>
+
+                      <Button
+                        type="button"
+                        onClick={handleVerifyLoginOtp}
+                        disabled={isVerifyingOtp}
+                        className="w-full h-9 text-sm font-semibold shadow-xs"
+                      >
+                        {isVerifyingOtp ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Verifying OTP...
+                          </>
+                        ) : (
+                          'Verify & Sign In'
+                        )}
+                      </Button>
+                    </div>
                   )}
-                </Button>
-              </form>
+                </div>
+              )}
 
               {/* Separator Divider */}
-              <div className="relative my-4">
+              <div className="relative my-2.5">
                 <div className="absolute inset-0 flex items-center">
                   <Separator />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground font-medium tracking-wider">
+                  <span className="bg-card px-2 text-muted-foreground font-medium tracking-wider text-[11px]">
                     Or continue with
                   </span>
                 </div>
               </div>
 
               {/* Google Auth Button */}
-              <Button
+              <button
                 type="button"
-                variant="outline"
                 onClick={() => setIsGoogleModalOpen(true)}
-                className="w-full h-10 font-medium text-foreground bg-background hover:bg-muted/50 border-input shadow-xs flex items-center justify-center gap-2.5"
+                className="w-full h-9 text-sm font-medium text-foreground hover:text-foreground bg-background hover:bg-muted border border-input rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
                   <path
@@ -310,11 +482,11 @@ export const Login: React.FC = () => {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                   />
                 </svg>
-                <span>Google</span>
-              </Button>
+                <span className="text-foreground font-medium">Continue with Google</span>
+              </button>
             </CardContent>
 
-            <CardFooter className="pt-2 pb-6 flex justify-center">
+            <CardFooter className="pt-1 pb-1 flex justify-center">
               <p className="text-xs text-muted-foreground text-center">
                 Don't have an account?{' '}
                 <Link

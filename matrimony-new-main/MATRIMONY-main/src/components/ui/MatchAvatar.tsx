@@ -12,12 +12,25 @@ interface MatchAvatarProps {
   alt?: string;
 }
 
+export const formatPhotoUrl = (url?: string | null): string => {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('/images/') || trimmed.startsWith('images/')) {
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  }
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `https://matrimony-production-4b00.up.railway.app${cleanPath}`;
+};
+
 export const isDummyImage = (url?: string | null): boolean => {
   if (!url || typeof url !== 'string') return true;
   const lower = url.toLowerCase().trim();
   if (!lower) return true;
   return (
-    lower.includes('unsplash.com') ||
     lower.includes('placeholder') ||
     lower.includes('dummy') ||
     lower.includes('ui-avatars.com')
@@ -58,7 +71,8 @@ export const MatchAvatar: React.FC<MatchAvatarProps> = ({
 }) => {
   const [hasError, setHasError] = useState(false);
 
-  const isPhotoValid = !isDummyImage(photo) && !hasError;
+  const resolvedPhoto = formatPhotoUrl(photo);
+  const isPhotoValid = !isDummyImage(resolvedPhoto) && !hasError;
   const initialLetter = getFirstLetter(firstName, lastName, name, email);
   const fullNameStr = (
     firstName
@@ -67,10 +81,10 @@ export const MatchAvatar: React.FC<MatchAvatarProps> = ({
   ).trim();
 
   // If photo is valid and hasn't errored, render real image
-  if (isPhotoValid && photo) {
+  if (isPhotoValid && resolvedPhoto) {
     return (
       <img
-        src={photo}
+        src={resolvedPhoto}
         alt={alt || fullNameStr}
         onError={() => setHasError(true)}
         className={

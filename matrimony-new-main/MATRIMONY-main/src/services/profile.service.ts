@@ -471,10 +471,19 @@ export const profileService = {
     const numericId = Number(userId);
     if (!numericId || numericId <= 0) return null;
 
+    const kmId = `KM${String(numericId).padStart(6, '0')}`;
+    const mnId = `MN${numericId}`;
+
     const candidateUrls = [
       `/profile/${numericId}/`,
       `/profile/${numericId}`,
+      `/profile/by-member-id/${kmId}/`,
+      `/profile/by-member-id/${kmId}`,
+      `/profile/by-member-id/${mnId}/`,
+      `/profile/by-member-id/${numericId}/`,
       `/search/profile-id-search?identifier=${numericId}`,
+      `/search/profile-id-search?identifier=${kmId}`,
+      `/search/profile-id-search?identifier=${mnId}`,
       `/profile/user/${numericId}/`,
       `/profile/user/${numericId}`,
       `/profile/get/${numericId}/`,

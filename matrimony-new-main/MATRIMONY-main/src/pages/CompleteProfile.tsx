@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp, isGenericName } from '../context/AppContext';
 import { profileService } from '../services/profile.service';
 import type { ProfileCreateRequest } from '../types/profile.types';
+import { getMaxDobDateString, isAtLeast18YearsOld } from '../utils/validationSchemas';
 import {
   useIncomeRanges,
   useEducations,
@@ -33,18 +34,20 @@ import {
   Clock,
   Loader2,
   Lock,
-  LogOut
+  LogOut,
+  Calendar
 } from 'lucide-react';
 
 export const CompleteProfile: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
-  const { showToast, checkProfileStatus, currentUser, updateCurrentUserAvatar, markProfileCompleted, logout } = useApp();
+  const { showToast, checkProfileStatus, currentUser, updateCurrentUserAvatar, markProfileCompleted, patchBasicProfile, logout } = useApp();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const maxAllowedDob = getMaxDobDateString();
 
   // Master Data Queries (100% Dynamic from Backend APIs)
   const { data: incomeRanges = [], isLoading: isLoadingIncomes } = useIncomeRanges();
@@ -59,6 +62,9 @@ export const CompleteProfile: React.FC = () => {
   const [formData, setFormData] = useState({
     // Section 1: Personal Details
     profile_name: currentUser?.name && !isGenericName(currentUser.name) ? currentUser.name : '',
+    gender: currentUser?.gender || 'Male',
+    date_of_birth: (currentUser?.date_of_birth && currentUser.date_of_birth !== '2000-01-01') ? currentUser.date_of_birth : '',
+    phone: currentUser?.phone || localStorage.getItem('logged_in_phone') || '',
     about_me: '',
     height: 0,
     weight: 0,
@@ -362,6 +368,21 @@ export const CompleteProfile: React.FC = () => {
         profile_photo: formData.profile_photo || ''
       };
 
+      if (formData.date_of_birth && !isAtLeast18YearsOld(formData.date_of_birth)) {
+        showToast('You must be 18 years or older to proceed.');
+        return;
+      }
+
+      if (formData.date_of_birth || formData.gender || formData.phone) {
+        try {
+          await patchBasicProfile({
+            gender: formData.gender || undefined,
+            date_of_birth: formData.date_of_birth || undefined,
+            phone: formData.phone || undefined
+          });
+        } catch {}
+      }
+
       try {
         await profileService.createProfile(apiPayload);
       } catch {
@@ -476,7 +497,43 @@ export const CompleteProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 1: Profile Name & About Me */}
+            {/* Row 1: Gender & Date of Birth */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Gender <span className="text-rose-600 font-black">*</span>
+                </label>
+                <div className="relative">
+                  <Heart className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <select
+                    value={formData.gender}
+                    onChange={e => handleChange('gender', e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  >
+                    <option value="Male">Male (Groom)</option>
+                    <option value="Female">Female (Bride)</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Date of Birth <span className="text-rose-600 font-black">*</span>
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <input
+                    type="date"
+                    max={maxAllowedDob}
+                    value={formData.date_of_birth}
+                    onChange={e => handleChange('date_of_birth', e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  />
+                </div>
+                <p className="text-[10px] font-semibold text-slate-500 mt-0.5">Must be 18 years or older</p>
+              </div>
+            </div>
+
+            {/* Row 2: Profile Name & About Me */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">

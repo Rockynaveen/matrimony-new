@@ -4,6 +4,20 @@ import { useApp, isGenericName } from '../context/AppContext';
 import { profileService } from '../services/profile.service';
 import type { ProfileCreateRequest } from '../types/profile.types';
 import {
+  useIncomeRanges,
+  useEducations,
+  useProfessions,
+  useReligions,
+  useCastes,
+  useLanguages,
+  useHobbies,
+  useCountries,
+  useStates,
+  useDistricts,
+  useMandals,
+  useVillages,
+} from '../hooks/useProfileOptions';
+import {
   User,
   GraduationCap,
   Sparkles,
@@ -32,6 +46,15 @@ export const CompleteProfile: React.FC = () => {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Master Data Queries (100% Dynamic from Backend APIs)
+  const { data: incomeRanges = [], isLoading: isLoadingIncomes } = useIncomeRanges();
+  const { data: educations = [], isLoading: isLoadingEducations } = useEducations();
+  const { data: professions = [], isLoading: isLoadingProfessions } = useProfessions();
+  const { data: religions = [], isLoading: isLoadingReligions } = useReligions();
+  const { data: languages = [], isLoading: isLoadingLanguages } = useLanguages();
+  const { data: hobbies = [], isLoading: isLoadingHobbies } = useHobbies();
+  const { data: countries = [], isLoading: isLoadingCountries } = useCountries();
+
   // Form State initialized with draft or empty
   const [formData, setFormData] = useState({
     // Section 1: Personal Details
@@ -47,7 +70,8 @@ export const CompleteProfile: React.FC = () => {
     // Section 2: Education & Profession
     highest_education: '',
     education_detail: '',
-    education_id: '',
+    education_id: '' as string | number,
+    profession_id: null as number | null,
     occupation: '',
     job_title: '',
     employment_type: '',
@@ -57,7 +81,9 @@ export const CompleteProfile: React.FC = () => {
 
     // Section 3: Religion, Caste & Horoscope
     religion: '',
+    religion_id: null as number | null,
     caste: '',
+    caste_id: null as number | null,
     sub_caste: '',
     gothram: '',
     has_horoscope: false,
@@ -93,18 +119,25 @@ export const CompleteProfile: React.FC = () => {
 
     // Section 7: Location & Citizenship
     country: '',
+    country_id: null as number | null,
     state: '',
+    state_id: null as number | null,
     district: '',
+    district_id: null as number | null,
     city: '',
     mandal: '',
+    mandal_id: null as number | null,
     village: '',
+    village_id: null as number | null,
     citizenship: '',
     pincode: '',
     address_line: '',
 
     // Section 8: Language & Hobbies
     languages_known: '',
+    language_ids: [] as number[],
     hobbies_interests: '',
+    hobby_ids: [] as number[],
 
     // Section 9: Privacy Settings
     hide_photos: false,
@@ -113,6 +146,51 @@ export const CompleteProfile: React.FC = () => {
     // Profile Photo
     profile_photo: currentUser.avatar || localStorage.getItem('logged_in_avatar') || ''
   });
+
+  // Cascading Location & Caste Queries
+  const selectedReligion = religions.find(
+    r => (formData.religion_id && r.id === Number(formData.religion_id)) || (formData.religion && r.name.toLowerCase() === formData.religion.toLowerCase())
+  );
+  const selectedReligionId = selectedReligion?.id || (formData.religion_id ? Number(formData.religion_id) : null);
+  const { data: castes = [], isLoading: isLoadingCastes } = useCastes(selectedReligionId);
+
+  const selectedCountry = countries.find(
+    c => (formData.country_id && c.id === Number(formData.country_id)) || (formData.country && c.name.toLowerCase() === formData.country.toLowerCase())
+  );
+  const selectedCountryId = selectedCountry?.id || (formData.country_id ? Number(formData.country_id) : null);
+  const { data: states = [], isLoading: isLoadingStates } = useStates(selectedCountryId);
+
+  const selectedState = states.find(
+    s => (formData.state_id && s.id === Number(formData.state_id)) || (formData.state && s.name.toLowerCase() === formData.state.toLowerCase())
+  );
+  const selectedStateId = selectedState?.id || (formData.state_id ? Number(formData.state_id) : null);
+  const { data: districts = [], isLoading: isLoadingDistricts } = useDistricts(selectedStateId);
+
+  const selectedDistrict = districts.find(
+    d => (formData.district_id && d.id === Number(formData.district_id)) || (formData.district && d.name.toLowerCase() === formData.district.toLowerCase())
+  );
+  const selectedDistrictId = selectedDistrict?.id || (formData.district_id ? Number(formData.district_id) : null);
+  const { data: mandals = [], isLoading: isLoadingMandals } = useMandals(selectedDistrictId);
+
+  const selectedMandal = mandals.find(
+    m => (formData.mandal_id && m.id === Number(formData.mandal_id)) || (formData.mandal && m.name.toLowerCase() === formData.mandal.toLowerCase())
+  );
+  const selectedMandalId = selectedMandal?.id || (formData.mandal_id ? Number(formData.mandal_id) : null);
+  const { data: villages = [], isLoading: isLoadingVillages } = useVillages(selectedMandalId);
+
+  // Auto-set India if no country selected
+  useEffect(() => {
+    if (!formData.country_id && countries.length > 0) {
+      const india = countries.find(c => c.name.toLowerCase() === 'india') || countries[0];
+      if (india) {
+        setFormData(prev => ({
+          ...prev,
+          country_id: prev.country_id || india.id,
+          country: prev.country || india.name
+        }));
+      }
+    }
+  }, [countries]);
 
   // Load existing draft or user details on mount
   useEffect(() => {
@@ -212,41 +290,75 @@ export const CompleteProfile: React.FC = () => {
     try {
       setIsSubmitting(true);
 
+      const parseIncome = (val?: string | number | null): number | null => {
+        if (!val) return null;
+        if (typeof val === 'number') return val;
+        const cleaned = String(val).replace(/[^0-9]/g, '');
+        return cleaned ? parseInt(cleaned, 10) : null;
+      };
+
+      const selectedLang = languages.find(l => l.name === formData.languages_known);
+      const selectedHobby = hobbies.find(h => h.name === formData.hobbies_interests);
+
       const apiPayload: ProfileCreateRequest = {
         profile_name: formData.profile_name || '',
         about_me: formData.about_me || '',
         height: formData.height > 0 ? (formData.height > 30 ? parseFloat((formData.height / 30.48).toFixed(1)) : formData.height) : 5.8,
         weight: formData.weight > 0 ? formData.weight : null,
         complexion: formData.complexion || 'Fair',
-        highest_education: formData.highest_education || 'B.Tech',
-        education_detail: formData.education_detail || '',
+        marital_status: formData.marital_status || 'Never Married',
+        disability_information: formData.disability_information || '',
+
+        // Education & Profession
         education_id: formData.education_id ? Number(formData.education_id) : null,
-        occupation: formData.occupation || 'Software Engineer',
+        highest_education: formData.highest_education || '',
+        education_detail: formData.education_detail || '',
+        profession_id: formData.profession_id,
+        occupation: formData.occupation || '',
         job_title: formData.job_title || '',
         employment_type: formData.employment_type || 'Full Time',
         company_name: formData.company_name || '',
         work_location: formData.work_location || '',
-        annual_income: formData.annual_income ? parseInt(String(formData.annual_income).replace(/[^0-9]/g, ''), 10) || null : null,
-        religion: formData.religion || 'Hindu',
+        annual_income: parseIncome(formData.annual_income),
+
+        // Religion & Community
+        religion_id: formData.religion_id,
+        religion: formData.religion || '',
+        caste_id: formData.caste_id,
         caste: formData.caste || '',
         sub_caste: formData.sub_caste || '',
         gothram: formData.gothram || '',
         rashi: formData.rashi || '',
         nakshatra: formData.nakshatra || '',
         dosha: formData.dosha || '',
+
+        // Family
         family_information: formData.family_information || '',
-        diet: (formData.diet as any) || 'Vegetarian',
-        smoking: (formData.smoking as any) || 'No',
-        drinking: (formData.drinking as any) || 'No',
-        languages_known: formData.languages_known || 'English',
+
+        // Lifestyle
+        diet: formData.diet || 'Vegetarian',
+        smoking: formData.smoking || 'No',
+        drinking: formData.drinking || 'No',
+
+        // Languages & Hobbies
+        languages_known: formData.languages_known || '',
+        language_ids: formData.language_ids?.length > 0 ? formData.language_ids : (selectedLang ? [selectedLang.id] : undefined),
         hobbies_interests: formData.hobbies_interests || '',
-        marital_status: (formData.marital_status as any) || 'Never Married',
-        disability_information: formData.disability_information || '',
-        country: formData.country || 'India',
-        state: formData.state || 'Maharashtra',
-        city: formData.city || 'Mumbai',
+        hobby_ids: formData.hobby_ids?.length > 0 ? formData.hobby_ids : (selectedHobby ? [selectedHobby.id] : undefined),
+
+        // Location Hierarchy
+        country_id: formData.country_id,
+        country: formData.country || '',
+        state_id: formData.state_id,
+        state: formData.state || '',
+        district_id: formData.district_id,
+        city: formData.city || formData.district || '',
+        mandal_id: formData.mandal_id,
+        village_id: formData.village_id,
         pincode: formData.pincode || '',
         address_line: formData.address_line || '',
+
+        // Photos
         profile_photo: formData.profile_photo || ''
       };
 
@@ -499,28 +611,31 @@ export const CompleteProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 1: Highest Education, Education Detail, Education ID */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+            {/* Row 1: Highest Education, Education Detail */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
                   Highest Education <span className="text-rose-600 font-black">*</span>
                 </label>
                 <select
-                  value={formData.highest_education}
-                  onChange={e => handleChange('highest_education', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                  value={formData.education_id || (formData.highest_education ? educations.find(e => e.name === formData.highest_education)?.id : '') || ''}
+                  onChange={e => {
+                    const selected = educations.find(ed => String(ed.id) === e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      education_id: selected ? String(selected.id) : '',
+                      highest_education: selected ? selected.name : ''
+                    }));
+                  }}
+                  disabled={isLoadingEducations}
+                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">Select highest education</option>
-                  <option value="B.Tech">B.Tech / B.E.</option>
-                  <option value="M.Tech">M.Tech / M.E.</option>
-                  <option value="BCA">BCA / MCA</option>
-                  <option value="MBA">MBA / PGDM</option>
-                  <option value="MBBS">MBBS / MD / MS</option>
-                  <option value="B.Sc">B.Sc / M.Sc</option>
-                  <option value="B.Com">B.Com / M.Com</option>
-                  <option value="CA">CA / ICWA / CS</option>
-                  <option value="Ph.D">Ph.D / Doctorate</option>
-                  <option value="Other">Other Higher Education</option>
+                  <option value="">{isLoadingEducations ? 'Loading educations...' : 'Select highest education'}</option>
+                  {educations.map(edu => (
+                    <option key={edu.id} value={edu.id}>
+                      {edu.name} {edu.degree_level ? `(${edu.degree_level})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -531,19 +646,7 @@ export const CompleteProfile: React.FC = () => {
                   type="text"
                   value={formData.education_detail}
                   onChange={e => handleChange('education_detail', e.target.value)}
-                  placeholder="Enter education details"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Education ID
-                </label>
-                <input
-                  type="text"
-                  value={formData.education_id}
-                  onChange={e => handleChange('education_id', e.target.value)}
-                  placeholder="Enter education ID"
+                  placeholder="Enter degree / college details"
                   className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                 />
               </div>
@@ -553,23 +656,27 @@ export const CompleteProfile: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Occupation <span className="text-rose-600 font-black">*</span>
+                  Occupation / Profession <span className="text-rose-600 font-black">*</span>
                 </label>
                 <select
-                  value={formData.occupation}
-                  onChange={e => handleChange('occupation', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                  value={formData.profession_id || (formData.occupation ? professions.find(p => p.name === formData.occupation)?.id : '') || ''}
+                  onChange={e => {
+                    const selected = professions.find(p => String(p.id) === e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      profession_id: selected ? selected.id : null,
+                      occupation: selected ? selected.name : ''
+                    }));
+                  }}
+                  disabled={isLoadingProfessions}
+                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">Select occupation</option>
-                  <option value="Software Engineer">Software Engineer / IT Professional</option>
-                  <option value="Doctor">Doctor / Medical Professional</option>
-                  <option value="Engineer">Civil / Mechanical / Electrical Engineer</option>
-                  <option value="Banker">Banking / Financial Professional</option>
-                  <option value="Civil Services">Civil Services / IAS / IPS</option>
-                  <option value="Business">Business Owner / Entrepreneur</option>
-                  <option value="Teacher">Professor / Teacher / Academician</option>
-                  <option value="Lawyer">Lawyer / Legal Professional</option>
-                  <option value="Other">Other Profession</option>
+                  <option value="">{isLoadingProfessions ? 'Loading professions...' : 'Select occupation'}</option>
+                  {professions.map(prof => (
+                    <option key={prof.id} value={prof.id}>
+                      {prof.name} {prof.category ? `(${prof.category})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -594,12 +701,11 @@ export const CompleteProfile: React.FC = () => {
                   className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
                 >
                   <option value="">Select employment type</option>
-                  <option value="Full Time">Full Time</option>
-                  <option value="Part Time">Part Time</option>
-                  <option value="Self Employed">Self Employed</option>
+                  <option value="Private">Private</option>
+                  <option value="Government">Government</option>
                   <option value="Business">Business</option>
-                  <option value="Government">Government / PSU</option>
-                  <option value="Not Employed">Not Employed</option>
+                  <option value="Defense">Defense</option>
+                  <option value="Not Working">Not Working</option>
                 </select>
               </div>
             </div>
@@ -634,13 +740,22 @@ export const CompleteProfile: React.FC = () => {
                 <label className="block text-xs font-bold text-black mb-1">
                   Annual Income
                 </label>
-                <input
-                  type="text"
+                <select
                   value={formData.annual_income}
                   onChange={e => handleChange('annual_income', e.target.value)}
-                  placeholder="Enter annual income"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                />
+                  disabled={isLoadingIncomes}
+                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60"
+                >
+                  <option value="">{isLoadingIncomes ? 'Loading income ranges...' : 'Select annual income'}</option>
+                  {incomeRanges.map(inc => (
+                    <option key={inc.id} value={inc.label}>
+                      {inc.label}
+                    </option>
+                  ))}
+                  {formData.annual_income && !incomeRanges.some(i => i.label === formData.annual_income) && (
+                    <option value={formData.annual_income}>{formData.annual_income}</option>
+                  )}
+                </select>
               </div>
             </div>
           </section>
@@ -664,19 +779,26 @@ export const CompleteProfile: React.FC = () => {
                   Religion <span className="text-rose-600 font-black">*</span>
                 </label>
                 <select
-                  value={formData.religion}
-                  onChange={e => handleChange('religion', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all cursor-pointer"
+                  value={formData.religion_id || (formData.religion ? religions.find(r => r.name === formData.religion)?.id : '') || ''}
+                  onChange={e => {
+                    const selected = religions.find(r => String(r.id) === e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      religion_id: selected ? selected.id : null,
+                      religion: selected ? selected.name : '',
+                      caste_id: null,
+                      caste: '' // reset downstream caste when religion changes
+                    }));
+                  }}
+                  disabled={isLoadingReligions}
+                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">Select religion</option>
-                  <option value="Hindu">Hindu</option>
-                  <option value="Muslim">Muslim</option>
-                  <option value="Christian">Christian</option>
-                  <option value="Sikh">Sikh</option>
-                  <option value="Jain">Jain</option>
-                  <option value="Buddhist">Buddhist</option>
-                  <option value="Parsi">Parsi</option>
-                  <option value="Other">Other</option>
+                  <option value="">{isLoadingReligions ? 'Loading religions...' : 'Select religion'}</option>
+                  {religions.map(rel => (
+                    <option key={rel.id} value={rel.id}>
+                      {rel.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -684,23 +806,32 @@ export const CompleteProfile: React.FC = () => {
                   Caste <span className="text-rose-600 font-black">*</span>
                 </label>
                 <select
-                  value={formData.caste}
-                  onChange={e => handleChange('caste', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all cursor-pointer"
+                  value={formData.caste_id || (formData.caste ? castes.find(c => c.name === formData.caste)?.id : '') || ''}
+                  onChange={e => {
+                    const selected = castes.find(c => String(c.id) === e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      caste_id: selected ? selected.id : null,
+                      caste: selected ? selected.name : ''
+                    }));
+                  }}
+                  disabled={!selectedReligionId || isLoadingCastes}
+                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">Select caste</option>
-                  <option value="Brahmin">Brahmin</option>
-                  <option value="Kshatriya">Kshatriya</option>
-                  <option value="Vaishya">Vaishya</option>
-                  <option value="Reddy">Reddy</option>
-                  <option value="Kamma">Kamma</option>
-                  <option value="Arya Vysya">Arya Vysya</option>
-                  <option value="Maratha">Maratha</option>
-                  <option value="Nair">Nair</option>
-                  <option value="Agarwal">Agarwal</option>
-                  <option value="Kayastha">Kayastha</option>
-                  <option value="Lingayat">Lingayat</option>
-                  <option value="Other">Other</option>
+                  <option value="">
+                    {!selectedReligionId
+                      ? 'Select Religion first'
+                      : isLoadingCastes
+                      ? 'Loading castes...'
+                      : castes.length === 0
+                      ? 'No castes listed'
+                      : 'Select caste'}
+                  </option>
+                  {castes.map(cst => (
+                    <option key={cst.id} value={cst.id}>
+                      {cst.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -1169,19 +1300,33 @@ export const CompleteProfile: React.FC = () => {
                   Country <span className="text-rose-600 font-black">*</span>
                 </label>
                 <select
-                  value={formData.country}
-                  onChange={e => handleChange('country', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
+                  value={formData.country_id || (formData.country ? countries.find(c => c.name === formData.country)?.id : '') || ''}
+                  onChange={e => {
+                    const selected = countries.find(c => String(c.id) === e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      country_id: selected ? selected.id : null,
+                      country: selected ? selected.name : '',
+                      state_id: null,
+                      state: '',
+                      district_id: null,
+                      district: '',
+                      city: '',
+                      mandal_id: null,
+                      mandal: '',
+                      village_id: null,
+                      village: ''
+                    }));
+                  }}
+                  disabled={isLoadingCountries}
+                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">Select country</option>
-                  <option value="India">India</option>
-                  <option value="United States">United States</option>
-                  <option value="United Kingdom">United Kingdom</option>
-                  <option value="Canada">Canada</option>
-                  <option value="Australia">Australia</option>
-                  <option value="UAE">United Arab Emirates</option>
-                  <option value="Singapore">Singapore</option>
-                  <option value="Other">Other</option>
+                  <option value="">{isLoadingCountries ? 'Loading countries...' : 'Select country'}</option>
+                  {countries.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -1189,22 +1334,39 @@ export const CompleteProfile: React.FC = () => {
                   State <span className="text-rose-600 font-black">*</span>
                 </label>
                 <select
-                  value={formData.state}
-                  onChange={e => handleChange('state', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
+                  value={formData.state_id || (formData.state ? states.find(s => s.name === formData.state)?.id : '') || ''}
+                  onChange={e => {
+                    const selected = states.find(s => String(s.id) === e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      state_id: selected ? selected.id : null,
+                      state: selected ? selected.name : '',
+                      district_id: null,
+                      district: '',
+                      city: '',
+                      mandal_id: null,
+                      mandal: '',
+                      village_id: null,
+                      village: ''
+                    }));
+                  }}
+                  disabled={!selectedCountryId || isLoadingStates}
+                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">Select state</option>
-                  <option value="Andhra Pradesh">Andhra Pradesh</option>
-                  <option value="Telangana">Telangana</option>
-                  <option value="Karnataka">Karnataka</option>
-                  <option value="Maharashtra">Maharashtra</option>
-                  <option value="Tamil Nadu">Tamil Nadu</option>
-                  <option value="Delhi">Delhi</option>
-                  <option value="Uttar Pradesh">Uttar Pradesh</option>
-                  <option value="Gujarat">Gujarat</option>
-                  <option value="Kerala">Kerala</option>
-                  <option value="West Bengal">West Bengal</option>
-                  <option value="Other">Other</option>
+                  <option value="">
+                    {!selectedCountryId
+                      ? 'Select Country first'
+                      : isLoadingStates
+                      ? 'Loading states...'
+                      : states.length === 0
+                      ? 'No states listed'
+                      : 'Select state'}
+                  </option>
+                  {states.map(st => (
+                    <option key={st.id} value={st.id}>
+                      {st.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -1212,20 +1374,37 @@ export const CompleteProfile: React.FC = () => {
                   District <span className="text-rose-600 font-black">*</span>
                 </label>
                 <select
-                  value={formData.district}
-                  onChange={e => handleChange('district', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
+                  value={formData.district_id || (formData.district ? districts.find(d => d.name === formData.district)?.id : '') || ''}
+                  onChange={e => {
+                    const selected = districts.find(d => String(d.id) === e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      district_id: selected ? selected.id : null,
+                      district: selected ? selected.name : '',
+                      city: selected ? selected.name : prev.city,
+                      mandal_id: null,
+                      mandal: '',
+                      village_id: null,
+                      village: ''
+                    }));
+                  }}
+                  disabled={!selectedStateId || isLoadingDistricts}
+                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">Select district</option>
-                  <option value="Hyderabad">Hyderabad</option>
-                  <option value="Ranga Reddy">Ranga Reddy</option>
-                  <option value="Bengaluru Urban">Bengaluru Urban</option>
-                  <option value="Mumbai">Mumbai City</option>
-                  <option value="Pune">Pune</option>
-                  <option value="Chennai">Chennai</option>
-                  <option value="Visakhapatnam">Visakhapatnam</option>
-                  <option value="Vijayawada">Vijayawada</option>
-                  <option value="Other">Other District</option>
+                  <option value="">
+                    {!selectedStateId
+                      ? 'Select State first'
+                      : isLoadingDistricts
+                      ? 'Loading districts...'
+                      : districts.length === 0
+                      ? 'No districts listed'
+                      : 'Select district'}
+                  </option>
+                  {districts.map(dst => (
+                    <option key={dst.id} value={dst.id}>
+                      {dst.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1249,14 +1428,34 @@ export const CompleteProfile: React.FC = () => {
                   Mandal
                 </label>
                 <select
-                  value={formData.mandal}
-                  onChange={e => handleChange('mandal', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
+                  value={formData.mandal_id || (formData.mandal ? mandals.find(m => m.name === formData.mandal)?.id : '') || ''}
+                  onChange={e => {
+                    const selected = mandals.find(m => String(m.id) === e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      mandal_id: selected ? selected.id : null,
+                      mandal: selected ? selected.name : '',
+                      village_id: null,
+                      village: ''
+                    }));
+                  }}
+                  disabled={!selectedDistrictId || isLoadingMandals}
+                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">Select mandal</option>
-                  <option value="Mandal 1">Central Mandal</option>
-                  <option value="Mandal 2">North Mandal</option>
-                  <option value="Mandal 3">South Mandal</option>
+                  <option value="">
+                    {!selectedDistrictId
+                      ? 'Select District first'
+                      : isLoadingMandals
+                      ? 'Loading mandals...'
+                      : mandals.length === 0
+                      ? 'No mandals listed'
+                      : 'Select mandal'}
+                  </option>
+                  {mandals.map(mnd => (
+                    <option key={mnd.id} value={mnd.id}>
+                      {mnd.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -1264,13 +1463,33 @@ export const CompleteProfile: React.FC = () => {
                   Village
                 </label>
                 <select
-                  value={formData.village}
-                  onChange={e => handleChange('village', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
+                  value={formData.village_id || (formData.village ? villages.find(v => v.name === formData.village)?.id : '') || ''}
+                  onChange={e => {
+                    const selected = villages.find(v => String(v.id) === e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      village_id: selected ? selected.id : null,
+                      village: selected ? selected.name : '',
+                      pincode: selected?.pincode || prev.pincode
+                    }));
+                  }}
+                  disabled={!selectedMandalId || isLoadingVillages}
+                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">Select village</option>
-                  <option value="Village 1">Main Town Area</option>
-                  <option value="Village 2">Suburban Area</option>
+                  <option value="">
+                    {!selectedMandalId
+                      ? 'Select Mandal first'
+                      : isLoadingVillages
+                      ? 'Loading villages...'
+                      : villages.length === 0
+                      ? 'No villages listed'
+                      : 'Select village'}
+                  </option>
+                  {villages.map(vlg => (
+                    <option key={vlg.id} value={vlg.id}>
+                      {vlg.name} {vlg.pincode ? `(${vlg.pincode})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1338,18 +1557,24 @@ export const CompleteProfile: React.FC = () => {
                   </label>
                   <select
                     value={formData.languages_known}
-                    onChange={e => handleChange('languages_known', e.target.value)}
-                    className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer"
+                    onChange={e => {
+                      const val = e.target.value;
+                      const lang = languages.find(l => l.name === val);
+                      setFormData(prev => ({
+                        ...prev,
+                        languages_known: val,
+                        language_ids: lang ? [lang.id] : prev.language_ids
+                      }));
+                    }}
+                    disabled={isLoadingLanguages}
+                    className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer disabled:opacity-60"
                   >
-                    <option value="">Select languages</option>
-                    <option value="Telugu">Telugu</option>
-                    <option value="Hindi">Hindi</option>
-                    <option value="English">English</option>
-                    <option value="Tamil">Tamil</option>
-                    <option value="Kannada">Kannada</option>
-                    <option value="Marathi">Marathi</option>
-                    <option value="Bengali">Bengali</option>
-                    <option value="Gujarati">Gujarati</option>
+                    <option value="">{isLoadingLanguages ? 'Loading languages...' : 'Select languages'}</option>
+                    {languages.map(lang => (
+                      <option key={lang.id} value={lang.name}>
+                        {lang.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -1359,17 +1584,24 @@ export const CompleteProfile: React.FC = () => {
                   </label>
                   <select
                     value={formData.hobbies_interests}
-                    onChange={e => handleChange('hobbies_interests', e.target.value)}
-                    className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer"
+                    onChange={e => {
+                      const val = e.target.value;
+                      const hb = hobbies.find(h => h.name === val);
+                      setFormData(prev => ({
+                        ...prev,
+                        hobbies_interests: val,
+                        hobby_ids: hb ? [hb.id] : prev.hobby_ids
+                      }));
+                    }}
+                    disabled={isLoadingHobbies}
+                    className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer disabled:opacity-60"
                   >
-                    <option value="">Select hobbies</option>
-                    <option value="Classical Music">Music & Singing</option>
-                    <option value="Reading">Reading & Literature</option>
-                    <option value="Trekking">Traveling & Trekking</option>
-                    <option value="Photography">Photography</option>
-                    <option value="Cooking">Cooking & Food</option>
-                    <option value="Fitness">Fitness & Yoga</option>
-                    <option value="Art">Art & Painting</option>
+                    <option value="">{isLoadingHobbies ? 'Loading hobbies...' : 'Select hobbies'}</option>
+                    {hobbies.map(hobby => (
+                      <option key={hobby.id} value={hobby.name}>
+                        {hobby.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

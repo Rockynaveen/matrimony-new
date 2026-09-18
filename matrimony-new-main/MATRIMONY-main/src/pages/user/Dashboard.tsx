@@ -243,6 +243,7 @@ export const Dashboard: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {curatedMatches.map((match) => {
               const fullName = `${match.first_name} ${match.last_name}`.trim();
+              const profileIdentifier = (match as any).user_uuid || (match as any).member_id || (match as any).uuid || match.user_id;
               const hasSent = alreadySentIds.has(match.user_id) || Boolean(sentMap[match.user_id]);
               const isSending =
                 sendInterestMutation.isPending && sendInterestMutation.variables?.to_user === match.user_id;
@@ -250,7 +251,7 @@ export const Dashboard: React.FC = () => {
               return (
                 <div
                   key={match.user_id}
-                  onClick={() => navigate(`/profile/${match.user_id}`)}
+                  onClick={() => navigate(`/profile/${profileIdentifier}`)}
                   className="p-4 bg-white border border-stone-200 hover:border-stone-400 rounded-xl transition-all cursor-pointer space-y-3"
                 >
                   <div className="flex items-center gap-3">
@@ -306,7 +307,7 @@ export const Dashboard: React.FC = () => {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/profile/${match.user_id}`);
+                        navigate(`/profile/${profileIdentifier}`);
                       }}
                       className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-medium rounded-lg transition-colors"
                     >
@@ -343,10 +344,11 @@ export const Dashboard: React.FC = () => {
           ) : (
             receivedInterests.slice(0, 5).map((item) => {
               const senderName = `${item.first_name || ''} ${item.last_name || ''}`.trim() || 'Member';
+              const senderIdentifier = (item as any).from_user_uuid || (item as any).user_uuid || (item as any).from_user_member_id || (item as any).member_id || item.from_user;
               return (
                 <div
                   key={item.id}
-                  onClick={() => navigate(`/profile/${item.from_user}`)}
+                  onClick={() => navigate(`/profile/${senderIdentifier}`)}
                   className="p-3.5 hover:bg-stone-50/80 transition-colors flex items-center justify-between gap-3 cursor-pointer"
                 >
                   <div className="flex items-center gap-3 min-w-0">

@@ -398,7 +398,7 @@ export const MyProfilePage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => navigate(`/profile/${profile.id}`)}
+                onClick={() => navigate(`/profile/${(profile as any).uuid || (profile as any).member_id || (profile as any).user_uuid || profile.id}`)}
                 className="w-full px-4 py-2 text-xs font-semibold text-stone-600 hover:text-stone-900 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Eye className="h-3.5 w-3.5" /> Public View

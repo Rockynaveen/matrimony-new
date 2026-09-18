@@ -35,6 +35,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) 
   const [isSending, setIsSending] = React.useState(false);
   const [isJustSent, setIsJustSent] = React.useState(false);
 
+  const profileIdentifier = (profile as any).uuid || (profile as any).member_id || (profile as any).user_uuid || profile.id;
   const hasSentInterest = isJustSent || profile.interestSent || interests.some(i => String(i.receiverId) === String(profile.id) || String(i.user_id) === String(profile.id) || String(i.to_user) === String(profile.id));
 
   const handleSendInterestClick = async () => {
@@ -100,7 +101,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) 
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleProtectedAction(`/profile/${profile.id}`, () => toggleShortlist(profile.id));
+                  handleProtectedAction(`/profile/${profileIdentifier}`, () => toggleShortlist(profile.id));
                 }}
                 className={`p-2 rounded-full backdrop-blur-md transition-all ${
                   isShortlisted
@@ -109,65 +110,59 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) 
                 }`}
                 title={isShortlisted ? 'Remove from shortlist' : 'Shortlist profile'}
               >
-                <Heart className={`h-4 w-4 ${isShortlisted ? 'fill-white stroke-none' : ''}`} />
+                <Heart
+                  className={`h-4 w-4 transition-transform ${
+                    isShortlisted ? 'fill-current scale-110' : ''
+                  }`}
+                />
               </button>
             </div>
 
-            {/* Bottom Media Meta */}
-            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white z-10">
-              <div>
-                <span className="text-xs font-medium text-white/90">ID: {profile.id}</span>
+            {/* AI Match Compatibility Badge */}
+            {profile.matchScore !== undefined && (
+              <div className="absolute bottom-3 right-3 z-10">
+                <div className="bg-stone-900/80 backdrop-blur-md text-amber-400 border border-amber-400/40 text-xs px-2.5 py-1 rounded-full flex items-center gap-1 font-bold shadow-sm">
+                  <Sparkles className="h-3 w-3 text-amber-400 fill-amber-400/30" />
+                  <span>{profile.matchScore}% Match</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1 bg-[#8B1E3F]/90 text-[#D4AF37] px-2.5 py-1 rounded-full text-xs font-bold shadow-md border border-[#D4AF37]/30">
-                <Sparkles className="h-3.5 w-3.5" /> {profile.compatibilityScore}% Match
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Profile Details Content */}
+          {/* Profile Details Body */}
           <div className="p-4 space-y-2.5">
             <div>
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => handleProtectedAction(`/profile/${profile.id}`)}
-                  className="font-serif text-base sm:text-lg font-bold text-foreground hover:text-[#8B1E3F] transition-colors line-clamp-1 text-left cursor-pointer"
-                >
-                  {profile.name}, {profile.age}
-                </button>
-              </div>
-              <p className="text-xs font-medium text-[#8B1E3F] mt-0.5">
-                {profile.religion} • {profile.caste} {profile.subcaste ? `(${profile.subcaste})` : ''}
+              <h3 className="font-bold text-base text-gray-900 line-clamp-1 group-hover:text-[#8B1E3F] transition-colors">
+                {profile.name}, {profile.age}
+              </h3>
+              <p className="text-xs text-stone-600 font-medium line-clamp-1">
+                {profile.community || profile.caste || profile.religion || 'Community'}
               </p>
             </div>
 
-            <div className="space-y-1.5 text-xs text-stone-800 font-semibold pt-1 border-t border-border/40">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
-                <span className="truncate">{profile.location.city}, {profile.location.state}</span>
+            <div className="space-y-1 text-xs text-stone-500 font-normal">
+              <div className="flex items-center gap-1.5 truncate">
+                <GraduationCap className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                <span className="truncate">{profile.education || 'Not specified'}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Briefcase className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
-                <span className="truncate">{profile.profession} ({profile.annualIncome})</span>
+              <div className="flex items-center gap-1.5 truncate">
+                <Briefcase className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                <span className="truncate">{profile.profession || 'Not specified'}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <GraduationCap className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
-                <span className="truncate">{profile.education}</span>
+              <div className="flex items-center gap-1.5 truncate">
+                <MapPin className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                <span className="truncate">{profile.city || profile.location || 'India'}</span>
               </div>
             </div>
-
-            <p className="text-xs text-stone-700 font-medium line-clamp-2 pt-0.5">
-              "{profile.about}"
-            </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="p-4 pt-0 grid grid-cols-2 gap-2 border-t border-border/30 mt-1 pt-2">
+        {/* Action Buttons Footer */}
+        <div className="p-3 pt-0 grid grid-cols-2 gap-2 mt-auto">
           <Button
             size="sm"
             variant="outline"
-            onClick={() => handleProtectedAction(`/profile/${profile.id}`)}
+            onClick={() => handleProtectedAction(`/profile/${profileIdentifier}`)}
             className="w-full text-xs border-2 border-[#8B1E3F] text-[#8B1E3F] bg-white hover:bg-[#8B1E3F] hover:text-white transition-all font-bold shadow-2xs"
           >
             <Eye className="h-3.5 w-3.5 mr-1" /> View Profile
@@ -195,7 +190,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) 
             <Button
               size="sm"
               variant="primary"
-              onClick={() => handleProtectedAction(`/profile/${profile.id}`, handleSendInterestClick)}
+              onClick={() => handleProtectedAction(`/profile/${profileIdentifier}`, handleSendInterestClick)}
               className="w-full text-xs"
             >
               <Heart className="h-3.5 w-3.5 mr-1 fill-white/20" /> Send Interest

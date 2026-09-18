@@ -868,7 +868,7 @@ export const MessagesPage: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => navigate(`/profile/${activeProfile.id}`)}
+                    onClick={() => navigate(`/profile/${(activeProfile as any).user_uuid || (activeProfile as any).member_id || (activeProfile as any).uuid || activeProfile.id}`)}
                     className="hidden sm:inline-flex items-center gap-1 text-xs font-extrabold px-3 py-1.5 rounded-xl border border-[#8B1E3F] bg-[#8B1E3F] text-white hover:bg-[#721733] hover:text-white shadow-xs transition-all cursor-pointer"
                   >
                     View Profile <ChevronRight className="h-3.5 w-3.5" />

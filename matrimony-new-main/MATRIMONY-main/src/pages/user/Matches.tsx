@@ -16,14 +16,9 @@ import {
   ChevronDown,
   LayoutGrid,
   List,
-  ShieldCheck,
-  Users,
-  Lock,
-  Heart,
   Sparkles,
   RefreshCw,
-  AlertCircle,
-  ArrowRight
+  AlertCircle
 } from 'lucide-react';
 import { LoadingScreen } from '../../components/ui/LoadingScreen';
 import { Button } from '../../components/ui/Button';
@@ -511,64 +506,7 @@ export const MatchesPage: React.FC = () => {
 
         </div>
 
-        {/* ── 3. Bottom Trust & Authenticity Strip ── */}
-        <div className="bg-white border border-stone-200/90 rounded-2xl p-4 sm:p-5 flex flex-col lg:flex-row items-center justify-between gap-6 shadow-2xs overflow-hidden relative">
-          
-          {/* 4 Feature Badges */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full lg:w-auto">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-rose-50 text-[#8B1E3F] shrink-0">
-                <ShieldCheck className="h-5 w-5 text-[#8B1E3F]" />
-              </div>
-              <div>
-                <h4 className="font-bold text-xs text-stone-900">100% Verified Profiles</h4>
-                <p className="text-[11px] text-stone-500">Safe & Secure</p>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-rose-50 text-[#8B1E3F] shrink-0">
-                <Users className="h-5 w-5 text-[#8B1E3F]" />
-              </div>
-              <div>
-                <h4 className="font-bold text-xs text-stone-900">Genuine Matches</h4>
-                <p className="text-[11px] text-stone-500">Real People</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-rose-50 text-[#8B1E3F] shrink-0">
-                <Lock className="h-5 w-5 text-[#8B1E3F]" />
-              </div>
-              <div>
-                <h4 className="font-bold text-xs text-stone-900">Privacy First</h4>
-                <p className="text-[11px] text-stone-500">Your data is protected</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-rose-50 text-[#8B1E3F] shrink-0">
-                <Heart className="h-5 w-5 text-[#8B1E3F]" />
-              </div>
-              <div>
-                <h4 className="font-bold text-xs text-stone-900">Find Your Forever</h4>
-                <p className="text-[11px] text-stone-500">Together Always</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Romantic Burgundy Badge */}
-          <div className="w-full lg:w-auto shrink-0">
-            <div className="bg-gradient-to-r from-[#8B1E3F] to-[#721833] text-white px-6 py-3 rounded-2xl flex items-center justify-between gap-3 shadow-sm">
-              <div className="font-serif italic text-xs leading-snug">
-                <span className="block font-sans text-[10px] tracking-wider uppercase opacity-80">More Than Matches</span>
-                <span>Meaningful Relationships</span>
-              </div>
-              <ArrowRight className="h-4 w-4" />
-            </div>
-          </div>
-
-        </div>
 
       </div>
     </div>

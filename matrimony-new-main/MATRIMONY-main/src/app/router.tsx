@@ -142,6 +142,7 @@ export const AppRouter: React.FC = () => (
         <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
         <Route path="/preferences" element={<ProtectedRoute><PreferencesPage /></ProtectedRoute>} />
         <Route path="/matches" element={<ProtectedRoute><MatchesPage /></ProtectedRoute>} />
+        <Route path="/matching" element={<ProtectedRoute><MatchesPage /></ProtectedRoute>} />
         <Route path="/membership" element={<ProtectedRoute><MembershipPage /></ProtectedRoute>} />
         <Route path="/profile/:id" element={<ProtectedRoute><ViewProfile /></ProtectedRoute>} />
         <Route path="/photos" element={<ProtectedRoute><PhotosPage /></ProtectedRoute>} />

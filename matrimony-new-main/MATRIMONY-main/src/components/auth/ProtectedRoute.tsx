@@ -61,11 +61,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <>{children}</>;
   }
 
-  // 5. Verification check: ONLY after verification is complete then only go to matching!
+  // 5. Verification check (Verify Now vs. Verify Later as per Section 10.1)
   const isVerificationCompleted =
     Boolean(onboardingStatus.verification_completed) ||
     onboardingStatus.verification_status === 'VERIFIED' ||
-    localStorage.getItem('verification_completed') === 'true';
+    localStorage.getItem('verification_completed') === 'true' ||
+    localStorage.getItem('verification_skipped') === 'true' ||
+    Boolean((onboardingStatus as any).verification_skipped);
 
   if (!onboardingStatus.complete_profile_completed) {
     return <Navigate to="/profile/complete" replace />;

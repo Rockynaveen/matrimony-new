@@ -28,7 +28,7 @@ interface RecommendationCardProps {
   isInterestSent?: boolean;
   isInterestAccepted?: boolean;
   isViewed?: boolean;
-  onViewProfile?: (userId: number) => void;
+  onViewProfile?: (userId: string | number) => void;
 }
 
 export const RecommendationCard: React.FC<RecommendationCardProps> = ({
@@ -84,8 +84,9 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 
   const handleProfileUnlockFlow = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    const publicIdentifier = (match as any).user_uuid || match.member_id || (match as any).uuid || match.user_id;
     if (onViewProfile) {
-      onViewProfile(match.user_id);
+      onViewProfile(publicIdentifier);
     }
     if (isLocked) {
       if (match.lock_reason === 'NO_PROFILE_CREDITS') {
@@ -96,7 +97,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         return;
       }
     }
-    navigate(`/profile/${match.user_id}`);
+    navigate(`/profile/${publicIdentifier}`);
   };
 
   const locationStr = [match.city, match.state].filter(Boolean).join(', ') || match.country || 'Not Specified';

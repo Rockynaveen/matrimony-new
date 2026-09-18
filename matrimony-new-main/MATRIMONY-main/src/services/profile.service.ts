@@ -468,27 +468,37 @@ export const profileService = {
    * If locked and remaining credits = 0, backend throws 403 Forbidden with lock_reason: "NO_PROFILE_CREDITS".
    */
   async getProfileByUserId(userId: string | number): Promise<ProfileOutAPI | null> {
-    const numericId = Number(userId);
-    if (!numericId || numericId <= 0) return null;
+    if (!userId) return null;
+    const rawStr = String(userId).trim();
+    if (!rawStr) return null;
 
-    const kmId = `KM${String(numericId).padStart(6, '0')}`;
-    const mnId = `MN${numericId}`;
+    const numericId = Number(rawStr);
+    const isNumeric = !isNaN(numericId) && numericId > 0;
 
-    const candidateUrls = [
-      `/profile/${numericId}/`,
-      `/profile/${numericId}`,
-      `/profile/by-member-id/${kmId}/`,
-      `/profile/by-member-id/${kmId}`,
-      `/profile/by-member-id/${mnId}/`,
-      `/profile/by-member-id/${numericId}/`,
-      `/search/profile-id-search?identifier=${numericId}`,
-      `/search/profile-id-search?identifier=${kmId}`,
-      `/search/profile-id-search?identifier=${mnId}`,
-      `/profile/user/${numericId}/`,
-      `/profile/user/${numericId}`,
-      `/profile/get/${numericId}/`,
-      `/profile/get/${numericId}`
+    const candidateUrls: string[] = [
+      `/profile/${rawStr}/`,
+      `/profile/${rawStr}`,
+      `/profile/by-member-id/${rawStr}/`,
+      `/profile/by-member-id/${rawStr}`,
+      `/search/profile-id-search?identifier=${rawStr}`
     ];
+
+    if (isNumeric) {
+      const kmId = `KM${String(numericId).padStart(6, '0')}`;
+      const mnId = `MN${numericId}`;
+      candidateUrls.push(
+        `/profile/by-member-id/${kmId}/`,
+        `/profile/by-member-id/${kmId}`,
+        `/profile/by-member-id/${mnId}/`,
+        `/profile/by-member-id/${numericId}/`,
+        `/search/profile-id-search?identifier=${kmId}`,
+        `/search/profile-id-search?identifier=${mnId}`,
+        `/profile/user/${numericId}/`,
+        `/profile/user/${numericId}`,
+        `/profile/get/${numericId}/`,
+        `/profile/get/${numericId}`
+      );
+    }
 
     for (const url of candidateUrls) {
       try {

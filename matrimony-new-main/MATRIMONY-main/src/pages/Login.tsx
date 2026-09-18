@@ -112,7 +112,14 @@ export const Login: React.FC = () => {
       showToast('OTP sent successfully to your mobile number.');
       setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
     } catch (err: any) {
-      showToast(err.message || 'Failed to send OTP. Please try again.');
+      const msg = err.message || 'Failed to send OTP. Please try again.';
+      const lower = msg.toLowerCase();
+      if (lower.includes('not registered') || lower.includes('not found') || lower.includes('register first')) {
+        showToast('Mobile number is not registered. Please register first.');
+        setTimeout(() => navigate('/register'), 1200);
+      } else {
+        showToast(msg);
+      }
     } finally {
       setIsSendingOtp(false);
     }
@@ -144,7 +151,14 @@ export const Login: React.FC = () => {
 
       checkOnboardingFlow(rawUser?.email);
     } catch (err: any) {
-      showToast(err.message || 'Invalid or expired OTP. Please try again.');
+      const msg = err.message || 'Invalid or expired OTP. Please try again.';
+      const lower = msg.toLowerCase();
+      if (lower.includes('not registered') || lower.includes('not found') || lower.includes('register first')) {
+        showToast('Mobile number is not registered. Please register first.');
+        setTimeout(() => navigate('/register'), 1200);
+      } else {
+        showToast(msg);
+      }
     } finally {
       setIsVerifyingOtp(false);
     }
@@ -159,7 +173,19 @@ export const Login: React.FC = () => {
       });
       checkOnboardingFlow(data.email);
     } catch (err: any) {
-      showToast(err.message || 'Login failed. Please check credentials.');
+      const msg = err.message || 'Login failed. Please check credentials.';
+      const lower = msg.toLowerCase();
+      if (
+        lower.includes('not registered') ||
+        lower.includes('not found') ||
+        lower.includes('register first') ||
+        lower.includes('no account')
+      ) {
+        showToast('Account not found. Please register first.');
+        setTimeout(() => navigate('/register'), 1200);
+      } else {
+        showToast(msg);
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   UploadCloud,
   Camera,
@@ -51,6 +52,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
   serverSuccess,
   onClearError
 }) => {
+  const navigate = useNavigate();
   const [documentType, setDocumentType] = useState<string>('Aadhaar');
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [documentPreview, setDocumentPreview] = useState<string | null>(null);
@@ -625,12 +627,22 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
 
       </div>
 
-      {/* 5. Bottom Action Button: Proceed to Next */}
-      <div className="flex justify-center pt-2">
+      {/* 5. Bottom Action Button: Submit & Verify Later */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+        <button
+          type="button"
+          onClick={() => {
+            localStorage.setItem('verification_skipped', 'true');
+            navigate('/matching');
+          }}
+          className="order-2 sm:order-1 px-6 py-3 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors cursor-pointer"
+        >
+          Verify Later (Skip for now)
+        </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-[#8B1E3F] hover:bg-[#721833] text-white px-12 py-3.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="order-1 sm:order-2 bg-[#8B1E3F] hover:bg-[#721833] text-white px-10 py-3.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? (
             <>

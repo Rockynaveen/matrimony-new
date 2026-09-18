@@ -10,7 +10,7 @@ import type {
   PatchBasicProfileRequest,
   DetailedProfileRequest
 } from '../types/apiTypes';
-import { extractNameFromEmail, isGenericName } from '../context/AppContext';
+import { extractNameFromEmail, isGenericName } from '../utils/nameUtils';
 
 export const profileApi = {
   // GET /api/profile/get/

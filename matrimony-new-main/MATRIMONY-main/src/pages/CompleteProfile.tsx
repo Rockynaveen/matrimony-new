@@ -58,7 +58,7 @@ export const CompleteProfile: React.FC = () => {
   // Form State initialized with draft or empty
   const [formData, setFormData] = useState({
     // Section 1: Personal Details
-    profile_name: currentUser.name && !isGenericName(currentUser.name) ? currentUser.name : '',
+    profile_name: currentUser?.name && !isGenericName(currentUser.name) ? currentUser.name : '',
     about_me: '',
     height: 0,
     weight: 0,
@@ -144,7 +144,7 @@ export const CompleteProfile: React.FC = () => {
     is_private_profile: false,
 
     // Profile Photo
-    profile_photo: currentUser.avatar || localStorage.getItem('logged_in_avatar') || ''
+    profile_photo: currentUser?.avatar || localStorage.getItem('logged_in_avatar') || ''
   });
 
   // Cascading Location & Caste Queries

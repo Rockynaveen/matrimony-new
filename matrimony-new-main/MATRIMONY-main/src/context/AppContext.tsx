@@ -20,6 +20,7 @@ import { verificationService } from '../services/verification.service';
 import { partnerPreferencesService } from '../services/partnerPreferences.service';
 import { queryClient } from '../lib/queryClient';
 import { isAtLeast18YearsOld } from '../utils/validationSchemas';
+import { isDummyImage } from '../components/ui/MatchAvatar';
 
 // Import Focused Domain Stores
 import { useAuthStore } from '../store/useAuthStore';

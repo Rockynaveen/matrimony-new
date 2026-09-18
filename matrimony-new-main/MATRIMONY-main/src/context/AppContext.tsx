@@ -704,6 +704,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('logged_in_name');
     localStorage.removeItem('logged_in_avatar');
     localStorage.removeItem('google_avatar');
+    localStorage.removeItem('logged_in_gender');
+    localStorage.removeItem('logged_in_dob');
+    localStorage.removeItem('logged_in_phone');
     localStorage.removeItem('user_profile_draft');
     localStorage.removeItem('vivah_mock_profile');
     localStorage.removeItem('vivah_mock_user');
@@ -792,6 +795,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('logged_in_email', payload.email);
       localStorage.setItem('login_method', 'email');
       localStorage.setItem('registration_method', 'manual');
+      if (payload.gender) localStorage.setItem('logged_in_gender', payload.gender);
+      if (payload.date_of_birth) localStorage.setItem('logged_in_dob', payload.date_of_birth);
+      if (payload.phone) localStorage.setItem('logged_in_phone', payload.phone);
 
       useAuthStore.setState({
         accessToken: res.access_token,
@@ -801,7 +807,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...currentUser,
           name,
           email: payload.email || currentUser.email,
-          phone: payload.phone || currentUser.phone
+          phone: payload.phone || currentUser.phone,
+          gender: payload.gender || currentUser.gender,
+          date_of_birth: payload.date_of_birth || currentUser.date_of_birth
         }
       });
 
@@ -835,6 +843,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('logged_in_email', payload.email);
     localStorage.setItem('login_method', 'google_register');
     localStorage.setItem('registration_method', 'google');
+    if (payload.gender) localStorage.setItem('logged_in_gender', payload.gender);
+    if (payload.date_of_birth) localStorage.setItem('logged_in_dob', payload.date_of_birth);
+    if (payload.phone) localStorage.setItem('logged_in_phone', payload.phone);
 
     useAuthStore.setState({
       accessToken: localStorage.getItem('access_token'),
@@ -843,7 +854,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       currentUser: {
         ...currentUser,
         name: finalName,
-        email: payload.email
+        email: payload.email,
+        phone: payload.phone || currentUser.phone,
+        gender: payload.gender || currentUser.gender,
+        date_of_birth: payload.date_of_birth || currentUser.date_of_birth
       }
     });
 

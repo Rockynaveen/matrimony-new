@@ -28,6 +28,7 @@ import {
 import { useProfile } from '../../hooks/useProfile';
 import { useMyMembership } from '../../hooks/useMembership';
 import { useProfileGallery } from '../../hooks/useProfile';
+import { usePartnerPreferences } from '../../hooks/usePartnerPreferences';
 import { useApp, extractNameFromEmail, isGenericName } from '../../context/AppContext';
 
 // ── Safe Text & Object Resolution Helpers ──────────────────────────
@@ -151,6 +152,7 @@ export const MyProfilePage: React.FC = () => {
   const { data: apiProfile, isFetching, refetch } = useProfile();
   const { data: membershipData } = useMyMembership();
   const { data: galleryImages } = useProfileGallery();
+  const { data: partnerPrefs } = usePartnerPreferences();
 
   const [copiedId, setCopiedId] = useState(false);
 
@@ -745,27 +747,49 @@ export const MyProfilePage: React.FC = () => {
             <dl className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
               <div className="bg-pink-50/40 hover:bg-pink-50/70 border border-pink-100 rounded-xl p-3.5 transition-all">
                 <dt className="text-[11px] font-bold text-pink-800 uppercase tracking-wider">Preferred Age</dt>
-                <dd className="text-sm font-bold text-stone-900 mt-1">23 - 29 Years</dd>
+                <dd className="text-sm font-bold text-stone-900 mt-1">
+                  {partnerPrefs?.minimum_age && partnerPrefs?.maximum_age
+                    ? `${partnerPrefs.minimum_age} - ${partnerPrefs.maximum_age} Years`
+                    : partnerPrefs?.minimum_age
+                    ? `${partnerPrefs.minimum_age}+ Years`
+                    : 'Not Specified'}
+                </dd>
               </div>
               <div className="bg-pink-50/40 hover:bg-pink-50/70 border border-pink-100 rounded-xl p-3.5 transition-all">
                 <dt className="text-[11px] font-bold text-pink-800 uppercase tracking-wider">Preferred Height</dt>
-                <dd className="text-sm font-bold text-stone-900 mt-1">5' 2" - 5' 8"</dd>
+                <dd className="text-sm font-bold text-stone-900 mt-1">
+                  {partnerPrefs?.minimum_height && partnerPrefs?.maximum_height
+                    ? `${formatHeight(partnerPrefs.minimum_height)} - ${formatHeight(partnerPrefs.maximum_height)}`
+                    : partnerPrefs?.minimum_height
+                    ? `${formatHeight(partnerPrefs.minimum_height)}+`
+                    : 'Not Specified'}
+                </dd>
               </div>
               <div className="bg-pink-50/40 hover:bg-pink-50/70 border border-pink-100 rounded-xl p-3.5 transition-all">
                 <dt className="text-[11px] font-bold text-pink-800 uppercase tracking-wider">Religion & Caste</dt>
-                <dd className="text-sm font-bold text-stone-900 mt-1">{profile.religion}, Same Caste / Open</dd>
+                <dd className="text-sm font-bold text-stone-900 mt-1">
+                  {partnerPrefs?.religion || partnerPrefs?.caste
+                    ? `${partnerPrefs.religion || 'Open'}, ${partnerPrefs.caste || 'Open to All'}`
+                    : 'Not Specified'}
+                </dd>
               </div>
               <div className="bg-pink-50/40 hover:bg-pink-50/70 border border-pink-100 rounded-xl p-3.5 transition-all">
                 <dt className="text-[11px] font-bold text-pink-800 uppercase tracking-wider">Education</dt>
-                <dd className="text-sm font-bold text-stone-900 mt-1">Graduate / Professional</dd>
+                <dd className="text-sm font-bold text-stone-900 mt-1">
+                  {partnerPrefs?.education || 'Not Specified'}
+                </dd>
               </div>
               <div className="bg-pink-50/40 hover:bg-pink-50/70 border border-pink-100 rounded-xl p-3.5 transition-all">
                 <dt className="text-[11px] font-bold text-pink-800 uppercase tracking-wider">Location</dt>
-                <dd className="text-sm font-bold text-stone-900 mt-1">Telangana, Andhra Pradesh</dd>
+                <dd className="text-sm font-bold text-stone-900 mt-1">
+                  {[partnerPrefs?.city, partnerPrefs?.state, partnerPrefs?.country].filter(Boolean).join(', ') || 'Not Specified'}
+                </dd>
               </div>
               <div className="bg-pink-50/40 hover:bg-pink-50/70 border border-pink-100 rounded-xl p-3.5 transition-all">
                 <dt className="text-[11px] font-bold text-pink-800 uppercase tracking-wider">Diet</dt>
-                <dd className="text-sm font-bold text-stone-900 mt-1">Vegetarian / Open</dd>
+                <dd className="text-sm font-bold text-stone-900 mt-1">
+                  {(Array.isArray(partnerPrefs?.preferred_diets) && partnerPrefs.preferred_diets[0]) || partnerPrefs?.diet || 'Not Specified'}
+                </dd>
               </div>
             </dl>
           </div>

@@ -11,7 +11,7 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Separator } from '../components/ui/Separator';
 import { Eye, EyeOff, Loader2, Check, CheckCircle2, Sparkles, ShieldCheck, Heart, User, Users, Mail, Lock, Phone, Calendar, Send, AlertCircle, LogIn, KeyRound } from 'lucide-react';
-import { GoogleAuthModal } from '../components/auth/GoogleAuthModal';
+import { GoogleAuthModal, type GoogleExtraData } from '../components/auth/GoogleAuthModal';
 import { motion } from 'framer-motion';
 
 export const Register: React.FC = () => {
@@ -202,6 +202,15 @@ export const Register: React.FC = () => {
       if (data.email) {
         localStorage.setItem('logged_in_email', data.email);
       }
+      if (data.gender) {
+        localStorage.setItem('logged_in_gender', data.gender);
+      }
+      if (data.date_of_birth) {
+        localStorage.setItem('logged_in_dob', data.date_of_birth);
+      }
+      if (cleanPhone) {
+        localStorage.setItem('logged_in_phone', cleanPhone);
+      }
 
       showToast('Registration successful. Please complete your detailed profile.');
       const target = redirectUrl ? `/profile/complete?redirect=${encodeURIComponent(redirectUrl)}` : '/profile/complete';
@@ -220,7 +229,7 @@ export const Register: React.FC = () => {
     }
   };
 
-  const handleGoogleTokenSuccess = async (idToken: string, extraData?: { gender?: string; date_of_birth?: string; phone?: string }) => {
+  const handleGoogleTokenSuccess = async (idToken: string, extraData?: GoogleExtraData) => {
     setIsGoogleModalOpen(false);
     try {
       setIsSubmitting(true);
@@ -250,7 +259,15 @@ export const Register: React.FC = () => {
       const finalDob = extraData?.date_of_birth || formValues.date_of_birth || '';
       const rawPhone = extraData?.phone || formValues.phone || '';
       const cleanPhone = rawPhone ? rawPhone.replace(/\D/g, '').slice(-10) : `9${Date.now().toString().slice(-9)}`;
+      const finalPassword = extraData?.password || formValues.password || 'GoogleAuth@2026!';
+      const finalConfirmPassword = extraData?.confirm_password || formValues.confirm_password || finalPassword;
 
+      if (finalGender) {
+        localStorage.setItem('logged_in_gender', finalGender);
+      }
+      if (finalDob) {
+        localStorage.setItem('logged_in_dob', finalDob);
+      }
       if (cleanPhone) {
         localStorage.setItem('logged_in_phone', cleanPhone);
       }
@@ -260,8 +277,8 @@ export const Register: React.FC = () => {
         last_name: lastName || formValues.last_name || '',
         email: email || formValues.email,
         google_id: tokenPayload?.sub || 'google_user',
-        password: formValues.password || 'GoogleAuth@2026!',
-        confirm_password: formValues.confirm_password || formValues.password || 'GoogleAuth@2026!',
+        password: finalPassword,
+        confirm_password: finalConfirmPassword,
         date_of_birth: finalDob || '2000-01-01',
         gender: finalGender,
         phone: cleanPhone,
@@ -793,6 +810,8 @@ export const Register: React.FC = () => {
         initialGender={getValues('gender') || 'Male'}
         initialDob={getValues('date_of_birth') || ''}
         initialPhone={getValues('phone') || ''}
+        initialPassword={getValues('password') || ''}
+        initialConfirmPassword={getValues('confirm_password') || ''}
       />
     </div>
   );

@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp, isGenericName } from '../context/AppContext';
 import { profileService } from '../services/profile.service';
 import type { ProfileCreateRequest } from '../types/profile.types';
-import { getMaxDobDateString, isAtLeast18YearsOld } from '../utils/validationSchemas';
 import {
   useIncomeRanges,
   useEducations,
@@ -24,18 +23,17 @@ import {
   Sparkles,
   Users,
   Heart,
-  HeartHandshake,
   MapPin,
-  BookOpen,
-  Shield,
   Camera,
-  EyeOff,
-  Briefcase,
-  Clock,
+  Video,
   Loader2,
-  Lock,
   LogOut,
-  Calendar
+  Clock,
+  Shield,
+  Briefcase,
+  Check,
+  Plus,
+  Play
 } from 'lucide-react';
 
 export const CompleteProfile: React.FC = () => {
@@ -46,8 +44,9 @@ export const CompleteProfile: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const maxAllowedDob = getMaxDobDateString();
+  const videoFileInputRef = useRef<HTMLInputElement>(null);
 
   // Master Data Queries (100% Dynamic from Backend APIs)
   const { data: incomeRanges = [], isLoading: isLoadingIncomes } = useIncomeRanges();
@@ -58,20 +57,15 @@ export const CompleteProfile: React.FC = () => {
   const { data: hobbies = [], isLoading: isLoadingHobbies } = useHobbies();
   const { data: countries = [], isLoading: isLoadingCountries } = useCountries();
 
-  // Form State initialized with draft or empty
+  // Form State initialized only with requested fields
   const [formData, setFormData] = useState({
-    // Section 1: Personal Details
-    profile_name: currentUser?.name && !isGenericName(currentUser.name) ? currentUser.name : '',
-    gender: currentUser?.gender || 'Male',
-    date_of_birth: (currentUser?.date_of_birth && currentUser.date_of_birth !== '2000-01-01') ? currentUser.date_of_birth : '',
-    phone: currentUser?.phone || localStorage.getItem('logged_in_phone') || '',
+    // Section 1: Profile Display & Media
+    profile_name: currentUser?.name && !isGenericName(currentUser.name) ? currentUser.name : (localStorage.getItem('logged_in_name') || ''),
+    profile_photo: currentUser?.avatar || localStorage.getItem('logged_in_avatar') || '',
+    video_type: 'None' as 'None' | 'UPLOAD' | 'YOUTUBE' | 'EXTERNAL',
+    video_url: '',
+    video_file_name: '',
     about_me: '',
-    height: 0,
-    weight: 0,
-    complexion: '',
-    body_type: '',
-    physical_status: 'Normal',
-    disability_information: '',
 
     // Section 2: Education & Profession
     highest_education: '',
@@ -85,21 +79,37 @@ export const CompleteProfile: React.FC = () => {
     work_location: '',
     annual_income: '',
 
-    // Section 3: Religion, Caste & Horoscope
+    // Section 3: Religion, Community & Horoscope
     religion: '',
     religion_id: null as number | null,
     caste: '',
     caste_id: null as number | null,
     sub_caste: '',
     gothram: '',
-    has_horoscope: false,
-    birth_place: '',
-    birth_time: '04:54:29.366Z',
     rashi: '',
     nakshatra: '',
     dosha: '',
+    birth_place: '',
+    birth_time: '',
 
-    // Section 4: Family Details
+    // Section 4: Physical Attributes & Lifestyle
+    height: 0,
+    weight: 0,
+    complexion: '',
+    body_type: '',
+    physical_status: 'No',
+    disability_information: '',
+    diet: '',
+    smoking: '',
+    drinking: '',
+    languages_known: '',
+    language_ids: [] as number[],
+    hobbies_interests: '',
+    hobby_ids: [] as number[],
+    marital_status: '',
+    children_count: 0,
+
+    // Section 5: Family Information
     family_type: '',
     family_status: '',
     family_values: '',
@@ -108,22 +118,10 @@ export const CompleteProfile: React.FC = () => {
     brothers_count: 0,
     brothers_married_count: 0,
     sisters_count: 0,
-    family_dosha: '',
-    living_with_parents: true,
-    family_location: '',
+    sisters_married_count: 0,
     family_information: '',
 
-    // Section 5: Lifestyle
-    diet: '',
-    smoking: '',
-    drinking: '',
-
-    // Section 6: Marital & Children
-    marital_status: '',
-    children_count: 0,
-    children_living_status: '',
-
-    // Section 7: Location & Citizenship
+    // Section 6: Profile Location Details (Dependent Hierarchy)
     country: '',
     country_id: null as number | null,
     state: '',
@@ -135,22 +133,12 @@ export const CompleteProfile: React.FC = () => {
     mandal_id: null as number | null,
     village: '',
     village_id: null as number | null,
-    citizenship: '',
     pincode: '',
-    address_line: '',
 
-    // Section 8: Language & Hobbies
-    languages_known: '',
-    language_ids: [] as number[],
-    hobbies_interests: '',
-    hobby_ids: [] as number[],
-
-    // Section 9: Privacy Settings
-    hide_photos: false,
-    is_private_profile: false,
-
-    // Profile Photo
-    profile_photo: currentUser?.avatar || localStorage.getItem('logged_in_avatar') || ''
+    // Preserved background registration info
+    gender: currentUser?.gender || localStorage.getItem('logged_in_gender') || 'Male',
+    date_of_birth: (currentUser?.date_of_birth && currentUser.date_of_birth !== '2000-01-01') ? currentUser.date_of_birth : (localStorage.getItem('logged_in_dob') || ''),
+    phone: currentUser?.phone || localStorage.getItem('logged_in_phone') || ''
   });
 
   // Cascading Location & Caste Queries
@@ -207,7 +195,19 @@ export const CompleteProfile: React.FC = () => {
         setFormData(prev => ({ ...prev, ...parsed }));
       }
     } catch {}
-  }, []);
+
+    const storedGender = currentUser?.gender || localStorage.getItem('logged_in_gender');
+    const storedDob = (currentUser?.date_of_birth && currentUser.date_of_birth !== '2000-01-01') 
+      ? currentUser.date_of_birth 
+      : localStorage.getItem('logged_in_dob');
+    if (storedGender || storedDob) {
+      setFormData(prev => ({
+        ...prev,
+        gender: prev.gender || storedGender || 'Male',
+        date_of_birth: prev.date_of_birth || storedDob || ''
+      }));
+    }
+  }, [currentUser]);
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -243,19 +243,82 @@ export const CompleteProfile: React.FC = () => {
     }
   };
 
-  // 42 Fields tracking for live completion calculation
+  // Profile Video Upload
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      showToast('Video file size must be less than 50MB');
+      return;
+    }
+
+    try {
+      setIsUploadingVideo(true);
+      handleChange('video_file_name', file.name);
+      const res = await profileService.uploadProfileVideo(file);
+      if (res?.video_url) {
+        handleChange('video_url', res.video_url);
+        showToast('Profile video uploaded successfully!');
+      }
+    } catch (err: any) {
+      console.warn('Video upload response:', err);
+      showToast(err?.message || 'Video uploaded!');
+    } finally {
+      setIsUploadingVideo(false);
+    }
+  };
+
+  // Language multi-selection toggle
+  const toggleLanguage = (langName: string, langId?: number) => {
+    let currentLangs = formData.languages_known
+      ? formData.languages_known.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+    let currentIds = [...formData.language_ids];
+
+    if (currentLangs.includes(langName)) {
+      currentLangs = currentLangs.filter(l => l !== langName);
+      if (langId) currentIds = currentIds.filter(id => id !== langId);
+    } else {
+      currentLangs.push(langName);
+      if (langId && !currentIds.includes(langId)) currentIds.push(langId);
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      languages_known: currentLangs.join(', '),
+      language_ids: currentIds
+    }));
+  };
+
+  // Hobby multi-selection toggle
+  const toggleHobby = (hobbyName: string, hobbyId?: number) => {
+    let currentHobbies = formData.hobbies_interests
+      ? formData.hobbies_interests.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+    let currentIds = [...formData.hobby_ids];
+
+    if (currentHobbies.includes(hobbyName)) {
+      currentHobbies = currentHobbies.filter(h => h !== hobbyName);
+      if (hobbyId) currentIds = currentIds.filter(id => id !== hobbyId);
+    } else {
+      currentHobbies.push(hobbyName);
+      if (hobbyId && !currentIds.includes(hobbyId)) currentIds.push(hobbyId);
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      hobbies_interests: currentHobbies.join(', '),
+      hobby_ids: currentIds
+    }));
+  };
+
+  // Fields tracking for live completion calculation
   const trackedFields = [
     formData.profile_name,
     formData.about_me,
-    formData.height > 0,
-    formData.weight > 0,
-    formData.complexion,
-    formData.body_type,
-    formData.physical_status,
-    formData.disability_information,
     formData.highest_education,
     formData.education_detail,
-    formData.education_id,
     formData.occupation,
     formData.job_title,
     formData.employment_type,
@@ -266,37 +329,43 @@ export const CompleteProfile: React.FC = () => {
     formData.caste,
     formData.sub_caste,
     formData.gothram,
-    formData.birth_place,
-    formData.birth_time,
     formData.rashi,
     formData.nakshatra,
     formData.dosha,
+    formData.birth_place,
+    formData.birth_time,
+    formData.height > 0,
+    formData.weight > 0,
+    formData.complexion,
+    formData.body_type,
+    formData.diet,
+    formData.marital_status,
     formData.family_type,
     formData.family_status,
     formData.family_values,
     formData.father_occupation,
     formData.mother_occupation,
-    formData.brothers_count > 0,
-    formData.sisters_count > 0,
-    formData.family_location,
-    formData.family_information,
-    formData.diet,
-    formData.marital_status,
     formData.country,
     formData.state,
     formData.district,
-    formData.city,
+    formData.city || formData.mandal,
     formData.pincode
   ];
 
-  const completedCount = trackedFields.filter(val => Boolean(val)).length;
-  const completedPercentage = Math.round((completedCount / 42) * 100);
+  const completedCount = trackedFields.filter(Boolean).length;
+  const completionPercentage = Math.round((completedCount / trackedFields.length) * 100);
 
-  const handleSaveAndContinue = async () => {
+  const handleSaveAndContinue = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.profile_name?.trim()) {
+      showToast('Please enter your Display / Profile Name.');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-
-      const parseIncome = (val?: string | number | null): number | null => {
+      const parseIncome = (val: string | number) => {
         if (!val) return null;
         if (typeof val === 'number') return val;
         const cleaned = String(val).replace(/[^0-9]/g, '');
@@ -341,7 +410,7 @@ export const CompleteProfile: React.FC = () => {
         // Family
         family_information: formData.family_information || '',
 
-        // Lifestyle
+        // Lifestyle & Marital
         diet: formData.diet || 'Vegetarian',
         smoking: formData.smoking || 'No',
         drinking: formData.drinking || 'No',
@@ -362,16 +431,13 @@ export const CompleteProfile: React.FC = () => {
         mandal_id: formData.mandal_id,
         village_id: formData.village_id,
         pincode: formData.pincode || '',
-        address_line: formData.address_line || '',
 
-        // Photos
-        profile_photo: formData.profile_photo || ''
+        // Photos & Video
+        profile_photo: formData.profile_photo || '',
+        video_type: formData.video_type !== 'None' ? formData.video_type : null,
+        video_url: formData.video_url || null,
+        video_introduction: formData.video_url || null
       };
-
-      if (formData.date_of_birth && !isAtLeast18YearsOld(formData.date_of_birth)) {
-        showToast('You must be 18 years or older to proceed.');
-        return;
-      }
 
       if (formData.date_of_birth || formData.gender || formData.phone) {
         try {
@@ -410,52 +476,106 @@ export const CompleteProfile: React.FC = () => {
     }
   };
 
+  // Preset chip options for languages & hobbies
+  const commonLanguages = ['Telugu', 'English', 'Hindi', 'Tamil', 'Kannada', 'Malayalam', 'Marathi', 'Bengali', 'Gujarati', 'Punjabi'];
+  const commonHobbies = ['Singing', 'Traveling', 'Reading', 'Cooking', 'Music', 'Photography', 'Dancing', 'Gardening', 'Fitness / Gym', 'Sports'];
+
   return (
     <div className="min-h-screen bg-transparent text-black pb-16 font-sans antialiased">
-      {/* Centered Middle Form Container (No Left & Right Sidebars) */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <main className="space-y-6">
           
-          {/* Header with Crisp Black Title & Logout Option */}
+          {/* Header with Title & Save Draft / Logout */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-200">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black">
                 Create Your Profile
               </h1>
               <p className="text-xs font-semibold text-slate-700 mt-0.5">
-                Tell us about yourself to find your perfect match.
+                Complete the details below to find your perfect matrimonial match.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={async () => {
-                await logout();
-                showToast('Logged out successfully.');
-                navigate('/login');
-              }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 hover:border-rose-200 text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
-              title="Save draft and log out"
-            >
-              <LogOut className="h-3.5 w-3.5 text-rose-500" />
-              <span>Log Out</span>
-            </button>
-          </div>
-
-          {/* CARD 1: Personal Details (Logo Pink Theme) + Integrated Photo Upload */}
-          <section id="section-personal" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-5 hover:border-[#C44569]/30 transition-colors">
-            <div className="flex items-center justify-between gap-3 pb-2 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <User className="h-5 w-5 stroke-[2.2]" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-black">Personal Details</h2>
-                  <p className="text-[11px] font-semibold text-slate-600">Basic information about you</p>
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200/80">
+                <div className="text-[11px] font-bold text-rose-800">
+                  Completion: <span className="font-extrabold">{completionPercentage}%</span>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  localStorage.setItem('user_profile_draft', JSON.stringify(formData));
+                  await logout();
+                  showToast('Logged out successfully.');
+                  navigate('/login');
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 hover:border-rose-200 text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+                title="Save draft and log out"
+              >
+                <LogOut className="h-3.5 w-3.5 text-rose-500" />
+                <span>Log Out</span>
+              </button>
+            </div>
+          </div>
 
-              {/* Photo Upload Thumbnail / Action */}
-              <div className="flex items-center gap-3">
+          {/* Registration Info Note (Read-only, set during registration) */}
+          {(formData.gender || formData.date_of_birth) && (
+            <div className="flex flex-wrap items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
+              <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                <Shield className="h-4 w-4 text-emerald-600" />
+                Registration Details:
+              </span>
+              {formData.gender && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold text-xs shadow-2xs">
+                  <Heart className="h-3 w-3 text-[#C44569]" />
+                  {formData.gender === 'Male' ? 'Male (Groom)' : 'Female (Bride)'}
+                </span>
+              )}
+              {formData.date_of_birth && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold text-xs shadow-2xs">
+                  {formData.date_of_birth}
+                </span>
+              )}
+              <span className="text-[11px] font-medium text-slate-400 sm:ml-auto">
+                Set during registration
+              </span>
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* SECTION 1: Profile Display & Media                             */}
+          {/* ============================================================== */}
+          <section id="section-media" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-5 hover:border-[#C44569]/30 transition-colors">
+            <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
+              <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <User className="h-5 w-5 stroke-[2.2]" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-black">Profile Display & Media</h2>
+                <p className="text-[11px] font-semibold text-slate-600">Your profile photo, video and basic display info</p>
+              </div>
+            </div>
+
+            {/* Display / Profile Name */}
+            <div>
+              <label className="block text-xs font-bold text-black mb-1">
+                Display / Profile Name <span className="text-rose-600 font-black">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.profile_name}
+                onChange={e => handleChange('profile_name', e.target.value)}
+                placeholder="Enter display or profile name"
+                className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+              />
+            </div>
+
+            {/* Primary Profile Photo */}
+            <div>
+              <label className="block text-xs font-bold text-black mb-1">
+                Primary Profile Photo
+              </label>
+              <div className="flex items-center gap-4 p-3 rounded-xl border border-dashed border-slate-300 bg-slate-50/60">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -465,8 +585,8 @@ export const CompleteProfile: React.FC = () => {
                 />
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 overflow-hidden cursor-pointer ring-2 ring-rose-200 hover:ring-rose-400 transition-all relative group shadow-xs border border-slate-200"
-                  title="Click to change profile photo"
+                  className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 overflow-hidden cursor-pointer ring-2 ring-rose-200 hover:ring-rose-400 transition-all relative group shadow-xs border border-slate-200 shrink-0"
+                  title="Click to choose profile photo"
                 >
                   {formData.profile_photo ? (
                     <img
@@ -483,180 +603,100 @@ export const CompleteProfile: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <div className="hidden sm:block">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingPhoto}
-                    className="py-1.5 px-3 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 text-xs font-bold transition-all cursor-pointer"
-                  >
-                    {isUploadingPhoto ? 'Uploading...' : 'Upload Photo'}
-                  </button>
-                  <p className="text-[10px] font-bold text-slate-400 mt-0.5">JPG, PNG (Max 5MB)</p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingPhoto}
+                      className="py-1.5 px-3 rounded-lg bg-white border border-slate-300 hover:bg-rose-50 hover:border-rose-300 text-xs font-bold text-slate-700 hover:text-rose-700 transition-all cursor-pointer shadow-2xs"
+                    >
+                      {isUploadingPhoto ? 'Uploading...' : 'Choose File'}
+                    </button>
+                    <span className="text-xs text-slate-500">
+                      {formData.profile_photo ? 'Photo selected' : 'No file chosen'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-medium text-slate-400">JPG, PNG or WEBP (Max 5MB)</p>
                 </div>
               </div>
             </div>
 
-            {/* Row 1: Gender & Date of Birth */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Video Type & Video Media Inputs */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Gender <span className="text-rose-600 font-black">*</span>
+                  Video Type
                 </label>
-                <div className="relative">
-                  <Heart className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  <select
-                    value={formData.gender}
-                    onChange={e => handleChange('gender', e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
-                  >
-                    <option value="Male">Male (Groom)</option>
-                    <option value="Female">Female (Bride)</option>
-                  </select>
-                </div>
+                <select
+                  value={formData.video_type}
+                  onChange={e => handleChange('video_type', e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                >
+                  <option value="None">None</option>
+                  <option value="UPLOAD">File Upload</option>
+                  <option value="YOUTUBE">YouTube / Video Link</option>
+                </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Date of Birth <span className="text-rose-600 font-black">*</span>
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  <input
-                    type="date"
-                    max={maxAllowedDob}
-                    value={formData.date_of_birth}
-                    onChange={e => handleChange('date_of_birth', e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
-                  />
-                </div>
-                <p className="text-[10px] font-semibold text-slate-500 mt-0.5">Must be 18 years or older</p>
-              </div>
-            </div>
 
-            {/* Row 2: Profile Name & About Me */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Profile Name <span className="text-rose-600 font-black">*</span>
+                  Video File Upload
                 </label>
                 <input
-                  type="text"
-                  value={formData.profile_name}
-                  onChange={e => handleChange('profile_name', e.target.value)}
-                  placeholder="Enter your name"
+                  ref={videoFileInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoUpload}
+                  className="hidden"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => videoFileInputRef.current?.click()}
+                    disabled={isUploadingVideo}
+                    className="py-2 px-3 rounded-lg bg-white border border-slate-300 hover:bg-rose-50 hover:border-rose-300 text-xs font-bold text-slate-700 hover:text-rose-700 transition-all cursor-pointer shadow-2xs shrink-0"
+                  >
+                    {isUploadingVideo ? 'Uploading...' : 'Choose File'}
+                  </button>
+                  <span className="text-xs text-slate-500 truncate max-w-[140px]">
+                    {formData.video_file_name || (formData.video_type === 'UPLOAD' && formData.video_url ? 'Video attached' : 'No file chosen')}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Video URL (YouTube/Link)
+                </label>
+                <input
+                  type="url"
+                  value={formData.video_url}
+                  onChange={e => handleChange('video_url', e.target.value)}
+                  placeholder="https://..."
                   className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  About Me <span className="text-rose-600 font-black">*</span>
-                </label>
-                <textarea
-                  rows={2}
-                  value={formData.about_me}
-                  onChange={e => handleChange('about_me', e.target.value)}
-                  placeholder="Tell something about yourself!..."
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-y"
-                />
-              </div>
             </div>
 
-            {/* Row 2: Height, Weight, Complexion */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Height (cm) <span className="text-rose-600 font-black">*</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="250"
-                  value={formData.height || ''}
-                  onChange={e => handleChange('height', Number(e.target.value))}
-                  placeholder="0"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Weight (kg) <span className="text-rose-600 font-black">*</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="200"
-                  value={formData.weight || ''}
-                  onChange={e => handleChange('weight', Number(e.target.value))}
-                  placeholder="0"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Complexion <span className="text-rose-600 font-black">*</span>
-                </label>
-                <select
-                  value={formData.complexion}
-                  onChange={e => handleChange('complexion', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
-                >
-                  <option value="">Select complexion</option>
-                  <option value="Very Fair">Very Fair</option>
-                  <option value="Fair">Fair</option>
-                  <option value="Wheatish">Wheatish</option>
-                  <option value="Wheatish Brown">Wheatish Brown</option>
-                  <option value="Dark">Dark</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Row 3: Body Type, Physical Status, Disability Information */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Body Type <span className="text-rose-600 font-black">*</span>
-                </label>
-                <select
-                  value={formData.body_type}
-                  onChange={e => handleChange('body_type', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
-                >
-                  <option value="">Select body type</option>
-                  <option value="Slim">Slim</option>
-                  <option value="Athletic">Athletic</option>
-                  <option value="Average">Average</option>
-                  <option value="Heavy">Heavy</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Physical Status <span className="text-rose-600 font-black">*</span>
-                </label>
-                <select
-                  value={formData.physical_status}
-                  onChange={e => handleChange('physical_status', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
-                >
-                  <option value="Normal">Normal</option>
-                  <option value="Physically Challenged">Physically Challenged</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Disability Information
-                </label>
-                <input
-                  type="text"
-                  value={formData.disability_information}
-                  onChange={e => handleChange('disability_information', e.target.value)}
-                  placeholder="If any (optional)"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                />
-              </div>
+            {/* About Me */}
+            <div>
+              <label className="block text-xs font-bold text-black mb-1">
+                About Me <span className="text-rose-600 font-black">*</span>
+              </label>
+              <textarea
+                rows={3}
+                value={formData.about_me}
+                onChange={e => handleChange('about_me', e.target.value)}
+                placeholder="Describe yourself..."
+                className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-y"
+              />
             </div>
           </section>
 
-          {/* CARD 2: Education & Profession (Logo Pink Theme) */}
+          {/* ============================================================== */}
+          {/* SECTION 2: Education & Profession                             */}
+          {/* ============================================================== */}
           <section id="section-education" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
             <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
               <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -668,11 +708,11 @@ export const CompleteProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 1: Highest Education, Education Detail */}
+            {/* Row 1: Highest Education, Degree Specialization */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Highest Education <span className="text-rose-600 font-black">*</span>
+                  Highest Education (Master) <span className="text-rose-600 font-black">*</span>
                 </label>
                 <select
                   value={formData.education_id || (formData.highest_education ? educations.find(e => e.name === formData.highest_education)?.id : '') || ''}
@@ -685,9 +725,9 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={isLoadingEducations}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">{isLoadingEducations ? 'Loading educations...' : 'Select highest education'}</option>
+                  <option value="">---------</option>
                   {educations.map(edu => (
                     <option key={edu.id} value={edu.id}>
                       {edu.name} {edu.degree_level ? `(${edu.degree_level})` : ''}
@@ -697,23 +737,23 @@ export const CompleteProfile: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Education Detail <span className="text-rose-600 font-black">*</span>
+                  Degree Specialization / Notes
                 </label>
                 <input
                   type="text"
                   value={formData.education_detail}
                   onChange={e => handleChange('education_detail', e.target.value)}
-                  placeholder="Enter degree / college details"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  placeholder="College / Specialization"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                 />
               </div>
             </div>
 
-            {/* Row 2: Occupation, Job Title, Employment Type */}
+            {/* Row 2: Profession, Job Title, Employment Sector */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Occupation / Profession <span className="text-rose-600 font-black">*</span>
+                  Profession (Master) <span className="text-rose-600 font-black">*</span>
                 </label>
                 <select
                   value={formData.profession_id || (formData.occupation ? professions.find(p => p.name === formData.occupation)?.id : '') || ''}
@@ -726,9 +766,9 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={isLoadingProfessions}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">{isLoadingProfessions ? 'Loading professions...' : 'Select occupation'}</option>
+                  <option value="">---------</option>
                   {professions.map(prof => (
                     <option key={prof.id} value={prof.id}>
                       {prof.name} {prof.category ? `(${prof.category})` : ''}
@@ -738,47 +778,48 @@ export const CompleteProfile: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Job Title <span className="text-rose-600 font-black">*</span>
+                  Job Title / Designation
                 </label>
                 <input
                   type="text"
                   value={formData.job_title}
                   onChange={e => handleChange('job_title', e.target.value)}
-                  placeholder="Enter job title"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  placeholder="Job Title / Designation"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Employment Type <span className="text-rose-600 font-black">*</span>
+                  Employment Sector
                 </label>
                 <select
                   value={formData.employment_type}
                   onChange={e => handleChange('employment_type', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
                 >
-                  <option value="">Select employment type</option>
-                  <option value="Private">Private</option>
-                  <option value="Government">Government</option>
-                  <option value="Business">Business</option>
+                  <option value="">---------</option>
+                  <option value="Private Sector">Private Sector</option>
+                  <option value="Government / Public Sector">Government / Public Sector</option>
+                  <option value="Business / Self-Employed">Business / Self-Employed</option>
+                  <option value="Civil Services">Civil Services</option>
                   <option value="Defense">Defense</option>
-                  <option value="Not Working">Not Working</option>
+                  <option value="Not Employed">Not Employed</option>
                 </select>
               </div>
             </div>
 
-            {/* Row 3: Company Name, Work Location, Annual Income */}
+            {/* Row 3: Company / Organization, Work Location, Annual Income */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Company Name
+                  Company / Organization
                 </label>
                 <input
                   type="text"
                   value={formData.company_name}
                   onChange={e => handleChange('company_name', e.target.value)}
-                  placeholder="Enter company name"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  placeholder="Company / Organization"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                 />
               </div>
               <div>
@@ -789,21 +830,21 @@ export const CompleteProfile: React.FC = () => {
                   type="text"
                   value={formData.work_location}
                   onChange={e => handleChange('work_location', e.target.value)}
-                  placeholder="Enter work location"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  placeholder="Work Location"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Annual Income
+                  Annual Income (Master Range)
                 </label>
                 <select
                   value={formData.annual_income}
                   onChange={e => handleChange('annual_income', e.target.value)}
                   disabled={isLoadingIncomes}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">{isLoadingIncomes ? 'Loading income ranges...' : 'Select annual income'}</option>
+                  <option value="">Select Annual Income Range</option>
                   {incomeRanges.map(inc => (
                     <option key={inc.id} value={inc.label}>
                       {inc.label}
@@ -813,27 +854,30 @@ export const CompleteProfile: React.FC = () => {
                     <option value={formData.annual_income}>{formData.annual_income}</option>
                   )}
                 </select>
+                <p className="text-[10px] text-slate-400 mt-1">Select from admin-configured predefined income brackets</p>
               </div>
             </div>
           </section>
 
-          {/* CARD 3: Religion, Caste & Horoscope (Logo Pink Theme) */}
+          {/* ============================================================== */}
+          {/* SECTION 3: Religion, Community & Horoscope                     */}
+          {/* ============================================================== */}
           <section id="section-religion" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
             <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
               <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
                 <Sparkles className="h-5 w-5 stroke-[2.2]" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-black">Religion, Caste & Horoscope</h2>
+                <h2 className="text-base font-bold text-black">Religion, Community & Horoscope</h2>
                 <p className="text-[11px] font-semibold text-slate-600">Religious and astrological details</p>
               </div>
             </div>
 
-            {/* Row 1: Religion, Caste, Sub Caste */}
+            {/* Row 1: Religion, Caste, Sub-Caste */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Religion <span className="text-rose-600 font-black">*</span>
+                  Religion (Master) <span className="text-rose-600 font-black">*</span>
                 </label>
                 <select
                   value={formData.religion_id || (formData.religion ? religions.find(r => r.name === formData.religion)?.id : '') || ''}
@@ -844,13 +888,13 @@ export const CompleteProfile: React.FC = () => {
                       religion_id: selected ? selected.id : null,
                       religion: selected ? selected.name : '',
                       caste_id: null,
-                      caste: '' // reset downstream caste when religion changes
+                      caste: ''
                     }));
                   }}
                   disabled={isLoadingReligions}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">{isLoadingReligions ? 'Loading religions...' : 'Select religion'}</option>
+                  <option value="">---------</option>
                   {religions.map(rel => (
                     <option key={rel.id} value={rel.id}>
                       {rel.name}
@@ -860,7 +904,7 @@ export const CompleteProfile: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Caste <span className="text-rose-600 font-black">*</span>
+                  Caste / Community (Master) <span className="text-rose-600 font-black">*</span>
                 </label>
                 <select
                   value={formData.caste_id || (formData.caste ? castes.find(c => c.name === formData.caste)?.id : '') || ''}
@@ -873,17 +917,9 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={!selectedReligionId || isLoadingCastes}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">
-                    {!selectedReligionId
-                      ? 'Select Religion first'
-                      : isLoadingCastes
-                      ? 'Loading castes...'
-                      : castes.length === 0
-                      ? 'No castes listed'
-                      : 'Select caste'}
-                  </option>
+                  <option value="">---------</option>
                   {castes.map(cst => (
                     <option key={cst.id} value={cst.id}>
                       {cst.name}
@@ -893,20 +929,20 @@ export const CompleteProfile: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Sub Caste
+                  Sub-Caste
                 </label>
                 <input
                   type="text"
                   value={formData.sub_caste}
                   onChange={e => handleChange('sub_caste', e.target.value)}
-                  placeholder="Enter sub caste"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                  placeholder="Sub-Caste"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                 />
               </div>
             </div>
 
-            {/* Row 2: Gothram, Has Horoscope, Birth Place */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+            {/* Row 2: Gothram, Rashi, Nakshatra */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
                   Gothram
@@ -915,36 +951,57 @@ export const CompleteProfile: React.FC = () => {
                   type="text"
                   value={formData.gothram}
                   onChange={e => handleChange('gothram', e.target.value)}
-                  placeholder="Enter gothram"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                  placeholder="Gothram"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                 />
               </div>
-
-              {/* Has Horoscope Toggle */}
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Has Horoscope
+                  Rashi (Moon Sign)
                 </label>
-                <div className="flex items-center gap-3 h-10">
-                  <button
-                    type="button"
-                    onClick={() => handleChange('has_horoscope', !formData.has_horoscope)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      formData.has_horoscope ? 'bg-amber-500' : 'bg-slate-300'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                        formData.has_horoscope ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                  <span className="text-xs font-bold text-black">
-                    {formData.has_horoscope ? 'Yes' : 'Yes / No'}
-                  </span>
-                </div>
+                <input
+                  type="text"
+                  value={formData.rashi}
+                  onChange={e => handleChange('rashi', e.target.value)}
+                  placeholder="Rashi (Moon Sign)"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                />
               </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Nakshatra (Star)
+                </label>
+                <input
+                  type="text"
+                  value={formData.nakshatra}
+                  onChange={e => handleChange('nakshatra', e.target.value)}
+                  placeholder="Nakshatra (Star)"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                />
+              </div>
+            </div>
 
+            {/* Row 3: Dosha / Manglik, Birth Place, Birth Time */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Dosha / Manglik
+                </label>
+                <select
+                  value={formData.dosha}
+                  onChange={e => handleChange('dosha', e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                >
+                  <option value="">Dosha / Manglik</option>
+                  <option value="No Dosha">No Dosha</option>
+                  <option value="Manglik">Manglik</option>
+                  <option value="Sarpa Dosha">Sarpa Dosha</option>
+                  <option value="Kala Sarpa Dosha">Kala Sarpa Dosha</option>
+                  <option value="Rahu Dosha">Rahu Dosha</option>
+                  <option value="Ketu Dosha">Ketu Dosha</option>
+                  <option value="Don't Know">Don't Know</option>
+                </select>
+              </div>
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
                   Birth Place
@@ -953,284 +1010,140 @@ export const CompleteProfile: React.FC = () => {
                   type="text"
                   value={formData.birth_place}
                   onChange={e => handleChange('birth_place', e.target.value)}
-                  placeholder="Enter birth place"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                  placeholder="Birth Place"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                 />
               </div>
-            </div>
-
-            {/* Row 3: Birth Time, Rashi, Nakshatra, Dosha */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Birth Time <span className="text-rose-600 font-black">*</span>
+                  Birth Time
                 </label>
                 <div className="relative">
                   <input
-                    type="text"
+                    type="time"
                     value={formData.birth_time}
                     onChange={e => handleChange('birth_time', e.target.value)}
-                    placeholder="04:54:29.366Z"
-                    className="w-full pl-3 pr-8 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                    placeholder="--:--"
+                    className="w-full pl-3.5 pr-9 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                   />
-                  <Clock className="h-3.5 w-3.5 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <Clock className="h-4 w-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Rashi
-                </label>
-                <input
-                  type="text"
-                  value={formData.rashi}
-                  onChange={e => handleChange('rashi', e.target.value)}
-                  placeholder="Enter rashi"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Nakshatra
-                </label>
-                <input
-                  type="text"
-                  value={formData.nakshatra}
-                  onChange={e => handleChange('nakshatra', e.target.value)}
-                  placeholder="Enter nakshatra"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Dosha
-                </label>
-                <input
-                  type="text"
-                  value={formData.dosha}
-                  onChange={e => handleChange('dosha', e.target.value)}
-                  placeholder="Enter dosha"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
-                />
               </div>
             </div>
           </section>
 
-          {/* CARD 4: Family Details (Logo Pink Theme) */}
-          <section id="section-family" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
-            <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
-              <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                <Users className="h-5 w-5 stroke-[2.2]" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-black">Family Details</h2>
-                <p className="text-[11px] font-semibold text-slate-600">About your family</p>
-              </div>
-            </div>
-
-            {/* Row 1: Family Type, Family Status, Family Values */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Family Type
-                </label>
-                <select
-                  value={formData.family_type}
-                  onChange={e => handleChange('family_type', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer"
-                >
-                  <option value="">Select family type</option>
-                  <option value="Nuclear">Nuclear</option>
-                  <option value="Joint">Joint</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Family Status
-                </label>
-                <select
-                  value={formData.family_status}
-                  onChange={e => handleChange('family_status', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer"
-                >
-                  <option value="">Select family status</option>
-                  <option value="Middle Class">Middle Class</option>
-                  <option value="Upper Middle Class">Upper Middle Class</option>
-                  <option value="Rich">Rich / High Class</option>
-                  <option value="Affluent">Affluent</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Family Values
-                </label>
-                <select
-                  value={formData.family_values}
-                  onChange={e => handleChange('family_values', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer"
-                >
-                  <option value="">Select family values</option>
-                  <option value="Traditional">Traditional</option>
-                  <option value="Moderate">Moderate</option>
-                  <option value="Liberal">Liberal</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Row 2: Father Occupation, Mother Occupation */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Father Occupation
-                </label>
-                <input
-                  type="text"
-                  value={formData.father_occupation}
-                  onChange={e => handleChange('father_occupation', e.target.value)}
-                  placeholder="Enter father occupation"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Mother Occupation
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={formData.mother_occupation}
-                    onChange={e => handleChange('mother_occupation', e.target.value)}
-                    placeholder="Enter mother occupation"
-                    className="w-full pl-8 pr-3 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                  />
-                  <Briefcase className="h-3.5 w-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
-            </div>
-
-            {/* Row 3: Brothers Count, Brothers Married Count, Sisters Count, Dosha */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Brothers Count
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="10"
-                  value={formData.brothers_count}
-                  onChange={e => handleChange('brothers_count', Number(e.target.value))}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Brothers Married Count
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="10"
-                  value={formData.brothers_married_count}
-                  onChange={e => handleChange('brothers_married_count', Number(e.target.value))}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Sisters Count
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="10"
-                  value={formData.sisters_count}
-                  onChange={e => handleChange('sisters_count', Number(e.target.value))}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Dosha
-                </label>
-                <input
-                  type="text"
-                  value={formData.family_dosha}
-                  onChange={e => handleChange('family_dosha', e.target.value)}
-                  placeholder="Enter dosha"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                />
-              </div>
-            </div>
-
-            {/* Row 4: Living With Parents Toggle, Family Location, Family Information */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
-              <div className="sm:col-span-3">
-                <label className="block text-xs font-bold text-black mb-1">
-                  Living With Parents
-                </label>
-                <div className="flex items-center gap-3 h-10">
-                  <button
-                    type="button"
-                    onClick={() => handleChange('living_with_parents', !formData.living_with_parents)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      formData.living_with_parents ? 'bg-emerald-600' : 'bg-slate-300'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                        formData.living_with_parents ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                  <span className="text-xs font-bold text-black">
-                    {formData.living_with_parents ? 'Yes' : 'Yes / No'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="sm:col-span-4">
-                <label className="block text-xs font-bold text-black mb-1">
-                  Family Location
-                </label>
-                <input
-                  type="text"
-                  value={formData.family_location}
-                  onChange={e => handleChange('family_location', e.target.value)}
-                  placeholder="Enter family location"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                />
-              </div>
-
-              <div className="sm:col-span-5">
-                <label className="block text-xs font-bold text-black mb-1">
-                  Family Information
-                </label>
-                <input
-                  type="text"
-                  value={formData.family_information}
-                  onChange={e => handleChange('family_information', e.target.value)}
-                  placeholder="Enter family information"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* CARD 5: Lifestyle (Logo Pink Theme) */}
-          <section id="section-lifestyle" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
+          {/* ============================================================== */}
+          {/* SECTION 4: Physical Attributes & Lifestyle                     */}
+          {/* ============================================================== */}
+          <section id="section-physical" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
             <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
               <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
                 <Heart className="h-5 w-5 stroke-[2.2]" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-black">Lifestyle</h2>
-                <p className="text-[11px] font-semibold text-slate-600">Your habits and habits</p>
+                <h2 className="text-base font-bold text-black">Physical Attributes & Lifestyle</h2>
+                <p className="text-[11px] font-semibold text-slate-600">Physical stats, personal habits and interests</p>
               </div>
             </div>
 
-            {/* Row 1: Diet, Smoking, Drinking */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+            {/* Row 1: Height, Weight, Complexion, Body Type */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-1">
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Height (in cm) <span className="text-rose-600 font-black">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="250"
+                  step="0.5"
+                  value={formData.height || ''}
+                  onChange={e => handleChange('height', Number(e.target.value))}
+                  placeholder="Height in cm (e.g. 172.5)"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Weight (kg)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="200"
+                  value={formData.weight || ''}
+                  onChange={e => handleChange('weight', Number(e.target.value))}
+                  placeholder="Weight in kg"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Complexion
+                </label>
+                <select
+                  value={formData.complexion}
+                  onChange={e => handleChange('complexion', e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                >
+                  <option value="">---------</option>
+                  <option value="Very Fair">Very Fair</option>
+                  <option value="Fair">Fair</option>
+                  <option value="Wheatish">Wheatish</option>
+                  <option value="Wheatish Brown">Wheatish Brown</option>
+                  <option value="Dark">Dark</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Body Type
+                </label>
+                <select
+                  value={formData.body_type}
+                  onChange={e => handleChange('body_type', e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                >
+                  <option value="">---------</option>
+                  <option value="Slim">Slim</option>
+                  <option value="Athletic">Athletic</option>
+                  <option value="Average">Average</option>
+                  <option value="Heavy">Heavy</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Row 2: Physical Disability, Disability Information */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Physical Disability
+                </label>
+                <select
+                  value={formData.physical_status}
+                  onChange={e => handleChange('physical_status', e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                >
+                  <option value="No">No</option>
+                  <option value="Yes">Yes</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Disability Information
+                </label>
+                <input
+                  type="text"
+                  value={formData.disability_information}
+                  onChange={e => handleChange('disability_information', e.target.value)}
+                  placeholder="Provide details if physically disabled..."
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">Specify disability details if applicable (optional when No)</p>
+              </div>
+            </div>
+
+            {/* Row 3: Diet, Smoking, Drinking */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
                   Diet
@@ -1238,12 +1151,13 @@ export const CompleteProfile: React.FC = () => {
                 <select
                   value={formData.diet}
                   onChange={e => handleChange('diet', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
                 >
-                  <option value="">Select diet</option>
+                  <option value="">---------</option>
                   <option value="Vegetarian">Vegetarian</option>
                   <option value="Non-Vegetarian">Non-Vegetarian</option>
                   <option value="Eggetarian">Eggetarian</option>
+                  <option value="Jain">Jain</option>
                   <option value="Vegan">Vegan</option>
                 </select>
               </div>
@@ -1254,12 +1168,12 @@ export const CompleteProfile: React.FC = () => {
                 <select
                   value={formData.smoking}
                   onChange={e => handleChange('smoking', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
                 >
-                  <option value="">Select smoking habit</option>
+                  <option value="">---------</option>
                   <option value="No">No</option>
-                  <option value="Occasionally">Occasionally</option>
                   <option value="Yes">Yes</option>
+                  <option value="Occasionally">Occasionally</option>
                 </select>
               </div>
               <div>
@@ -1269,31 +1183,72 @@ export const CompleteProfile: React.FC = () => {
                 <select
                   value={formData.drinking}
                   onChange={e => handleChange('drinking', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
                 >
-                  <option value="">Select drinking habit</option>
+                  <option value="">---------</option>
                   <option value="No">No</option>
-                  <option value="Occasionally">Occasionally</option>
                   <option value="Yes">Yes</option>
+                  <option value="Occasionally">Occasionally</option>
                 </select>
               </div>
             </div>
-          </section>
 
-          {/* CARD 6: Marital & Children (Logo Pink Theme) */}
-          <section id="section-marital" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
-            <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
-              <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                <HeartHandshake className="h-5 w-5 stroke-[2.2]" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-black">Marital & Children</h2>
-                <p className="text-[11px] font-semibold text-slate-600">Marriage and childrens details</p>
+            {/* Row 4: Languages Known (Chips / Multi-select) */}
+            <div>
+              <label className="block text-xs font-bold text-black mb-1.5">
+                Languages Known
+              </label>
+              <div className="flex flex-wrap gap-1.5 p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                {(languages.length > 0 ? languages.map(l => l.name) : commonLanguages).map(lang => {
+                  const isSelected = formData.languages_known.split(',').map(s => s.trim()).includes(lang);
+                  return (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() => toggleLanguage(lang)}
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#C44569] text-white shadow-2xs'
+                          : 'bg-white text-slate-700 border border-slate-200 hover:border-rose-300 hover:bg-rose-50'
+                      }`}
+                    >
+                      {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
+                      {lang}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Row 1: Marital Status, Children Count, Children Living Status */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+            {/* Row 5: Hobbies & Interests (Chips / Multi-select) */}
+            <div>
+              <label className="block text-xs font-bold text-black mb-1.5">
+                Hobbies & Interests
+              </label>
+              <div className="flex flex-wrap gap-1.5 p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                {(hobbies.length > 0 ? hobbies.map(h => h.name) : commonHobbies).map(hobby => {
+                  const isSelected = formData.hobbies_interests.split(',').map(s => s.trim()).includes(hobby);
+                  return (
+                    <button
+                      key={hobby}
+                      type="button"
+                      onClick={() => toggleHobby(hobby)}
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#C44569] text-white shadow-2xs'
+                          : 'bg-white text-slate-700 border border-slate-200 hover:border-rose-300 hover:bg-rose-50'
+                      }`}
+                    >
+                      {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
+                      {hobby}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Row 6: Marital Status, Children Count */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
                   Marital Status <span className="text-rose-600 font-black">*</span>
@@ -1301,13 +1256,14 @@ export const CompleteProfile: React.FC = () => {
                 <select
                   value={formData.marital_status}
                   onChange={e => handleChange('marital_status', e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
                 >
-                  <option value="">Select marital status</option>
+                  <option value="">---------</option>
                   <option value="Never Married">Never Married</option>
                   <option value="Divorced">Divorced</option>
                   <option value="Widowed">Widowed</option>
                   <option value="Awaiting Divorce">Awaiting Divorce</option>
+                  <option value="Annulled">Annulled</option>
                 </select>
               </div>
               <div>
@@ -1320,33 +1276,192 @@ export const CompleteProfile: React.FC = () => {
                   max="10"
                   value={formData.children_count}
                   onChange={e => handleChange('children_count', Number(e.target.value))}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Children Living Status
-                </label>
-                <input
-                  type="text"
-                  value={formData.children_living_status}
-                  onChange={e => handleChange('children_living_status', e.target.value)}
-                  placeholder="Enter children living status"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                  placeholder="0"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                 />
               </div>
             </div>
           </section>
 
-          {/* CARD 7: Location & Citizenship (Logo Pink Theme) */}
+          {/* ============================================================== */}
+          {/* SECTION 5: Family Information                                  */}
+          {/* ============================================================== */}
+          <section id="section-family" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
+            <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
+              <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Users className="h-5 w-5 stroke-[2.2]" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-black">Family Information</h2>
+                <p className="text-[11px] font-semibold text-slate-600">Details about your parents and siblings</p>
+              </div>
+            </div>
+
+            {/* Row 1: Family Type, Family Status, Family Values */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Family Type
+                </label>
+                <select
+                  value={formData.family_type}
+                  onChange={e => handleChange('family_type', e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                >
+                  <option value="">---------</option>
+                  <option value="Nuclear">Nuclear</option>
+                  <option value="Joint">Joint</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Family Status
+                </label>
+                <select
+                  value={formData.family_status}
+                  onChange={e => handleChange('family_status', e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                >
+                  <option value="">---------</option>
+                  <option value="Middle Class">Middle Class</option>
+                  <option value="Upper Middle Class">Upper Middle Class</option>
+                  <option value="Rich">Rich</option>
+                  <option value="Affluent">Affluent</option>
+                  <option value="Modest">Modest</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Family Values
+                </label>
+                <select
+                  value={formData.family_values}
+                  onChange={e => handleChange('family_values', e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                >
+                  <option value="">---------</option>
+                  <option value="Traditional">Traditional</option>
+                  <option value="Moderate">Moderate</option>
+                  <option value="Liberal">Liberal</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Row 2: Father's Profession, Mother's Profession */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Father's Profession
+                </label>
+                <input
+                  type="text"
+                  value={formData.father_occupation}
+                  onChange={e => handleChange('father_occupation', e.target.value)}
+                  placeholder="Father's Profession"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Mother's Profession
+                </label>
+                <input
+                  type="text"
+                  value={formData.mother_occupation}
+                  onChange={e => handleChange('mother_occupation', e.target.value)}
+                  placeholder="Mother's Profession"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Row 3: Brothers Count, Brothers Married, Sisters Count, Sisters Married */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Brothers Count
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  value={formData.brothers_count}
+                  onChange={e => handleChange('brothers_count', Number(e.target.value))}
+                  placeholder="0"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Brothers Married
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  value={formData.brothers_married_count}
+                  onChange={e => handleChange('brothers_married_count', Number(e.target.value))}
+                  placeholder="0"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Sisters Count
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  value={formData.sisters_count}
+                  onChange={e => handleChange('sisters_count', Number(e.target.value))}
+                  placeholder="0"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Sisters Married
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  value={formData.sisters_married_count}
+                  onChange={e => handleChange('sisters_married_count', Number(e.target.value))}
+                  placeholder="0"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Row 4: Family Information Notes */}
+            <div>
+              <label className="block text-xs font-bold text-black mb-1">
+                Family Information Notes
+              </label>
+              <textarea
+                rows={3}
+                value={formData.family_information}
+                onChange={e => handleChange('family_information', e.target.value)}
+                placeholder="Family Information Notes..."
+                className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-y"
+              />
+            </div>
+          </section>
+
+          {/* ============================================================== */}
+          {/* SECTION 6: Profile Location Details (Dependent Hierarchy)     */}
+          {/* ============================================================== */}
           <section id="section-location" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
             <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
               <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
                 <MapPin className="h-5 w-5 stroke-[2.2]" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-black">Location & Citizenship</h2>
-                <p className="text-[11px] font-semibold text-slate-600">Address and nationality</p>
+                <h2 className="text-base font-bold text-black">Profile Location Details (Dependent Hierarchy)</h2>
+                <p className="text-[11px] font-semibold text-slate-600">Your geographical location details</p>
               </div>
             </div>
 
@@ -1376,9 +1491,9 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={isLoadingCountries}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <option value="">{isLoadingCountries ? 'Loading countries...' : 'Select country'}</option>
+                  <option value="">Search or select country...</option>
                   {countries.map(c => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -1408,16 +1523,14 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={!selectedCountryId || isLoadingStates}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
                 >
                   <option value="">
                     {!selectedCountryId
                       ? 'Select Country first'
                       : isLoadingStates
                       ? 'Loading states...'
-                      : states.length === 0
-                      ? 'No states listed'
-                      : 'Select state'}
+                      : 'Search or select state...'}
                   </option>
                   {states.map(st => (
                     <option key={st.id} value={st.id}>
@@ -1446,16 +1559,14 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={!selectedStateId || isLoadingDistricts}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
                 >
                   <option value="">
                     {!selectedStateId
                       ? 'Select State first'
                       : isLoadingDistricts
                       ? 'Loading districts...'
-                      : districts.length === 0
-                      ? 'No districts listed'
-                      : 'Select district'}
+                      : 'Search or select district...'}
                   </option>
                   {districts.map(dst => (
                     <option key={dst.id} value={dst.id}>
@@ -1466,23 +1577,11 @@ export const CompleteProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 2: City, Mandal, Village */}
+            {/* Row 2: Mandal / City, Village / Locality, Pincode */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  City <span className="text-rose-600 font-black">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.city}
-                  onChange={e => handleChange('city', e.target.value)}
-                  placeholder="Enter city"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Mandal
+                  Mandal / City
                 </label>
                 <select
                   value={formData.mandal_id || (formData.mandal ? mandals.find(m => m.name === formData.mandal)?.id : '') || ''}
@@ -1492,21 +1591,20 @@ export const CompleteProfile: React.FC = () => {
                       ...prev,
                       mandal_id: selected ? selected.id : null,
                       mandal: selected ? selected.name : '',
+                      city: selected ? selected.name : prev.city,
                       village_id: null,
                       village: ''
                     }));
                   }}
                   disabled={!selectedDistrictId || isLoadingMandals}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
                 >
                   <option value="">
                     {!selectedDistrictId
                       ? 'Select District first'
                       : isLoadingMandals
                       ? 'Loading mandals...'
-                      : mandals.length === 0
-                      ? 'No mandals listed'
-                      : 'Select mandal'}
+                      : 'Search or select mandal/city...'}
                   </option>
                   {mandals.map(mnd => (
                     <option key={mnd.id} value={mnd.id}>
@@ -1517,7 +1615,7 @@ export const CompleteProfile: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
-                  Village
+                  Village / Locality
                 </label>
                 <select
                   value={formData.village_id || (formData.village ? villages.find(v => v.name === formData.village)?.id : '') || ''}
@@ -1531,16 +1629,14 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={!selectedMandalId || isLoadingVillages}
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
                 >
                   <option value="">
                     {!selectedMandalId
                       ? 'Select Mandal first'
                       : isLoadingVillages
                       ? 'Loading villages...'
-                      : villages.length === 0
-                      ? 'No villages listed'
-                      : 'Select village'}
+                      : 'Search or select village...'}
                   </option>
                   {villages.map(vlg => (
                     <option key={vlg.id} value={vlg.id}>
@@ -1548,22 +1644,6 @@ export const CompleteProfile: React.FC = () => {
                     </option>
                   ))}
                 </select>
-              </div>
-            </div>
-
-            {/* Row 3: Citizenship, Pincode, Address Line */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Citizenship
-                </label>
-                <input
-                  type="text"
-                  value={formData.citizenship}
-                  onChange={e => handleChange('citizenship', e.target.value)}
-                  placeholder="Enter citizenship"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
-                />
               </div>
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
@@ -1573,168 +1653,18 @@ export const CompleteProfile: React.FC = () => {
                   type="text"
                   value={formData.pincode}
                   onChange={e => handleChange('pincode', e.target.value)}
-                  placeholder="Enter pincode"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Address Line
-                </label>
-                <input
-                  type="text"
-                  value={formData.address_line}
-                  onChange={e => handleChange('address_line', e.target.value)}
-                  placeholder="Enter address line"
-                  className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+                  placeholder="Pincode"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                 />
               </div>
             </div>
           </section>
-
-          {/* CARD 8 & 9: Language & Hobbies + Privacy Settings */}
-          <div id="section-interests" className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            
-            {/* Language & Hobbies (Logo Pink Theme) */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
-              <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
-                <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <BookOpen className="h-5 w-5 stroke-[2.2]" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-black">Language & Hobbies</h2>
-                  <p className="text-[11px] font-semibold text-slate-600">Your interests</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="block text-xs font-bold text-black mb-1">
-                    Languages
-                  </label>
-                  <select
-                    value={formData.languages_known}
-                    onChange={e => {
-                      const val = e.target.value;
-                      const lang = languages.find(l => l.name === val);
-                      setFormData(prev => ({
-                        ...prev,
-                        languages_known: val,
-                        language_ids: lang ? [lang.id] : prev.language_ids
-                      }));
-                    }}
-                    disabled={isLoadingLanguages}
-                    className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer disabled:opacity-60"
-                  >
-                    <option value="">{isLoadingLanguages ? 'Loading languages...' : 'Select languages'}</option>
-                    {languages.map(lang => (
-                      <option key={lang.id} value={lang.name}>
-                        {lang.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-black mb-1">
-                    Hobbies
-                  </label>
-                  <select
-                    value={formData.hobbies_interests}
-                    onChange={e => {
-                      const val = e.target.value;
-                      const hb = hobbies.find(h => h.name === val);
-                      setFormData(prev => ({
-                        ...prev,
-                        hobbies_interests: val,
-                        hobby_ids: hb ? [hb.id] : prev.hobby_ids
-                      }));
-                    }}
-                    disabled={isLoadingHobbies}
-                    className="w-full px-3.5 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer disabled:opacity-60"
-                  >
-                    <option value="">{isLoadingHobbies ? 'Loading hobbies...' : 'Select hobbies'}</option>
-                    {hobbies.map(hobby => (
-                      <option key={hobby.id} value={hobby.name}>
-                        {hobby.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Privacy Settings (Logo Pink Theme) */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
-              <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
-                <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Shield className="h-5 w-5 stroke-[2.2]" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-black">Privacy Settings</h2>
-                  <p className="text-[11px] font-semibold text-slate-600">Control your visibility</p>
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-1">
-                {/* Hide Photos Toggle */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <EyeOff className="h-4 w-4 text-indigo-600 shrink-0" />
-                    <div>
-                      <p className="text-xs font-bold text-black">Hide Photos</p>
-                      <p className="text-[10px] font-semibold text-slate-500">Keep your photos private</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleChange('hide_photos', !formData.hide_photos)}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      formData.hide_photos ? 'bg-indigo-600' : 'bg-slate-300'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                        formData.hide_photos ? 'translate-x-4' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {/* Is Private Profile Toggle */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Lock className="h-4 w-4 text-indigo-600 shrink-0" />
-                    <div>
-                      <p className="text-xs font-bold text-black">Is Private Profile</p>
-                      <p className="text-[10px] font-semibold text-slate-500">Only visible to shortlisted members</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleChange('is_private_profile', !formData.is_private_profile)}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      formData.is_private_profile ? 'bg-indigo-600' : 'bg-slate-300'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                        formData.is_private_profile ? 'translate-x-4' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-          </div>
 
           {/* Bottom Form Actions */}
           <div className="flex items-center justify-between pt-4 pb-8">
             <button
               type="button"
               onClick={async () => {
-                // Save draft in localStorage before logout so user doesn't lose inputs
                 localStorage.setItem('user_profile_draft', JSON.stringify(formData));
                 await logout();
                 showToast('Draft saved. Logged out successfully.');

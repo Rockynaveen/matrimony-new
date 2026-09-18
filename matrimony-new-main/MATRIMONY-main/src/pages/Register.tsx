@@ -220,7 +220,7 @@ export const Register: React.FC = () => {
     }
   };
 
-  const handleGoogleTokenSuccess = async (idToken: string) => {
+  const handleGoogleTokenSuccess = async (idToken: string, extraData?: { gender?: string; date_of_birth?: string; phone?: string }) => {
     setIsGoogleModalOpen(false);
     try {
       setIsSubmitting(true);
@@ -246,7 +246,15 @@ export const Register: React.FC = () => {
       }
 
       const formValues = getValues();
-      const dynamicPhone = formValues.phone ? formValues.phone.replace(/\D/g, '').slice(-10) : `9${Date.now().toString().slice(-9)}`;
+      const finalGender = extraData?.gender || formValues.gender || 'Male';
+      const finalDob = extraData?.date_of_birth || formValues.date_of_birth || '';
+      const rawPhone = extraData?.phone || formValues.phone || '';
+      const cleanPhone = rawPhone ? rawPhone.replace(/\D/g, '').slice(-10) : `9${Date.now().toString().slice(-9)}`;
+
+      if (cleanPhone) {
+        localStorage.setItem('logged_in_phone', cleanPhone);
+      }
+
       await googleRegisterUser({
         first_name: firstName || formValues.first_name || 'User',
         last_name: lastName || formValues.last_name || '',
@@ -254,9 +262,9 @@ export const Register: React.FC = () => {
         google_id: tokenPayload?.sub || 'google_user',
         password: formValues.password || 'GoogleAuth@2026!',
         confirm_password: formValues.confirm_password || formValues.password || 'GoogleAuth@2026!',
-        date_of_birth: formValues.date_of_birth || '2000-01-01',
-        gender: formValues.gender || 'Male',
-        phone: dynamicPhone,
+        date_of_birth: finalDob || '2000-01-01',
+        gender: finalGender,
+        phone: cleanPhone,
         register_for: formValues.register_for || 'SELF'
       });
 
@@ -781,6 +789,10 @@ export const Register: React.FC = () => {
         isOpen={isGoogleModalOpen}
         onClose={() => setIsGoogleModalOpen(false)}
         onSuccessToken={handleGoogleTokenSuccess}
+        mode="register"
+        initialGender={getValues('gender') || 'Male'}
+        initialDob={getValues('date_of_birth') || ''}
+        initialPhone={getValues('phone') || ''}
       />
     </div>
   );

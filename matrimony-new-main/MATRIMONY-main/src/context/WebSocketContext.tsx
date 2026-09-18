@@ -24,6 +24,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const queryClient = useQueryClient();
   const { showToast, isAuthenticated } = useApp();
 
+  const retryCount = useRef(0);
+
   const connect = useCallback(() => {
     const token = localStorage.getItem('access_token');
     if (!token || !isAuthenticated) {
@@ -32,6 +34,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         socketRef.current = null;
       }
       setIsConnected(false);
+      return;
+    }
+
+    // Don't retry indefinitely if server does not support WebSocket (404)
+    if (retryCount.current >= 3) {
       return;
     }
 
@@ -55,6 +62,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       ws.onopen = () => {
         setIsConnected(true);
+        retryCount.current = 0;
         // Setup 30s Heartbeat as per Section 18.2 / 23.2
         if (heartbeatTimer.current) clearInterval(heartbeatTimer.current);
         heartbeatTimer.current = setInterval(() => {
@@ -117,10 +125,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setIsConnected(false);
         if (heartbeatTimer.current) clearInterval(heartbeatTimer.current);
 
-        // Auto-reconnect with 3s backoff if user is still logged in
-        if (localStorage.getItem('access_token')) {
+        // Auto-reconnect with exponential backoff if user is still logged in and retry < 3
+        retryCount.current += 1;
+        if (localStorage.getItem('access_token') && retryCount.current < 3) {
           if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-          reconnectTimer.current = setTimeout(connect, 3000);
+          reconnectTimer.current = setTimeout(connect, retryCount.current * 5000);
         }
       };
 

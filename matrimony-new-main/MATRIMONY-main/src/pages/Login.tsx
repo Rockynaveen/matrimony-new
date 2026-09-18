@@ -43,19 +43,6 @@ export const Login: React.FC = () => {
   const emailParam = searchParams.get('email');
   const modeParam = searchParams.get('mode');
 
-  useEffect(() => {
-    if (phoneParam) {
-      const clean = phoneParam.replace(/\D/g, '').slice(-10);
-      setValue('email', clean);
-      setOtpPhone(clean);
-      if (modeParam === 'otp') {
-        setLoginMode('otp');
-      }
-    } else if (emailParam) {
-      setValue('email', emailParam.trim());
-    }
-  }, [phoneParam, emailParam, modeParam, setValue]);
-
   const {
     register,
     handleSubmit,
@@ -72,6 +59,19 @@ export const Login: React.FC = () => {
   });
 
   const rememberMe = watch('remember_me');
+
+  useEffect(() => {
+    if (phoneParam) {
+      const clean = phoneParam.replace(/\D/g, '').slice(-10);
+      setValue('email', clean);
+      setOtpPhone(clean);
+      if (modeParam === 'otp') {
+        setLoginMode('otp');
+      }
+    } else if (emailParam) {
+      setValue('email', emailParam.trim());
+    }
+  }, [phoneParam, emailParam, modeParam, setValue]);
 
   const checkOnboardingFlow = (targetEmail?: string) => {
     const email = (targetEmail || localStorage.getItem('logged_in_email') || '').toLowerCase().trim();

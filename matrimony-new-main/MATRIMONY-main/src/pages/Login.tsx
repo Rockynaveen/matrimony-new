@@ -39,6 +39,23 @@ export const Login: React.FC = () => {
     return () => clearTimeout(timer);
   }, [otpCooldown]);
 
+  const phoneParam = searchParams.get('phone');
+  const emailParam = searchParams.get('email');
+  const modeParam = searchParams.get('mode');
+
+  useEffect(() => {
+    if (phoneParam) {
+      const clean = phoneParam.replace(/\D/g, '').slice(-10);
+      setValue('email', clean);
+      setOtpPhone(clean);
+      if (modeParam === 'otp') {
+        setLoginMode('otp');
+      }
+    } else if (emailParam) {
+      setValue('email', emailParam.trim());
+    }
+  }, [phoneParam, emailParam, modeParam, setValue]);
+
   const {
     register,
     handleSubmit,
@@ -101,21 +118,25 @@ export const Login: React.FC = () => {
   const handleSendLoginOtp = async () => {
     const rawPhone = otpPhone || (document.getElementById('login-otp-phone') as HTMLInputElement)?.value || '';
     const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+    if (!cleanPhone || cleanPhone.length < 10) {
+      showToast('Please enter a valid 10-digit mobile number.');
+      return;
+    }
     console.log('[Login] handleSendLoginOtp calling Railway API with phone:', cleanPhone);
 
     try {
       setIsSendingOtp(true);
-      const res = await authApi.sendMobileOtp(cleanPhone);
+      const res = await authApi.forgotPasswordSendOtp(cleanPhone);
       setOtpSent(true);
       setOtpCooldown(30);
       setOtpCode(['', '', '', '', '', '']);
-      showToast('OTP sent successfully to your mobile number.');
+      showToast(res.message || 'OTP sent successfully to your mobile number.');
       setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
     } catch (err: any) {
       const msg = err.message || 'Failed to send OTP. Please try again.';
       const lower = msg.toLowerCase();
-      if (lower.includes('not registered') || lower.includes('not found') || lower.includes('register first')) {
-        showToast('Mobile number is not registered. Please register first.');
+      if (lower.includes('not registered') || lower.includes('not found') || lower.includes('no account') || lower.includes('register first')) {
+        showToast('Mobile number is not registered. Redirecting to registration...');
         setTimeout(() => navigate('/register'), 1200);
       } else {
         showToast(msg);
@@ -129,36 +150,20 @@ export const Login: React.FC = () => {
     const rawPhone = otpPhone || (document.getElementById('login-otp-phone') as HTMLInputElement)?.value || '';
     const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
     const code = otpCode.join('');
+    if (code.length < 6) {
+      showToast('Please enter the complete 6-digit OTP code.');
+      return;
+    }
     console.log('[Login] handleVerifyLoginOtp calling Railway API with phone:', cleanPhone, 'otp:', code);
 
     try {
       setIsVerifyingOtp(true);
-      const res = await authApi.verifyMobileOtp(cleanPhone, code);
-      showToast(res.message || 'Mobile OTP verified successfully.');
-
-      if (res.access_token) {
-        localStorage.setItem('access_token', res.access_token);
-      }
-      if (res.refresh_token) {
-        localStorage.setItem('refresh_token', res.refresh_token);
-      }
-      const rawUser = res.user;
-      if (rawUser?.id) localStorage.setItem('user_id', String(rawUser.id));
-      if (rawUser?.email) localStorage.setItem('logged_in_email', rawUser.email);
-      if (rawUser?.first_name || rawUser?.name) {
-        localStorage.setItem('logged_in_name', `${rawUser.first_name || ''} ${rawUser.last_name || ''}`.trim() || rawUser.name);
-      }
-
-      checkOnboardingFlow(rawUser?.email);
+      const res = await authApi.forgotPasswordVerifyOtp(cleanPhone, code);
+      showToast(res.message || 'Mobile OTP verified! Redirecting to set your password.');
+      navigate(`/forgot-password?phone=${cleanPhone}&step=3`);
     } catch (err: any) {
       const msg = err.message || 'Invalid or expired OTP. Please try again.';
-      const lower = msg.toLowerCase();
-      if (lower.includes('not registered') || lower.includes('not found') || lower.includes('register first')) {
-        showToast('Mobile number is not registered. Please register first.');
-        setTimeout(() => navigate('/register'), 1200);
-      } else {
-        showToast(msg);
-      }
+      showToast(msg);
     } finally {
       setIsVerifyingOtp(false);
     }

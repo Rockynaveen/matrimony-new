@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { authApi } from '../../api/authApi';
 import { Button } from '../../components/ui/Button';
@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 export const ForgotPassword: React.FC = () => {
   const { showToast } = useApp();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Multi-step state: 1 = Send OTP, 2 = Verify OTP, 3 = Reset Password, 4 = Success
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -19,6 +20,18 @@ export const ForgotPassword: React.FC = () => {
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Handle URL query params
+  useEffect(() => {
+    const p = searchParams.get('phone') || searchParams.get('email');
+    if (p) {
+      setPhoneOrEmail(p.trim());
+    }
+    const initialStep = searchParams.get('step');
+    if (initialStep === '2' || initialStep === '3') {
+      setStep(Number(initialStep) as 2 | 3);
+    }
+  }, [searchParams]);
 
   // UI state
   const [showPassword, setShowPassword] = useState(false);

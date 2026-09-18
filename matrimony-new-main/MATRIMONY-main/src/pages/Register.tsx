@@ -10,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Separator } from '../components/ui/Separator';
-import { Eye, EyeOff, Loader2, Check, CheckCircle2, Sparkles, ShieldCheck, Heart, User, Users, Mail, Lock, Phone, Calendar, Send } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Check, CheckCircle2, Sparkles, ShieldCheck, Heart, User, Users, Mail, Lock, Phone, Calendar, Send, AlertCircle, LogIn, KeyRound } from 'lucide-react';
 import { GoogleAuthModal } from '../components/auth/GoogleAuthModal';
 import { motion } from 'framer-motion';
 
@@ -31,6 +31,7 @@ export const Register: React.FC = () => {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [otpCooldown, setOtpCooldown] = useState(0);
+  const [alreadyRegisteredPhone, setAlreadyRegisteredPhone] = useState<string | null>(null);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Cooldown timer for OTP resend
@@ -47,10 +48,15 @@ export const Register: React.FC = () => {
       || currentPhone 
       || '';
     const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+    if (!cleanPhone || cleanPhone.length < 10) {
+      showToast('Please enter a valid 10-digit mobile number first.');
+      return;
+    }
     console.log('[Register] handleSendOtp calling Railway API with phone:', cleanPhone);
 
     try {
       setIsSendingOtp(true);
+      setAlreadyRegisteredPhone(null);
       const res = await authApi.sendMobileOtp(cleanPhone);
       setOtpSent(true);
       setOtpCooldown(30);
@@ -58,7 +64,14 @@ export const Register: React.FC = () => {
       showToast('OTP sent successfully to your mobile number.');
       setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
     } catch (err: any) {
-      showToast(err.message || 'Failed to send OTP. Please try again.');
+      const msg = err.message || 'Failed to send OTP. Please try again.';
+      const lower = msg.toLowerCase();
+      if (lower.includes('already') || lower.includes('registered') || lower.includes('please login')) {
+        setAlreadyRegisteredPhone(cleanPhone);
+        showToast('This mobile number is already registered. Please log in or reset your password.');
+      } else {
+        showToast(msg);
+      }
     } finally {
       setIsSendingOtp(false);
     }
@@ -148,6 +161,7 @@ export const Register: React.FC = () => {
   const lastVerifiedPhoneRef = useRef<string>('');
   useEffect(() => {
     const clean = (currentPhone || '').replace(/\D/g, '').slice(-10);
+    setAlreadyRegisteredPhone(null);
     if (lastVerifiedPhoneRef.current && clean !== lastVerifiedPhoneRef.current) {
       setOtpVerified(false);
       setOtpSent(false);
@@ -164,8 +178,10 @@ export const Register: React.FC = () => {
       showToast('Please verify your mobile number with OTP before completing registration.');
       return;
     }
+    const cleanPhone = (data.phone || '').replace(/\D/g, '').slice(-10);
     try {
       setIsSubmitting(true);
+      setAlreadyRegisteredPhone(null);
       await registerUser({
         register_for: data.register_for,
         first_name: data.first_name,
@@ -173,7 +189,7 @@ export const Register: React.FC = () => {
         gender: data.gender,
         date_of_birth: data.date_of_birth,
         email: data.email,
-        phone: data.phone,
+        phone: cleanPhone,
         password: data.password,
         confirm_password: data.confirm_password,
         accept_terms: data.accept_terms
@@ -191,7 +207,14 @@ export const Register: React.FC = () => {
       const target = redirectUrl ? `/profile/complete?redirect=${encodeURIComponent(redirectUrl)}` : '/profile/complete';
       navigate(target);
     } catch (err: any) {
-      showToast(err.message || 'Registration failed. Please check your details.');
+      const msg = err.message || 'Registration failed. Please check your details.';
+      const lower = msg.toLowerCase();
+      if (lower.includes('already') || lower.includes('registered') || lower.includes('exists') || lower.includes('please login')) {
+        setAlreadyRegisteredPhone(cleanPhone);
+        showToast('This mobile number or email is already registered. Please log in or reset password.');
+      } else {
+        showToast(msg);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -223,6 +246,7 @@ export const Register: React.FC = () => {
       }
 
       const formValues = getValues();
+      const dynamicPhone = formValues.phone ? formValues.phone.replace(/\D/g, '').slice(-10) : `9${Date.now().toString().slice(-9)}`;
       await googleRegisterUser({
         first_name: firstName || formValues.first_name || 'User',
         last_name: lastName || formValues.last_name || '',
@@ -232,7 +256,7 @@ export const Register: React.FC = () => {
         confirm_password: formValues.confirm_password || formValues.password || 'GoogleAuth@2026!',
         date_of_birth: formValues.date_of_birth || '2000-01-01',
         gender: formValues.gender || 'Male',
-        phone: formValues.phone || '9999999999',
+        phone: dynamicPhone,
         register_for: formValues.register_for || 'SELF'
       });
 
@@ -493,6 +517,46 @@ export const Register: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Already Registered Phone Alert Banner */}
+                {alreadyRegisteredPhone && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-lg border border-amber-300/80 bg-amber-50/90 dark:bg-amber-950/40 dark:border-amber-700/60 p-3 space-y-2 text-xs text-amber-950 dark:text-amber-200 shadow-xs"
+                  >
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <p className="font-semibold text-xs text-amber-900 dark:text-amber-100">
+                          Mobile number is already registered
+                        </p>
+                        <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90">
+                          +91 {alreadyRegisteredPhone} is already linked with an existing account. You can log in directly or reset your password.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 pt-1 pl-6">
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-7 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs"
+                        onClick={() => navigate(`/login?phone=${alreadyRegisteredPhone}`)}
+                      >
+                        <LogIn className="h-3.5 w-3.5 mr-1" /> Log In Now
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs font-medium border-amber-300 dark:border-amber-700 hover:bg-amber-100/70 dark:hover:bg-amber-900/40"
+                        onClick={() => navigate(`/forgot-password?phone=${alreadyRegisteredPhone}`)}
+                      >
+                        <KeyRound className="h-3.5 w-3.5 mr-1" /> Reset Password via OTP
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
 
                 {/* OTP Verification Box if OTP was sent and not verified */}
                 {otpSent && !otpVerified && (

@@ -334,516 +334,521 @@ export const MyProfilePage: React.FC = () => {
         </div>
       )}
 
-      {/* ── 1. SIMPLE CLEAN PROFILE HEADER CARD ── */}
-      <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-2xs">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-          
-          {/* Left: Avatar + Details */}
-          <div className="flex items-center gap-4 min-w-0">
-            {/* Avatar */}
-            <div className="relative shrink-0">
-              {profile.avatar ? (
-                <img
-                  src={profile.avatar}
-                  alt={profile.name}
-                  onClick={() => setSelectedPhoto(profile.avatar)}
-                  className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover border border-stone-200 cursor-pointer hover:opacity-95 transition-opacity"
-                />
-              ) : (
-                <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl bg-stone-100 border border-stone-200 text-[#8B1E3F] font-bold text-2xl flex flex-col items-center justify-center select-none">
-                  <span>{initialLetter}</span>
+      {/* ── SINGLE UNIFIED PROFILE CARD / PAGE ── */}
+      <div className="bg-white border border-stone-200 rounded-2xl shadow-2xs divide-y divide-stone-100 overflow-hidden">
+
+        {/* ── 1. SIMPLE CLEAN PROFILE HEADER ── */}
+        <div className="p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+            
+            {/* Left: Avatar + Details */}
+            <div className="flex items-center gap-4 min-w-0">
+              {/* Avatar */}
+              <div className="relative shrink-0">
+                {profile.avatar ? (
+                  <img
+                    src={profile.avatar}
+                    alt={profile.name}
+                    onClick={() => setSelectedPhoto(profile.avatar)}
+                    className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover border border-stone-200 cursor-pointer hover:opacity-95 transition-opacity"
+                  />
+                ) : (
+                  <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl bg-stone-100 border border-stone-200 text-[#8B1E3F] font-bold text-2xl flex flex-col items-center justify-center select-none">
+                    <span>{initialLetter}</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => navigate('/photos')}
+                  title="Manage Photo"
+                  className="absolute -bottom-1 -right-1 p-1.5 bg-white text-stone-700 border border-stone-200 rounded-lg shadow-2xs hover:text-[#8B1E3F] transition-colors cursor-pointer"
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              {/* Name & Basic Line */}
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden max-w-full">
+                  <h1 className="text-sm sm:text-base font-bold text-stone-900 tracking-tight truncate">
+                    {profile.name}
+                  </h1>
+                  {isVerified && (
+                    <span
+                      title="Verified Profile"
+                      className="inline-flex items-center cursor-default shrink-0"
+                      aria-label="Verified Profile"
+                    >
+                      <svg
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#0A66C2] drop-shadow-2xs"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zm3.707 6.763a.75.75 0 00-1.06-1.06l-3.9 3.9-1.447-1.448a.75.75 0 00-1.06 1.06l1.977 1.978a.75.75 0 001.06 0l4.43-4.43z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </span>
+                  )}
+                  {displayAge && (
+                    <span className="text-stone-500 text-xs font-medium shrink-0">
+                      • {displayAge}
+                    </span>
+                  )}
                 </div>
-              )}
+
+                {/* ID & Plan line */}
+                <div className="flex items-center gap-2 text-xs text-stone-500 flex-wrap">
+                  <span className="font-mono font-medium text-stone-700 bg-stone-100 px-2 py-0.5 rounded">
+                    {profile.kmId}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyId}
+                    className="text-stone-400 hover:text-stone-700 transition-colors"
+                    title="Copy Profile ID"
+                  >
+                    {copiedId ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                  </button>
+                  <span>•</span>
+                  <span className="font-medium text-stone-600">{planName}</span>
+                  {hasLocation && (
+                    <>
+                      <span>•</span>
+                      <span className="text-stone-600">{locationString}</span>
+                    </>
+                  )}
+                </div>
+
+                {profile.occupation !== 'Not Specified' && (
+                  <p className="text-xs text-stone-600">
+                    {profile.occupation}
+                    {profile.highest_education !== 'Not Specified' && ` • ${profile.highest_education}`}
+                  </p>
+                )}
+              </div>
+
+            </div>
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0">
               <button
                 type="button"
-                onClick={() => navigate('/photos')}
-                title="Manage Photo"
-                className="absolute -bottom-1 -right-1 p-1.5 bg-white text-stone-700 border border-stone-200 rounded-lg shadow-2xs hover:text-[#8B1E3F] transition-colors cursor-pointer"
+                onClick={() => navigate('/profile/edit')}
+                className="flex-1 sm:flex-none px-4 py-2 text-xs font-semibold bg-[#8B1E3F] hover:bg-[#721833] text-white rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <Camera className="h-3.5 w-3.5" />
+                <Edit3 className="h-3.5 w-3.5" />
+                <span>Edit Profile</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate('/preferences')}
+                className="flex-1 sm:flex-none px-4 py-2 text-xs font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Sliders className="h-3.5 w-3.5" />
+                <span>Preferences</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate(`/profile/${(profile as any).uuid || (profile as any).member_id || (profile as any).user_uuid || profile.id}`)}
+                className="p-2 text-stone-500 hover:text-stone-900 border border-stone-200 hover:bg-stone-50 rounded-xl transition-colors cursor-pointer"
+                title="Public Preview"
+              >
+                <Eye className="h-4 w-4" />
               </button>
             </div>
 
-            {/* Name & Basic Line */}
-            <div className="space-y-1 min-w-0">
-              <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden max-w-full">
-                <h1 className="text-base sm:text-lg font-bold text-stone-900 tracking-tight truncate">
-                  {profile.name}
-                </h1>
-                {isVerified && (
-                  <span
-                    title="Verified Profile"
-                    className="inline-flex items-center cursor-default shrink-0"
-                    aria-label="Verified Profile"
-                  >
-                    <svg
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className="h-4 w-4 sm:h-5 sm:w-5 text-[#0A66C2] drop-shadow-2xs"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zm3.707 6.763a.75.75 0 00-1.06-1.06l-3.9 3.9-1.447-1.448a.75.75 0 00-1.06 1.06l1.977 1.978a.75.75 0 001.06 0l4.43-4.43z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </span>
-                )}
-                {displayAge && (
-                  <span className="text-stone-500 text-sm font-medium shrink-0">
-                    • {displayAge}
-                  </span>
-                )}
-              </div>
-
-              {/* ID & Plan line */}
-              <div className="flex items-center gap-2 text-xs text-stone-500 flex-wrap">
-                <span className="font-mono font-medium text-stone-700 bg-stone-100 px-2 py-0.5 rounded">
-                  {profile.kmId}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleCopyId}
-                  className="text-stone-400 hover:text-stone-700 transition-colors"
-                  title="Copy Profile ID"
-                >
-                  {copiedId ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
-                </button>
-                <span>•</span>
-                <span className="font-medium text-stone-600">{planName}</span>
-                {hasLocation && (
-                  <>
-                    <span>•</span>
-                    <span className="text-stone-600">{locationString}</span>
-                  </>
-                )}
-              </div>
-
-              {profile.occupation !== 'Not Specified' && (
-                <p className="text-xs text-stone-600">
-                  {profile.occupation}
-                  {profile.highest_education !== 'Not Specified' && ` • ${profile.highest_education}`}
-                </p>
-              )}
-            </div>
-
           </div>
 
-          {/* Right: Actions */}
-          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0">
+          {/* Profile Completeness Simple Meter */}
+          <div className="mt-5 pt-4 border-t border-stone-100 flex items-center justify-between gap-4 text-xs text-stone-500">
+            <div className="flex items-center gap-2">
+              <span>Profile Completeness:</span>
+              <span className="font-bold text-stone-900">{profile.completion_percentage}%</span>
+            </div>
+            <div className="flex-1 max-w-xs h-1.5 bg-stone-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#8B1E3F] rounded-full transition-all duration-300"
+                style={{ width: `${profile.completion_percentage}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── 2. ABOUT MYSELF ── */}
+        <div className="p-6 sm:p-8 space-y-4">
+          <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
+            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+              About Myself
+            </h2>
             <button
               type="button"
               onClick={() => navigate('/profile/edit')}
-              className="flex-1 sm:flex-none px-4 py-2 text-xs font-semibold bg-[#8B1E3F] hover:bg-[#721833] text-white rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
             >
-              <Edit3 className="h-3.5 w-3.5" />
-              <span>Edit Profile</span>
+              <Edit3 className="h-3 w-3" /> Edit
             </button>
+          </div>
 
+          {profile.about_me ? (
+            <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">
+              {profile.about_me}
+            </p>
+          ) : (
+            <p className="text-xs text-stone-400 italic">No description added yet.</p>
+          )}
+
+          {/* Languages & Hobbies */}
+          <div className="pt-3 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-stone-100">
+            <div>
+              <span className="text-[11px] font-medium text-stone-500 block mb-1">Languages Known</span>
+              {profile.languages_known.length > 0 ? (
+                <p className="text-xs font-semibold text-stone-800">{profile.languages_known.join(', ')}</p>
+              ) : (
+                <p className="text-xs text-stone-400 italic">Not Specified</p>
+              )}
+            </div>
+            <div>
+              <span className="text-[11px] font-medium text-stone-500 block mb-1">Hobbies & Interests</span>
+              {profile.hobbies_interests.length > 0 ? (
+                <p className="text-xs font-semibold text-stone-800">{profile.hobbies_interests.join(', ')}</p>
+              ) : (
+                <p className="text-xs text-stone-400 italic">Not Specified</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── 3. BASIC & PERSONAL DETAILS ── */}
+        <div className="p-6 sm:p-8 space-y-4">
+          <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
+            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+              Personal & Lifestyle Details
+            </h2>
+            <button
+              type="button"
+              onClick={() => navigate('/profile/edit')}
+              className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <Edit3 className="h-3 w-3" /> Edit
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-xs">
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Marital Status</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.marital_status}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Height</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.height}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Weight</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.weight}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Complexion</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.complexion}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Mother Tongue</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.mother_tongue}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Diet</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.diet}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Physical Status</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.physical_status}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Smoking / Drinking</span>
+              <span className="font-semibold text-stone-800 text-xs">
+                {profile.smoking !== 'Not Specified' || profile.drinking !== 'Not Specified'
+                  ? `${profile.smoking} / ${profile.drinking}`
+                  : 'Not Specified'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 4. EDUCATION & CAREER ── */}
+        <div className="p-6 sm:p-8 space-y-4">
+          <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
+            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+              Education & Career
+            </h2>
+            <button
+              type="button"
+              onClick={() => navigate('/profile/edit')}
+              className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <Edit3 className="h-3 w-3" /> Edit
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Highest Degree</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.highest_education}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Degree Detail</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.education_detail}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Occupation</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.occupation}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Company / Organization</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.company_name}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Annual Income</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.annual_income}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Work Location</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.work_location}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 5. RELIGION & HOROSCOPE ── */}
+        <div className="p-6 sm:p-8 space-y-4">
+          <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
+            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+              Religion & Horoscope
+            </h2>
+            <button
+              type="button"
+              onClick={() => navigate('/profile/edit')}
+              className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <Edit3 className="h-3 w-3" /> Edit
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-xs">
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Religion</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.religion}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Caste</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.caste}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Sub-Caste</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.sub_caste}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Gothram</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.gothram}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Moon Sign (Rashi)</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.rashi}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Star (Nakshatra)</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.nakshatra}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Dosha / Manglik</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.dosha}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 6. FAMILY DETAILS ── */}
+        <div className="p-6 sm:p-8 space-y-4">
+          <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
+            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+              Family Background
+            </h2>
+            <button
+              type="button"
+              onClick={() => navigate('/profile/edit')}
+              className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <Edit3 className="h-3 w-3" /> Edit
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Family Values</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.family_values}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Family Type</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.family_type}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Family Status</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.family_status}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Father's Profession</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.father_occupation}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Mother's Profession</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.mother_occupation}</span>
+            </div>
+          </div>
+
+          {profile.family_information && (
+            <div className="pt-2 border-t border-stone-100">
+              <span className="text-stone-400 text-[11px] block mb-1">About Family</span>
+              <p className="text-xs text-stone-700 leading-relaxed">{profile.family_information}</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── 7. PARTNER PREFERENCES ── */}
+        <div className="p-6 sm:p-8 space-y-4">
+          <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
+            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+              Partner Preferences
+            </h2>
             <button
               type="button"
               onClick={() => navigate('/preferences')}
-              className="flex-1 sm:flex-none px-4 py-2 text-xs font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
             >
-              <Sliders className="h-3.5 w-3.5" />
-              <span>Preferences</span>
+              <Edit3 className="h-3 w-3" /> Edit Preferences
             </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Preferred Age</span>
+              <span className="font-semibold text-stone-800 text-xs">
+                {partnerPrefs?.minimum_age && partnerPrefs?.maximum_age
+                  ? `${partnerPrefs.minimum_age} - ${partnerPrefs.maximum_age} Yrs`
+                  : partnerPrefs?.minimum_age
+                  ? `${partnerPrefs.minimum_age}+ Yrs`
+                  : 'Not Specified'}
+              </span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Preferred Height</span>
+              <span className="font-semibold text-stone-800 text-xs">
+                {partnerPrefs?.minimum_height && partnerPrefs?.maximum_height
+                  ? `${formatHeight(partnerPrefs.minimum_height)} - ${formatHeight(partnerPrefs.maximum_height)}`
+                  : partnerPrefs?.minimum_height
+                  ? `${formatHeight(partnerPrefs.minimum_height)}+`
+                  : 'Not Specified'}
+              </span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Religion & Caste</span>
+              <span className="font-semibold text-stone-800 text-xs">
+                {partnerPrefs?.religion || partnerPrefs?.caste
+                  ? `${partnerPrefs.religion || 'Any'}, ${partnerPrefs.caste || 'Any'}`
+                  : 'Not Specified'}
+              </span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Education</span>
+              <span className="font-semibold text-stone-800 text-xs">
+                {partnerPrefs?.education || 'Not Specified'}
+              </span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Preferred Location</span>
+              <span className="font-semibold text-stone-800 text-xs">
+                {[partnerPrefs?.city, partnerPrefs?.state, partnerPrefs?.country].filter(Boolean).join(', ') || 'Not Specified'}
+              </span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Diet</span>
+              <span className="font-semibold text-stone-800 text-xs">
+                {(Array.isArray(partnerPrefs?.preferred_diets) && partnerPrefs.preferred_diets[0]) || partnerPrefs?.diet || 'Not Specified'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 8. PHOTOS & MEDIA ── */}
+        <div className="p-6 sm:p-8 space-y-4">
+          <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
+            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+              Photos ({ (profile.avatar ? 1 : 0) + realGalleryImages.length })
+            </h2>
+            <button
+              type="button"
+              onClick={() => navigate('/photos')}
+              className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" /> Manage Photos
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+            {profile.avatar && (
+              <div
+                onClick={() => setSelectedPhoto(profile.avatar)}
+                className="relative aspect-square rounded-xl overflow-hidden border border-stone-200 cursor-pointer group"
+              >
+                <img src={profile.avatar} alt="Primary" className="h-full w-full object-cover" />
+                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-[#8B1E3F] text-white text-[9px] rounded font-bold">
+                  Primary
+                </span>
+              </div>
+            )}
+
+            {realGalleryImages.map((img, idx) => (
+              <div
+                key={idx}
+                onClick={() => setSelectedPhoto(img.image_url)}
+                className="relative aspect-square rounded-xl overflow-hidden border border-stone-200 cursor-pointer"
+              >
+                <img src={img.image_url} alt="" className="h-full w-full object-cover" />
+              </div>
+            ))}
 
             <button
               type="button"
-              onClick={() => navigate(`/profile/${(profile as any).uuid || (profile as any).member_id || (profile as any).user_uuid || profile.id}`)}
-              className="p-2 text-stone-500 hover:text-stone-900 border border-stone-200 hover:bg-stone-50 rounded-xl transition-colors cursor-pointer"
-              title="Public Preview"
+              onClick={() => navigate('/photos')}
+              className="aspect-square rounded-xl border border-dashed border-stone-300 hover:border-[#8B1E3F] flex flex-col items-center justify-center text-xs text-stone-500 hover:text-[#8B1E3F] transition-colors cursor-pointer bg-stone-50/50"
             >
-              <Eye className="h-4 w-4" />
+              <Plus className="h-4 w-4" />
+              <span className="text-[10px] mt-1 font-medium">Add Photo</span>
             </button>
           </div>
-
         </div>
 
-        {/* Profile Completeness Simple Meter */}
-        <div className="mt-5 pt-4 border-t border-stone-100 flex items-center justify-between gap-4 text-xs text-stone-500">
-          <div className="flex items-center gap-2">
-            <span>Profile Completeness:</span>
-            <span className="font-bold text-stone-900">{profile.completion_percentage}%</span>
+        {/* ── 9. PRIVACY & SECURITY ── */}
+        <div className="p-6 sm:p-8 bg-stone-50/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
+          <div className="space-y-1">
+            <p className="font-semibold text-stone-800">
+              Contact Details: <span className="font-normal text-stone-600">{profile.phone} • {profile.email}</span>
+            </p>
+            <p className="text-stone-400">
+              Shared only with verified matches you accept.
+            </p>
           </div>
-          <div className="flex-1 max-w-xs h-1.5 bg-stone-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#8B1E3F] rounded-full transition-all duration-300"
-              style={{ width: `${profile.completion_percentage}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* ── 2. ABOUT MYSELF ── */}
-      <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-2xs space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
-            About Myself
-          </h2>
-          <button
-            type="button"
-            onClick={() => navigate('/profile/edit')}
-            className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <Edit3 className="h-3 w-3" /> Edit
-          </button>
-        </div>
-
-        {profile.about_me ? (
-          <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">
-            {profile.about_me}
-          </p>
-        ) : (
-          <p className="text-xs text-stone-400 italic">No description added yet.</p>
-        )}
-
-        {/* Languages & Hobbies */}
-        <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-stone-100">
-          <div>
-            <span className="text-xs font-medium text-stone-500 block mb-1">Languages Known</span>
-            {profile.languages_known.length > 0 ? (
-              <p className="text-xs font-semibold text-stone-800">{profile.languages_known.join(', ')}</p>
-            ) : (
-              <p className="text-xs text-stone-400 italic">Not Specified</p>
-            )}
-          </div>
-          <div>
-            <span className="text-xs font-medium text-stone-500 block mb-1">Hobbies & Interests</span>
-            {profile.hobbies_interests.length > 0 ? (
-              <p className="text-xs font-semibold text-stone-800">{profile.hobbies_interests.join(', ')}</p>
-            ) : (
-              <p className="text-xs text-stone-400 italic">Not Specified</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── 3. BASIC & PERSONAL DETAILS ── */}
-      <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-          <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
-            Personal & Lifestyle Details
-          </h2>
-          <button
-            type="button"
-            onClick={() => navigate('/profile/edit')}
-            className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <Edit3 className="h-3 w-3" /> Edit
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-xs">
-          <div>
-            <span className="text-stone-400 block mb-0.5">Marital Status</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.marital_status}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Height</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.height}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Weight</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.weight}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Complexion</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.complexion}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Mother Tongue</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.mother_tongue}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Diet</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.diet}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Physical Status</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.physical_status}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Smoking / Drinking</span>
-            <span className="font-semibold text-stone-800 text-sm">
-              {profile.smoking !== 'Not Specified' || profile.drinking !== 'Not Specified'
-                ? `${profile.smoking} / ${profile.drinking}`
-                : 'Not Specified'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 4. EDUCATION & CAREER ── */}
-      <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-          <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
-            Education & Career
-          </h2>
-          <button
-            type="button"
-            onClick={() => navigate('/profile/edit')}
-            className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <Edit3 className="h-3 w-3" /> Edit
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
-          <div>
-            <span className="text-stone-400 block mb-0.5">Highest Degree</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.highest_education}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Degree Detail</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.education_detail}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Occupation</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.occupation}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Company / Organization</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.company_name}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Annual Income</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.annual_income}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Work Location</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.work_location}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 5. RELIGION & HOROSCOPE ── */}
-      <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-          <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
-            Religion & Horoscope
-          </h2>
-          <button
-            type="button"
-            onClick={() => navigate('/profile/edit')}
-            className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <Edit3 className="h-3 w-3" /> Edit
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-xs">
-          <div>
-            <span className="text-stone-400 block mb-0.5">Religion</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.religion}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Caste</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.caste}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Sub-Caste</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.sub_caste}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Gothram</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.gothram}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Moon Sign (Rashi)</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.rashi}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Star (Nakshatra)</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.nakshatra}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Dosha / Manglik</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.dosha}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 6. FAMILY DETAILS ── */}
-      <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-          <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
-            Family Background
-          </h2>
-          <button
-            type="button"
-            onClick={() => navigate('/profile/edit')}
-            className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <Edit3 className="h-3 w-3" /> Edit
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
-          <div>
-            <span className="text-stone-400 block mb-0.5">Family Values</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.family_values}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Family Type</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.family_type}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Family Status</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.family_status}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Father's Profession</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.father_occupation}</span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Mother's Profession</span>
-            <span className="font-semibold text-stone-800 text-sm">{profile.mother_occupation}</span>
-          </div>
-        </div>
-
-        {profile.family_information && (
-          <div className="pt-2 border-t border-stone-100">
-            <span className="text-stone-400 text-xs block mb-1">About Family</span>
-            <p className="text-xs text-stone-700 leading-relaxed">{profile.family_information}</p>
-          </div>
-        )}
-      </div>
-
-      {/* ── 7. PARTNER PREFERENCES ── */}
-      <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-          <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
-            Partner Preferences
-          </h2>
-          <button
-            type="button"
-            onClick={() => navigate('/preferences')}
-            className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <Edit3 className="h-3 w-3" /> Edit Preferences
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
-          <div>
-            <span className="text-stone-400 block mb-0.5">Preferred Age</span>
-            <span className="font-semibold text-stone-800 text-sm">
-              {partnerPrefs?.minimum_age && partnerPrefs?.maximum_age
-                ? `${partnerPrefs.minimum_age} - ${partnerPrefs.maximum_age} Yrs`
-                : partnerPrefs?.minimum_age
-                ? `${partnerPrefs.minimum_age}+ Yrs`
-                : 'Not Specified'}
-            </span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Preferred Height</span>
-            <span className="font-semibold text-stone-800 text-sm">
-              {partnerPrefs?.minimum_height && partnerPrefs?.maximum_height
-                ? `${formatHeight(partnerPrefs.minimum_height)} - ${formatHeight(partnerPrefs.maximum_height)}`
-                : partnerPrefs?.minimum_height
-                ? `${formatHeight(partnerPrefs.minimum_height)}+`
-                : 'Not Specified'}
-            </span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Religion & Caste</span>
-            <span className="font-semibold text-stone-800 text-sm">
-              {partnerPrefs?.religion || partnerPrefs?.caste
-                ? `${partnerPrefs.religion || 'Any'}, ${partnerPrefs.caste || 'Any'}`
-                : 'Not Specified'}
-            </span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Education</span>
-            <span className="font-semibold text-stone-800 text-sm">
-              {partnerPrefs?.education || 'Not Specified'}
-            </span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Preferred Location</span>
-            <span className="font-semibold text-stone-800 text-sm">
-              {[partnerPrefs?.city, partnerPrefs?.state, partnerPrefs?.country].filter(Boolean).join(', ') || 'Not Specified'}
-            </span>
-          </div>
-          <div>
-            <span className="text-stone-400 block mb-0.5">Diet</span>
-            <span className="font-semibold text-stone-800 text-sm">
-              {(Array.isArray(partnerPrefs?.preferred_diets) && partnerPrefs.preferred_diets[0]) || partnerPrefs?.diet || 'Not Specified'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 8. PHOTOS & MEDIA ── */}
-      <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-          <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
-            Photos ({ (profile.avatar ? 1 : 0) + realGalleryImages.length })
-          </h2>
-          <button
-            type="button"
-            onClick={() => navigate('/photos')}
-            className="text-xs font-medium text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <Plus className="h-3.5 w-3.5" /> Manage Photos
-          </button>
-        </div>
-
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-          {profile.avatar && (
-            <div
-              onClick={() => setSelectedPhoto(profile.avatar)}
-              className="relative aspect-square rounded-xl overflow-hidden border border-stone-200 cursor-pointer group"
-            >
-              <img src={profile.avatar} alt="Primary" className="h-full w-full object-cover" />
-              <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-[#8B1E3F] text-white text-[9px] rounded font-bold">
-                Primary
-              </span>
-            </div>
-          )}
-
-          {realGalleryImages.map((img, idx) => (
-            <div
-              key={idx}
-              onClick={() => setSelectedPhoto(img.image_url)}
-              className="relative aspect-square rounded-xl overflow-hidden border border-stone-200 cursor-pointer"
-            >
-              <img src={img.image_url} alt="" className="h-full w-full object-cover" />
-            </div>
-          ))}
 
           <button
             type="button"
-            onClick={() => navigate('/photos')}
-            className="aspect-square rounded-xl border border-dashed border-stone-300 hover:border-[#8B1E3F] flex flex-col items-center justify-center text-xs text-stone-500 hover:text-[#8B1E3F] transition-colors cursor-pointer bg-stone-50/50"
+            onClick={() => navigate('/privacy-settings')}
+            className="text-xs font-semibold text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer shrink-0"
           >
-            <Plus className="h-4 w-4" />
-            <span className="text-[10px] mt-1 font-medium">Add Photo</span>
+            <span>Privacy Settings</span>
+            <ArrowRight className="h-3 w-3" />
           </button>
         </div>
-      </div>
 
-      {/* ── 9. PRIVACY & SECURITY ── */}
-      <div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-        <div className="space-y-0.5">
-          <p className="font-semibold text-stone-800">
-            Contact Details: <span className="font-normal text-stone-600">{profile.phone} • {profile.email}</span>
-          </p>
-          <p className="text-stone-400">
-            Shared only with verified matches you accept.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => navigate('/privacy-settings')}
-          className="text-xs font-semibold text-[#8B1E3F] hover:underline flex items-center gap-1 cursor-pointer shrink-0"
-        >
-          <span>Privacy Settings</span>
-          <ArrowRight className="h-3 w-3" />
-        </button>
       </div>
 
       {/* Photo Lightbox Modal */}

@@ -205,6 +205,66 @@ export const CompleteProfile: React.FC = () => {
       }
     } catch {}
 
+    // Also load profile from backend database
+    const loadBackendProfile = async () => {
+      try {
+        const profile = await profileService.getProfile();
+        if (profile) {
+          markProfileCompleted();
+          setFormData(prev => ({
+            ...prev,
+            profile_name: profile.profile_name || prev.profile_name,
+            profile_photo: profile.profile_photo || prev.profile_photo,
+            video_url: profile.video_url || profile.video_introduction || prev.video_url,
+            about_me: profile.about_me || prev.about_me,
+            highest_education: profile.highest_education || prev.highest_education,
+            education_detail: (profile as any).education_detail || prev.education_detail,
+            education_id: (profile as any).education_id || prev.education_id,
+            profession_id: (profile as any).profession_id || prev.profession_id,
+            occupation: profile.occupation || prev.occupation,
+            job_title: (profile as any).job_title || prev.job_title,
+            employment_type: (profile as any).employment_type || prev.employment_type,
+            company_name: (profile as any).company_name || prev.company_name,
+            work_location: (profile as any).work_location || prev.work_location,
+            annual_income: profile.annual_income || prev.annual_income,
+            religion: profile.religion || prev.religion,
+            religion_id: (profile as any).religion_id || prev.religion_id,
+            caste: profile.caste || prev.caste,
+            caste_id: (profile as any).caste_id || prev.caste_id,
+            sub_caste: (profile as any).sub_caste || prev.sub_caste,
+            gothram: (profile as any).gothram || prev.gothram,
+            rashi: profile.rashi || prev.rashi,
+            nakshatra: profile.nakshatra || prev.nakshatra,
+            dosha: profile.dosha || prev.dosha,
+            height: profile.height ? Number(profile.height) : prev.height,
+            weight: profile.weight ? Number(profile.weight) : prev.weight,
+            complexion: profile.complexion || prev.complexion,
+            diet: profile.diet || prev.diet,
+            smoking: profile.smoking || prev.smoking,
+            drinking: profile.drinking || prev.drinking,
+            languages_known: profile.languages_known || prev.languages_known,
+            language_ids: (profile as any).language_ids || prev.language_ids,
+            hobbies_interests: profile.hobbies_interests || prev.hobbies_interests,
+            hobby_ids: (profile as any).hobby_ids || prev.hobby_ids,
+            marital_status: profile.marital_status || prev.marital_status,
+            country: profile.country || prev.country,
+            country_id: (profile as any).country_id || prev.country_id,
+            state: profile.state || prev.state,
+            state_id: (profile as any).state_id || prev.state_id,
+            city: profile.city || prev.city,
+            district_id: (profile as any).district_id || prev.district_id,
+            mandal_id: (profile as any).mandal_id || prev.mandal_id,
+            village_id: (profile as any).village_id || prev.village_id,
+            pincode: (profile as any).pincode || prev.pincode,
+          }));
+        }
+      } catch (err) {
+        console.warn('Could not fetch existing profile from backend:', err);
+      }
+    };
+
+    loadBackendProfile();
+
     const storedGender = currentUser?.gender || localStorage.getItem('logged_in_gender');
     const storedDob = (currentUser?.date_of_birth && currentUser.date_of_birth !== '2000-01-01') 
       ? currentUser.date_of_birth 

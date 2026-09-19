@@ -73,8 +73,13 @@ export const Login: React.FC = () => {
     }
   }, [phoneParam, emailParam, modeParam, setValue]);
 
-  const checkOnboardingFlow = (targetEmail?: string) => {
+  const checkOnboardingFlow = async (targetEmail?: string) => {
     const email = (targetEmail || localStorage.getItem('logged_in_email') || '').toLowerCase().trim();
+    // Synchronize latest profile, partner preferences, and verification status from backend
+    try {
+      await checkProfileStatus();
+    } catch {}
+
     const status = getStoredOnboardingStatus(email);
     const nextRoute = getNextPendingRoute(status);
 
@@ -176,7 +181,7 @@ export const Login: React.FC = () => {
         email: data.email,
         password: data.password
       });
-      checkOnboardingFlow(data.email);
+      await checkOnboardingFlow(data.email);
     } catch (err: any) {
       const msg = err.message || 'Login failed. Please check credentials.';
       const lower = msg.toLowerCase();
@@ -222,7 +227,7 @@ export const Login: React.FC = () => {
         id_token: idToken,
         action: 'login'
       });
-      checkOnboardingFlow(googleEmail);
+      await checkOnboardingFlow(googleEmail);
     } catch (err: any) {
       const msg = err.message || 'Google Login failed';
       if (msg.toLowerCase().includes('register')) {

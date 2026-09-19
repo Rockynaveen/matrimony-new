@@ -18,6 +18,7 @@ import { matchingApi } from '../api/matchingApi';
 import { notificationApi } from '../api/notificationApi';
 import { verificationService } from '../services/verification.service';
 import { partnerPreferencesService } from '../services/partnerPreferences.service';
+import { identityVerificationService } from '../services/identityVerification.service';
 import { queryClient } from '../lib/queryClient';
 import { isAtLeast18YearsOld } from '../utils/validationSchemas';
 import { isDummyImage } from '../components/ui/MatchAvatar';
@@ -589,39 +590,86 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const isDoneLocally = isUserProfileCompleted(email);
 
     try {
+      // 1. Profile Status from Backend
       const res = await profileApi.getProfile();
-      const isBasicDone = Boolean(res.is_basic_complete) || storedStatus.basic_profile_completed || (storedStatus.registration_method === 'manual');
-      const isDetailedDone = Boolean(res.is_detailed_complete) || storedStatus.complete_profile_completed;
-      const isPreferencesDone = Boolean(storedStatus.partner_preferences_completed);
+      const hasBackendProfile = Boolean(
+        res.is_detailed_complete ||
+        (res.id && String(res.id) !== '' && String(res.id) !== '0') ||
+        res.highest_education ||
+        res.occupation ||
+        res.religion ||
+        (res as any).height
+      );
+      const isBasicDone = Boolean(res.is_basic_complete) || storedStatus.basic_profile_completed || (storedStatus.registration_method === 'manual') || hasBackendProfile;
+      const isDetailedDone = hasBackendProfile || storedStatus.complete_profile_completed;
 
+      // 2. Partner Preferences Status from Backend
+      let isPreferencesDone = Boolean(storedStatus.partner_preferences_completed);
+      try {
+        const prefRes = await partnerPreferencesService.getPreferences();
+        if (
+          prefRes &&
+          (prefRes.id != null || (prefRes as any).partner_preference_id != null || (prefRes as any).user_id != null || prefRes.created_at != null || Object.keys(prefRes).length > 2)
+        ) {
+          isPreferencesDone = true;
+        }
+      } catch (prefErr) {
+        console.warn('Could not load partner preferences from backend:', prefErr);
+      }
+
+      // 3. Identity Verification Status from Backend
       let mappedVStatus: VerificationState = storedStatus.verification_status || (storedStatus.verification_completed ? 'PENDING' : 'NOT_SUBMITTED');
       let vRejectionReason: string | null = storedStatus.rejection_reason || null;
 
       try {
-        const vRes = await verificationService.getVerificationStatus();
-        if (vRes.status) {
-          mappedVStatus = vRes.status as VerificationState;
-          vRejectionReason = vRes.rejection_reason || null;
+        const idVRes = await identityVerificationService.getVerificationStatus();
+        if (idVRes.isVerified || idVRes.code === 'VERIFIED') {
+          mappedVStatus = 'VERIFIED';
+        } else if (idVRes.code === 'PENDING') {
+          mappedVStatus = 'PENDING';
+        } else if (idVRes.code === 'REJECTED') {
+          mappedVStatus = 'REJECTED';
+          vRejectionReason = idVRes.adminReviewMessage || idVRes.message || null;
         }
-      } catch {}
+      } catch {
+        try {
+          const vRes = await verificationService.getVerificationStatus();
+          if (vRes.status) {
+            mappedVStatus = vRes.status as VerificationState;
+            vRejectionReason = vRes.rejection_reason || null;
+          }
+        } catch {}
+      }
+
+      const isVerificationDone =
+        mappedVStatus === 'VERIFIED' ||
+        mappedVStatus === 'PENDING' ||
+        Boolean(storedStatus.verification_completed) ||
+        localStorage.getItem('verification_completed') === 'true' ||
+        localStorage.getItem('verification_skipped') === 'true';
 
       const syncedStatus = saveStoredOnboardingStatus({
         registration_completed: true,
         basic_profile_completed: isBasicDone,
         complete_profile_completed: isDetailedDone,
         partner_preferences_completed: isPreferencesDone,
-        verification_completed: mappedVStatus === 'PENDING' || mappedVStatus === 'VERIFIED',
+        verification_completed: isVerificationDone,
         verification_status: mappedVStatus,
         rejection_reason: vRejectionReason
       }, email);
 
       setOnboardingStatusState(syncedStatus);
+      useOnboardingStore.getState().setOnboardingStatus(syncedStatus);
       setVerificationStatusState(mappedVStatus);
+
+      if (isDetailedDone && isPreferencesDone) {
+        markUserProfileCompleted(email);
+      }
 
       setProfileStatus({
         is_basic_complete: isBasicDone,
         is_detailed_complete: isDetailedDone,
-        completion_percentage: isDoneLocally ? 100 : (isDetailedDone ? 85 : (isBasicDone ? 30 : 15))
+        completion_percentage: isDoneLocally || (isDetailedDone && isPreferencesDone) ? 100 : (isDetailedDone ? 85 : (isBasicDone ? 30 : 15))
       });
 
       const storedName = localStorage.getItem('logged_in_name');

@@ -23,16 +23,26 @@ export const profileApi = {
         const userObj = raw.user || {};
 
         const hasDetailedFields = Boolean(
-          (normalized.highest_education || userObj.highest_education) &&
-          (normalized.occupation || userObj.occupation) &&
-          (normalized.about_me || normalized.religion || userObj.religion || normalized.city || userObj.city || normalized.marital_status || userObj.marital_status)
+          normalized.id ||
+          normalized.created_at ||
+          normalized.height ||
+          normalized.highest_education ||
+          normalized.education_id ||
+          normalized.occupation ||
+          normalized.profession_id ||
+          normalized.religion ||
+          normalized.religion_id ||
+          normalized.profile_name ||
+          normalized.city ||
+          (userObj.highest_education && userObj.occupation) ||
+          ((normalized.highest_education || userObj.highest_education) && (normalized.occupation || userObj.occupation))
         );
 
         const isBasic = typeof normalized.is_basic_complete === 'boolean'
           ? normalized.is_basic_complete
           : (typeof userObj.is_basic_complete === 'boolean'
               ? userObj.is_basic_complete
-              : Boolean((normalized.first_name || userObj.first_name) && (normalized.gender || userObj.gender || normalized.date_of_birth || userObj.date_of_birth)));
+              : Boolean((normalized.first_name || userObj.first_name) || (normalized.gender || userObj.gender) || Boolean(normalized.id)));
 
         const isDetailed = typeof normalized.is_detailed_complete === 'boolean'
           ? normalized.is_detailed_complete

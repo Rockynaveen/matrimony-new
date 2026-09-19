@@ -150,6 +150,7 @@ export const PreferencesPage: React.FC = () => {
         // Fetch from backend API
         const apiData = await partnerPreferencesService.getPreferences();
         if (apiData) {
+          markPreferencesCompleted();
           setFormData(prev => ({
             ...prev,
             minimum_age: apiData.minimum_age ?? prev.minimum_age,

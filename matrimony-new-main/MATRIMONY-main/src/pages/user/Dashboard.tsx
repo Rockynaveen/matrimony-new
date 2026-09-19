@@ -49,15 +49,27 @@ export const Dashboard: React.FC = () => {
 
   const firstName = rawName.split(' ')[0] || 'Member';
 
-  // Numeric and KM ID
-  const numericId =
+  // Resolve Member ID & Numeric ID
+  const resolvedMemberId =
+    (apiProfile as any)?.member_id ||
+    (currentUser as any)?.member_id ||
+    localStorage.getItem('member_id');
+
+  const resolvedUserId =
+    (apiProfile as any)?.user_id ||
     apiProfile?.id ||
-    (currentUser?.id ? parseInt(String(currentUser.id).replace(/\D/g, ''), 10) : 0) ||
-    24;
-  const kmId = `KM${String(numericId).padStart(6, '0')}`;
+    currentUser?.id ||
+    localStorage.getItem('user_id');
+
+  const numericId = resolvedUserId ? parseInt(String(resolvedUserId).replace(/\D/g, ''), 10) : 0;
+  const kmId = resolvedMemberId
+    ? String(resolvedMemberId)
+    : numericId > 0
+    ? `KM${String(numericId).padStart(6, '0')}`
+    : 'KM-MEMBER';
 
   // Stats Counters
-  const profileViewsCount = (apiProfile as any)?.profile_views ?? 142;
+  const profileViewsCount = (apiProfile as any)?.profile_views ?? 0;
   const interestedInYouCount = receivedInterests?.length ?? 0;
   const newMessagesCount = unreadCount || 0;
   const profileMatchesCount = recommendations?.length ?? 0;
@@ -106,13 +118,27 @@ export const Dashboard: React.FC = () => {
          ───────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-stone-200">
         <div className="space-y-1">
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">
               Welcome, {firstName}
             </h1>
             {isVerified && (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> Verified
+              <span
+                title="Verified Member"
+                className="inline-flex items-center cursor-default shrink-0"
+                aria-label="Verified Member"
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="h-5 w-5 sm:h-6 sm:w-6 text-[#0A66C2] drop-shadow-2xs"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zm3.707 6.763a.75.75 0 00-1.06-1.06l-3.9 3.9-1.447-1.448a.75.75 0 00-1.06 1.06l1.977 1.978a.75.75 0 001.06 0l4.43-4.43z"
+                    clipRule="evenodd"
+                  />
+                </svg>
               </span>
             )}
           </div>

@@ -50,12 +50,24 @@ export const UserSidebar: React.FC<UserSidebarProps> = ({ onNavClick, className 
   const shortlistCount = shortlistData?.length ?? shortlistedIds.length;
   const totalInterestsCount = (sentInterests?.length || 0) + (receivedInterests?.length || 0);
 
-  // Numeric and KM ID
-  const numericId =
+  // Resolve Member ID & Numeric ID
+  const resolvedMemberId =
+    (apiProfile as any)?.member_id ||
+    (currentUser as any)?.member_id ||
+    localStorage.getItem('member_id');
+
+  const resolvedUserId =
+    (apiProfile as any)?.user_id ||
     apiProfile?.id ||
-    (currentUser?.id ? parseInt(String(currentUser.id).replace(/\D/g, ''), 10) : 0) ||
-    24;
-  const kmId = `KM${String(numericId).padStart(6, '0')}`;
+    currentUser?.id ||
+    localStorage.getItem('user_id');
+
+  const numericId = resolvedUserId ? parseInt(String(resolvedUserId).replace(/\D/g, ''), 10) : 0;
+  const kmId = resolvedMemberId
+    ? String(resolvedMemberId)
+    : numericId > 0
+    ? `KM${String(numericId).padStart(6, '0')}`
+    : 'KM-MEMBER';
 
   const rawName =
     (apiProfile?.first_name ? `${apiProfile.first_name} ${apiProfile.last_name || ''}`.trim() : null) ||

@@ -304,7 +304,7 @@ export const PreferencesPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
           <Loader2 className="h-8 w-8 text-[#C44569] animate-spin" />
           <p className="text-sm font-semibold text-slate-700">Loading your preferences...</p>
@@ -314,7 +314,7 @@ export const PreferencesPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] py-8 px-3 sm:px-6 lg:px-8 font-sans antialiased text-slate-900">
+    <div className="min-h-screen bg-white py-8 px-3 sm:px-6 lg:px-8 font-sans antialiased text-slate-900">
       <div className="max-w-5xl mx-auto space-y-5">
 
         {/* Informational Callout Banner */}

@@ -232,9 +232,11 @@ const getInitialUser = (): User => {
 
   const photo = (loggedInAvatar && !isDummyImage(loggedInAvatar)) ? loggedInAvatar : (draftPhoto && !isDummyImage(draftPhoto) ? draftPhoto : '');
 
+  const storedUserId = localStorage.getItem('user_id') || '';
   if (localStorage.getItem('access_token')) {
     return {
       ...defaultEmptyUser,
+      id: storedUserId,
       name: resolvedName,
       email: loggedInEmail,
       avatar: photo
@@ -705,12 +707,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       localStorage.removeItem('google_avatar');
 
+      const resolvedUserId = String(
+        (res as any).user_id ||
+        (res as any).user?.id ||
+        (res.id && String(res.id) !== '0' ? res.id : '') ||
+        currentUser.id ||
+        localStorage.getItem('user_id') ||
+        ''
+      );
+      if (resolvedUserId && resolvedUserId !== '0') {
+        localStorage.setItem('user_id', resolvedUserId);
+      }
+
+      const resolvedMemberId = (res as any).member_id || (res as any).user_member_id || '';
+      if (resolvedMemberId) {
+        localStorage.setItem('member_id', resolvedMemberId);
+      }
+
       setCurrentUserStore({
+        id: resolvedUserId,
         name: finalName,
         email: res.email || storedEmail || currentUser.email,
         phone: res.phone || currentUser.phone,
-        avatar: finalAvatar
-      });
+        avatar: finalAvatar,
+        member_id: resolvedMemberId || (currentUser as any).member_id
+      } as any);
 
       return {
         ...res,
@@ -799,12 +820,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     localStorage.setItem('login_method', 'email');
 
+    const userId = String(res.user?.id || res.user?.user_id || localStorage.getItem('user_id') || '');
+    if (userId) {
+      localStorage.setItem('user_id', userId);
+    }
+
     useAuthStore.setState({
       accessToken: res.access_token || localStorage.getItem('access_token'),
       refreshToken: res.refresh_token || localStorage.getItem('refresh_token'),
       isAuthenticated: true,
       currentUser: {
         ...currentUser,
+        id: userId,
         name: finalName,
         email: userEmail
       }
@@ -847,12 +874,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (payload.date_of_birth) localStorage.setItem('logged_in_dob', payload.date_of_birth);
       if (payload.phone) localStorage.setItem('logged_in_phone', payload.phone);
 
+      const regUserId = String(res.user?.id || (res as any)?.user_id || localStorage.getItem('user_id') || '');
+      if (regUserId) {
+        localStorage.setItem('user_id', regUserId);
+      }
+
       useAuthStore.setState({
         accessToken: res.access_token,
         refreshToken: res.refresh_token || null,
         isAuthenticated: true,
         currentUser: {
           ...currentUser,
+          id: regUserId,
           name,
           email: payload.email || currentUser.email,
           phone: payload.phone || currentUser.phone,

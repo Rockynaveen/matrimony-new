@@ -296,9 +296,25 @@ export const ViewProfile: React.FC = () => {
 
     const resolvedAge = typeof activeSource.age === 'number' ? activeSource.age : (Number(activeSource.age) || null);
 
+    const resolvedMemberId =
+      activeSource.member_id ||
+      activeSource.user_member_id ||
+      activeSource.user?.member_id;
+
+    const profileNumericId =
+      (activeSource.user_id ? parseInt(String(activeSource.user_id).replace(/\D/g, ''), 10) : 0) ||
+      (activeSource.id ? parseInt(String(activeSource.id).replace(/\D/g, ''), 10) : 0) ||
+      numericUserId;
+
+    const resolvedKmId = resolvedMemberId
+      ? String(resolvedMemberId)
+      : profileNumericId > 0
+      ? `KM${String(profileNumericId).padStart(6, '0')}`
+      : kmId;
+
     return {
       id: String(activeSource.user_id || activeSource.id || numericUserId),
-      kmId,
+      kmId: resolvedKmId,
       name: fullDisplayName,
       firstName: resolvedFirstName || (fullDisplayName ? fullDisplayName.split(' ')[0] : 'Member'),
       lastName: resolvedLastName || (fullDisplayName ? fullDisplayName.split(' ').slice(1).join(' ') : ''),

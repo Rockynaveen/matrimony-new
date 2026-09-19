@@ -603,7 +603,7 @@ export const EditProfile: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50/50 py-6 sm:py-10 px-3 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white py-6 sm:py-10 px-3 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl space-y-6">
         
         {/* Navigation back */}

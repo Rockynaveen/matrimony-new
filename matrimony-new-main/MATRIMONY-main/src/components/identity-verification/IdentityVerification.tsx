@@ -44,7 +44,7 @@ export const IdentityVerification: React.FC = () => {
   const isRejected = status?.code === 'REJECTED' || status?.code === 'FAILED';
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] py-8 px-3 sm:px-6 lg:px-8 font-sans antialiased text-slate-900">
+    <div className="min-h-screen bg-white py-8 px-3 sm:px-6 lg:px-8 font-sans antialiased text-slate-900">
       <div className="max-w-5xl mx-auto space-y-5">
 
         {/* ── 1. Cyan Informational Alert Banner ── */}

@@ -102,8 +102,12 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 
   const locationStr = [match.city, match.state].filter(Boolean).join(', ') || match.country || 'Not Specified';
   const educationProfessionStr = [match.education, match.profession || (match as any).occupation].filter(Boolean).join(', ') || 'Not Specified';
-  const genderSymbol = match.gender?.toLowerCase().startsWith('f') ? '♀' : '♂';
-  const displayId = (match as any).member_id || (match.user_id ? `KM${String(match.user_id).padStart(6, '0')}` : 'Member');
+  const rawMatchUserId = match.user_id || (match as any).id;
+  const numericMatchId = rawMatchUserId ? parseInt(String(rawMatchUserId).replace(/\D/g, ''), 10) : 0;
+  const displayId =
+    (match as any).member_id ||
+    (match as any).user_member_id ||
+    (numericMatchId > 0 ? `KM${String(numericMatchId).padStart(6, '0')}` : 'Member');
 
   const formatHeightDisplay = (h?: string | number | null): string => {
     if (!h) return 'Not Specified';

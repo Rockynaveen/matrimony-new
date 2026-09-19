@@ -38,8 +38,14 @@ export const SearchPage: React.FC = () => {
     if (searchFilter.religion !== 'All' && p.religion !== searchFilter.religion) return false;
     if (searchFilter.caste !== 'All' && p.caste !== searchFilter.caste) return false;
     if (searchFilter.verifiedOnly && !p.verified) return false;
-    if (searchFilter.keyword && !p.name.toLowerCase().includes(searchFilter.keyword.toLowerCase()) && !p.profession.toLowerCase().includes(searchFilter.keyword.toLowerCase()) && !p.location.city.toLowerCase().includes(searchFilter.keyword.toLowerCase())) return false;
-    if (searchProfileId && !p.id.toLowerCase().includes(searchProfileId.toLowerCase())) return false;
+    if (searchProfileId) {
+      const searchVal = searchProfileId.trim().toLowerCase();
+      const rawId = String(p.id).toLowerCase();
+      const memberId = ((p as any).member_id || '').toLowerCase();
+      const kmFormatted = !isNaN(numericId) && numericId > 0 ? `km${String(numericId).padStart(6, '0')}` : '';
+      const matchesId = rawId.includes(searchVal) || memberId.includes(searchVal) || kmFormatted.includes(searchVal);
+      if (!matchesId) return false;
+    }
     return true;
   });
 

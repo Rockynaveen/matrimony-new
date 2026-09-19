@@ -1,49 +1,51 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   UploadCloud,
   Camera,
-  Lock,
-  AlertCircle,
   CheckCircle2,
+  AlertCircle,
+  FileText,
+  Trash2,
   RefreshCw,
-  X,
   CreditCard,
   Car,
-  FileText,
   UserCheck,
+  ShieldCheck,
   Check,
   Image as ImageIcon,
+  Sparkles,
   ArrowRight
 } from 'lucide-react';
-import { Input } from '../ui/Input';
-import { Alert, AlertDescription } from '../ui/Alert';
+import { Button } from '../ui/Button';
+import { BACKEND_DOCUMENT_TYPES } from '../../types/identityVerification.types';
 import type {
+  BackendGovtDocumentType,
   IdentityDocumentUploadPayload,
-  IdentityFormValidationErrors
+  IdentityFormValidationErrors,
+  DocumentUploadVerificationOut
 } from '../../types/identityVerification.types';
 
 export interface DocumentUploadFormProps {
-  onSubmit: (payload: IdentityDocumentUploadPayload) => Promise<boolean>;
+  onSubmit: (payload: IdentityDocumentUploadPayload) => Promise<DocumentUploadVerificationOut | null | boolean>;
   isSubmitting: boolean;
   serverError?: string | null;
   serverSuccess?: string | null;
   onClearError?: () => void;
 }
 
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB matching mockup
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED_DOC_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
 const ALLOWED_DOC_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png'];
 const ALLOWED_FACE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
 const ALLOWED_FACE_EXTENSIONS = ['.jpg', '.jpeg', '.png'];
 
-const GOVT_ID_OPTIONS = [
-  { id: 'Aadhaar', label: 'Aadhaar Card', icon: CreditCard },
-  { id: 'PAN Card', label: 'PAN Card', icon: FileText },
-  { id: 'Passport', label: 'Passport', icon: CreditCard },
-  { id: 'Driving License', label: 'Driving License', icon: Car },
-  { id: 'Voter ID', label: 'Voter ID', icon: UserCheck }
-];
+const DOC_ICONS: Record<BackendGovtDocumentType, React.ComponentType<{ className?: string }>> = {
+  AADHAAR: CreditCard,
+  PAN: FileText,
+  PASSPORT: CreditCard,
+  DRIVING_LICENCE: Car,
+  VOTER_ID: UserCheck
+};
 
 export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
   onSubmit,
@@ -52,21 +54,19 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
   serverSuccess,
   onClearError
 }) => {
-  const navigate = useNavigate();
-  const [documentType, setDocumentType] = useState<string>('Aadhaar');
+  const [documentType, setDocumentType] = useState<BackendGovtDocumentType>('AADHAAR');
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [documentPreview, setDocumentPreview] = useState<string | null>(null);
 
   const [liveFaceFile, setLiveFaceFile] = useState<File | null>(null);
   const [facePreview, setFacePreview] = useState<string | null>(null);
-  const [photoMethod, setPhotoMethod] = useState<'upload' | 'camera'>('upload');
+  const [photoMethod, setPhotoMethod] = useState<'camera' | 'upload'>('upload');
 
-  const [pdfPassword, setPdfPassword] = useState<string>('');
   const [errors, setErrors] = useState<IdentityFormValidationErrors>({});
   const [isDocDragging, setIsDocDragging] = useState<boolean>(false);
   const [isFaceDragging, setIsFaceDragging] = useState<boolean>(false);
 
-  // Camera handling
+  // Live Camera state
   const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -74,6 +74,13 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
 
   const docInputRef = useRef<HTMLInputElement | null>(null);
   const faceInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Stop camera when unmounting
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
 
   const handleDocumentFile = (file: File) => {
     if (onClearError) onClearError();
@@ -91,23 +98,21 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     if (file.size > MAX_FILE_SIZE_BYTES) {
       setErrors(prev => ({
         ...prev,
-        document_file: 'File size exceeds 5 MB limit.'
+        document_file: 'File size exceeds 10 MB limit.'
       }));
       return;
     }
 
     setDocumentFile(file);
     if (file.type.startsWith('image/')) {
-      setDocumentPreview(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onload = () => setDocumentPreview(reader.result as string);
+      reader.readAsDataURL(file);
     } else {
       setDocumentPreview(null);
     }
 
-    setErrors(prev => {
-      const next = { ...prev };
-      delete next.document_file;
-      return next;
-    });
+    setErrors(prev => ({ ...prev, document_file: undefined }));
   };
 
   const handleLiveFaceFile = (file: File) => {
@@ -118,7 +123,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     if (!isValidType) {
       setErrors(prev => ({
         ...prev,
-        live_face_file: 'Please upload a valid photo (JPG or PNG).'
+        live_face_file: 'Please upload a valid photo (JPG, JPEG, or PNG).'
       }));
       return;
     }
@@ -126,26 +131,24 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     if (file.size > MAX_FILE_SIZE_BYTES) {
       setErrors(prev => ({
         ...prev,
-        live_face_file: 'Photo size exceeds 5 MB limit.'
+        live_face_file: 'Face photo size exceeds 10 MB limit.'
       }));
       return;
     }
 
     setLiveFaceFile(file);
-    setFacePreview(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.onload = () => setFacePreview(reader.result as string);
+    reader.readAsDataURL(file);
 
-    setErrors(prev => {
-      const next = { ...prev };
-      delete next.live_face_file;
-      return next;
-    });
+    setErrors(prev => ({ ...prev, live_face_file: undefined }));
   };
 
   const startCamera = async () => {
     setCameraError(null);
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setCameraError('Camera access is not supported on this device. Please upload a photo.');
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        setCameraError('Camera access is not supported in this browser. Please upload a selfie photo instead.');
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -198,9 +201,9 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     e.preventDefault();
 
     const newErrors: IdentityFormValidationErrors = {};
-    if (!documentType.trim()) newErrors.document_type = 'Please select a government ID type.';
+    if (!documentType) newErrors.document_type = 'Please select a government ID type.';
     if (!documentFile) newErrors.document_file = 'Please upload your government ID document.';
-    if (!liveFaceFile) newErrors.live_face_file = 'Please upload or capture your verification photo.';
+    if (!liveFaceFile) newErrors.live_face_file = 'Please upload or capture your live selfie photo.';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -211,18 +214,16 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
 
     const payload: IdentityDocumentUploadPayload = {
       document_type: documentType,
-      pdf_password: pdfPassword.trim() || 'N',
       document_file: documentFile,
       live_face_file: liveFaceFile
     };
 
-    const success = await onSubmit(payload);
-    if (success) {
+    const res = await onSubmit(payload);
+    if (res) {
       setDocumentFile(null);
       setDocumentPreview(null);
       setLiveFaceFile(null);
       setFacePreview(null);
-      setPdfPassword('');
       setErrors({});
     }
   };
@@ -230,432 +231,386 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {serverError && (
-        <Alert variant="destructive" className="rounded-xl border-rose-200 bg-rose-50 text-rose-900">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription className="text-xs font-medium">{serverError}</AlertDescription>
-        </Alert>
+        <div className="p-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-900 flex items-start gap-3 shadow-2xs">
+          <AlertCircle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="text-xs font-bold text-rose-950">Verification Notice</p>
+            <p className="text-xs font-medium text-rose-800 leading-relaxed">{serverError}</p>
+          </div>
+        </div>
       )}
 
       {serverSuccess && (
-        <Alert variant="success" className="rounded-xl border-emerald-200 bg-emerald-50 text-emerald-900">
-          <CheckCircle2 className="h-4 w-4" />
-          <AlertDescription className="text-xs font-medium">{serverSuccess}</AlertDescription>
-        </Alert>
+        <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 flex items-start gap-3 shadow-2xs">
+          <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="text-xs font-bold text-emerald-950">Submission Successful</p>
+            <p className="text-xs font-medium text-emerald-800 leading-relaxed">{serverSuccess}</p>
+          </div>
+        </div>
       )}
 
-      {/* Main Form White Card */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-2xs p-6 sm:p-8 space-y-7">
-        
-        {/* Section Heading */}
-        <div className="space-y-1">
-          <h2 className="text-lg sm:text-xl font-bold text-stone-900">
-            Upload a Government ID
-          </h2>
-          <p className="text-xs sm:text-sm text-stone-500 font-normal">
-            Please upload a clear and valid document to verify your identity. This helps us maintain a safe and genuine community.
-          </p>
+      {/* ── CARD 1: Select Government ID Type ── */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-5">
+        <div className="flex items-center gap-2.5">
+          <ShieldCheck className="h-5 w-5 text-blue-600" />
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900">
+              1. Select Government ID Type
+            </h2>
+            <p className="text-xs text-slate-500">
+              Choose the official government identity card you wish to submit for verification.
+            </p>
+          </div>
         </div>
 
-        {/* 1. Government ID Type Selector (5 Options Grid) */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3">
-          {GOVT_ID_OPTIONS.map(opt => {
-            const isSelected = documentType === opt.id;
-            const Icon = opt.icon;
+        {/* Single-line Government ID Type Selector */}
+        <div className="grid grid-cols-5 gap-2 sm:gap-3">
+          {BACKEND_DOCUMENT_TYPES.map(doc => {
+            const Icon = DOC_ICONS[doc.value] || CreditCard;
+            const isSelected = documentType === doc.value;
+
             return (
               <button
-                key={opt.id}
+                key={doc.value}
                 type="button"
+                title={`${doc.label} - ${doc.description}`}
                 onClick={() => {
-                  setDocumentType(opt.id);
-                  if (errors.document_type) {
-                    setErrors(prev => {
-                      const next = { ...prev };
-                      delete next.document_type;
-                      return next;
-                    });
-                  }
+                  setDocumentType(doc.value);
+                  if (onClearError) onClearError();
                 }}
-                className={`flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer text-center select-none ${
+                className={`p-2 sm:p-3 rounded-xl border text-center transition-all cursor-pointer relative flex flex-col items-center justify-center gap-1.5 sm:gap-2 min-h-[80px] sm:min-h-[90px] ${
                   isSelected
-                    ? 'border-[#8B1E3F] bg-[#FFF5F7] text-[#8B1E3F] shadow-xs'
-                    : 'border-stone-200 bg-stone-50/60 hover:bg-stone-100/80 text-stone-700'
+                    ? 'border-blue-600 bg-blue-50/60 shadow-xs ring-2 ring-blue-600/30'
+                    : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/70 bg-white'
                 }`}
               >
-                <div
-                  className={`h-9 w-9 rounded-lg flex items-center justify-center mb-2 transition-colors ${
-                    isSelected ? 'bg-rose-100 text-[#8B1E3F]' : 'bg-stone-100 text-stone-600'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
+                {isSelected && (
+                  <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 h-4 w-4 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-2xs">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                  </div>
+                )}
+                <div className={`p-1.5 sm:p-2 rounded-xl transition-colors ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <span className={`text-xs ${isSelected ? 'font-bold text-[#8B1E3F]' : 'font-medium text-stone-800'}`}>
-                  {opt.label}
-                </span>
+                <div className="w-full px-0.5 text-center">
+                  <h3 className={`text-[11px] sm:text-xs font-bold leading-tight truncate ${isSelected ? 'text-blue-950' : 'text-slate-800'}`}>
+                    {doc.label}
+                  </h3>
+                </div>
               </button>
             );
           })}
         </div>
 
         {errors.document_type && (
-          <p className="text-xs text-rose-600 font-medium">{errors.document_type}</p>
+          <p className="text-xs text-rose-600 font-semibold">{errors.document_type}</p>
         )}
+      </div>
 
-        {/* 2. Drag & Drop Upload Zone for ID Document */}
-        <div>
-          <input
-            ref={docInputRef}
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*"
-            className="hidden"
-            onChange={e => {
-              const file = e.target.files?.[0];
-              if (file) handleDocumentFile(file);
-            }}
-          />
-
-          {!documentFile ? (
-            <div
-              onDragOver={e => {
-                e.preventDefault();
-                setIsDocDragging(true);
-              }}
-              onDragLeave={e => {
-                e.preventDefault();
-                setIsDocDragging(false);
-              }}
-              onDrop={e => {
-                e.preventDefault();
-                setIsDocDragging(false);
-                const file = e.dataTransfer.files?.[0];
-                if (file) handleDocumentFile(file);
-              }}
-              onClick={() => docInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer ${
-                isDocDragging
-                  ? 'border-[#8B1E3F] bg-rose-50/70 scale-[0.99]'
-                  : 'border-stone-300 hover:border-[#8B1E3F]/70 bg-stone-50/40 hover:bg-rose-50/20'
-              }`}
-            >
-              <div className="flex flex-col items-center justify-center space-y-3">
-                <div className="h-14 w-14 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-[#8B1E3F]">
-                  <UploadCloud className="h-7 w-7 text-[#8B1E3F]" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-bold text-stone-800">
-                    Drag &amp; Drop your file here
-                  </p>
-                  <p className="text-xs text-stone-400 font-medium">or</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={e => {
-                    e.stopPropagation();
-                    docInputRef.current?.click();
-                  }}
-                  className="px-6 py-2 rounded-xl text-xs font-bold text-white bg-[#8B1E3F] hover:bg-[#721833] shadow-xs cursor-pointer transition-all"
-                >
-                  Choose File
-                </button>
-                <p className="text-[11px] text-stone-400 font-normal pt-1">
-                  Accepted formats: JPG, PNG, PDF | Max size: 5 MB
-                </p>
-              </div>
-            </div>
-          ) : (
-            /* Selected Document File Card */
-            <div className="flex items-center justify-between p-4 bg-[#FFF5F7] border border-rose-200/90 rounded-2xl">
-              <div className="flex items-center gap-3.5 min-w-0 pr-2">
-                {documentPreview ? (
-                  <div className="h-12 w-12 rounded-xl overflow-hidden border border-rose-200 shrink-0 shadow-2xs">
-                    <img src={documentPreview} alt="Document" className="h-full w-full object-cover" />
-                  </div>
-                ) : (
-                  <div className="h-12 w-12 rounded-xl bg-rose-100 text-[#8B1E3F] flex items-center justify-center shrink-0">
-                    <FileText className="h-6 w-6 text-[#8B1E3F]" />
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-bold text-stone-900 truncate max-w-[220px] sm:max-w-xs">
-                      {documentFile.name}
-                    </p>
-                    <span className="inline-flex items-center text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">
-                      <Check className="h-3 w-3 mr-0.5" /> Ready
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-stone-500 font-medium">
-                    {formatFileSize(documentFile.size)} • {documentType}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => docInputRef.current?.click()}
-                  className="text-xs font-semibold text-[#8B1E3F] hover:underline px-2 py-1 cursor-pointer"
-                >
-                  Change
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDocumentFile(null);
-                    setDocumentPreview(null);
-                  }}
-                  className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 transition-colors cursor-pointer"
-                  title="Remove file"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {errors.document_file && (
-            <p className="text-xs text-rose-600 font-medium mt-1.5">{errors.document_file}</p>
-          )}
-
-          {/* If PDF, show password input if protected */}
-          {documentFile?.name.toLowerCase().endsWith('.pdf') && (
-            <div className="mt-3 p-3 bg-stone-50 border border-stone-200 rounded-xl space-y-1">
-              <label className="text-xs font-semibold text-stone-700">
-                PDF Password (Optional)
-              </label>
-              <Input
-                type="password"
-                placeholder="Enter password if your PDF is password-protected"
-                value={pdfPassword}
-                onChange={e => setPdfPassword(e.target.value)}
-                className="text-xs h-9 bg-white"
-              />
-            </div>
-          )}
+      {/* ── CARD 2: Upload Government ID File ── */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-5">
+        <div className="flex items-center gap-2.5">
+          <FileText className="h-5 w-5 text-blue-600" />
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900">
+              2. Upload {BACKEND_DOCUMENT_TYPES.find(d => d.value === documentType)?.label || 'Document'}
+            </h2>
+            <p className="text-xs text-slate-500">
+              Ensure all 4 corners are visible, text is readable, and without flash glare (JPG, PNG, or PDF up to 10MB).
+            </p>
+          </div>
         </div>
 
-        {/* 3. Verification Photo / Live Selfie Section */}
-        <div className="pt-2 border-t border-stone-100 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <h3 className="text-sm font-bold text-stone-900">
-                Live Face / Selfie Verification
-              </h3>
-              <p className="text-xs text-stone-500 font-normal">
-                Upload a clear frontal photo or take a quick webcam selfie to match your ID.
+        {documentFile ? (
+          /* File Uploaded Preview */
+          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row items-center gap-4">
+            {documentPreview ? (
+              <img
+                src={documentPreview}
+                alt="Document preview"
+                className="h-24 w-36 object-cover rounded-lg border border-slate-200 bg-white"
+              />
+            ) : (
+              <div className="h-24 w-36 rounded-lg border border-slate-200 bg-white flex flex-col items-center justify-center text-slate-500">
+                <FileText className="h-8 w-8 text-blue-600" />
+                <span className="text-[10px] font-bold mt-1 text-slate-700">PDF Document</span>
+              </div>
+            )}
+
+            <div className="flex-1 space-y-1 text-center sm:text-left min-w-0">
+              <p className="text-xs font-bold text-slate-900 truncate">
+                {documentFile.name}
               </p>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Size: {formatFileSize(documentFile.size)} • Type: {documentFile.type || 'Document'}
+              </p>
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md mt-1">
+                <Check className="h-3 w-3" /> Ready for AI OCR Verification
+              </span>
             </div>
 
-            {/* Toggle Photo Method */}
-            <div className="inline-flex rounded-xl bg-stone-100 p-0.5 border border-stone-200 self-start sm:self-auto">
-              <button
-                type="button"
-                onClick={() => {
-                  stopCamera();
-                  setPhotoMethod('upload');
-                }}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  photoMethod === 'upload'
-                    ? 'bg-white text-[#8B1E3F] shadow-xs'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                Upload Photo
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setPhotoMethod('camera');
-                  startCamera();
-                }}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  photoMethod === 'camera'
-                    ? 'bg-white text-[#8B1E3F] shadow-xs'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                Live Camera
-              </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDocumentFile(null);
+                setDocumentPreview(null);
+              }}
+              className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+              title="Remove file"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          /* Dropzone */
+          <div
+            onDragOver={e => {
+              e.preventDefault();
+              setIsDocDragging(true);
+            }}
+            onDragLeave={() => setIsDocDragging(false)}
+            onDrop={e => {
+              e.preventDefault();
+              setIsDocDragging(false);
+              if (e.dataTransfer.files?.[0]) {
+                handleDocumentFile(e.dataTransfer.files[0]);
+              }
+            }}
+            onClick={() => docInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-3 ${
+              isDocDragging
+                ? 'border-blue-500 bg-blue-50/50'
+                : 'border-slate-300 hover:border-blue-400 hover:bg-slate-50/60 bg-white'
+            }`}
+          >
+            <input
+              ref={docInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              onChange={e => {
+                if (e.target.files?.[0]) {
+                  handleDocumentFile(e.target.files[0]);
+                }
+              }}
+              className="hidden"
+            />
+            <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-xs">
+              <UploadCloud className="h-6 w-6 text-blue-600" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs sm:text-sm font-bold text-slate-900">
+                Click to browse or drag and drop your {BACKEND_DOCUMENT_TYPES.find(d => d.value === documentType)?.label}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                Supported formats: PDF, JPG, PNG (Max: 10 MB)
+              </p>
+            </div>
+          </div>
+        )}
+
+        {errors.document_file && (
+          <p className="text-xs text-rose-600 font-semibold">{errors.document_file}</p>
+        )}
+      </div>
+
+      {/* ── CARD 3: Live Face Verification ── */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-5">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2.5">
+            <Camera className="h-5 w-5 text-blue-600" />
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                3. Live Face Verification
+              </h2>
+              <p className="text-xs text-slate-500">
+                A live selfie is matched against the photo on your government ID to confirm genuine ownership.
+              </p>
             </div>
           </div>
 
-          <input
-            ref={faceInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/jpg"
-            className="hidden"
-            onChange={e => {
-              const file = e.target.files?.[0];
-              if (file) handleLiveFaceFile(file);
-            }}
-          />
+          {/* Toggle between Webcam and File Upload */}
+          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
+            <button
+              type="button"
+              onClick={() => {
+                setPhotoMethod('upload');
+                stopCamera();
+              }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                photoMethod === 'upload'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <ImageIcon className="h-3.5 w-3.5" />
+              Upload Selfie
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPhotoMethod('camera');
+                startCamera();
+              }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                photoMethod === 'camera'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Camera className="h-3.5 w-3.5" />
+              Live Webcam
+            </button>
+          </div>
+        </div>
 
-          {/* Camera View Mode */}
-          {photoMethod === 'camera' && isCameraActive && (
-            <div className="relative rounded-2xl overflow-hidden border-2 border-[#8B1E3F] bg-stone-950 p-2 text-center space-y-3">
-              <div className="relative max-w-sm mx-auto aspect-[4/3] rounded-xl overflow-hidden bg-black">
-                <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover scale-x-[-1]" />
-                <div className="absolute inset-0 border-2 border-white/30 rounded-xl pointer-events-none" />
-              </div>
-              <div className="flex items-center justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={capturePhoto}
-                  className="px-5 py-2 bg-[#8B1E3F] hover:bg-[#721833] text-white text-xs font-bold rounded-xl shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Camera className="h-4 w-4" /> Capture Selfie
-                </button>
-                <button
-                  type="button"
-                  onClick={stopCamera}
-                  className="px-3 py-2 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-xl cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
+        {liveFaceFile ? (
+          /* Face Photo Preview */
+          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row items-center gap-4">
+            {facePreview && (
+              <img
+                src={facePreview}
+                alt="Face preview"
+                className="h-24 w-24 object-cover rounded-full border-2 border-blue-600/60 shadow-xs"
+              />
+            )}
+
+            <div className="flex-1 space-y-1 text-center sm:text-left min-w-0">
+              <p className="text-xs font-bold text-slate-900 truncate">
+                {liveFaceFile.name}
+              </p>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Size: {formatFileSize(liveFaceFile.size)} • Type: {liveFaceFile.type}
+              </p>
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md mt-1">
+                <Check className="h-3 w-3" /> Ready for Face Match AI Check
+              </span>
             </div>
-          )}
 
-          {cameraError && photoMethod === 'camera' && (
-            <p className="text-xs text-rose-600 font-medium">{cameraError}</p>
-          )}
-
-          {/* Face Photo Dropzone or Preview */}
-          {!liveFaceFile ? (
-            photoMethod === 'upload' && (
-              <div
-                onDragOver={e => {
-                  e.preventDefault();
-                  setIsFaceDragging(true);
-                }}
-                onDragLeave={e => {
-                  e.preventDefault();
-                  setIsFaceDragging(false);
-                }}
-                onDrop={e => {
-                  e.preventDefault();
-                  setIsFaceDragging(false);
-                  const file = e.dataTransfer.files?.[0];
-                  if (file) handleLiveFaceFile(file);
-                }}
-                onClick={() => faceInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer ${
-                  isFaceDragging
-                    ? 'border-[#8B1E3F] bg-rose-50/70 scale-[0.99]'
-                    : 'border-stone-300 hover:border-[#8B1E3F]/70 bg-stone-50/40 hover:bg-rose-50/20'
-                }`}
-              >
-                <div className="flex flex-col items-center justify-center space-y-2">
-                  <div className="h-10 w-10 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-[#8B1E3F]">
-                    <ImageIcon className="h-5 w-5 text-[#8B1E3F]" />
-                  </div>
-                  <p className="text-xs font-bold text-stone-800">
-                    Upload a clear face photo or selfie
-                  </p>
+            <button
+              type="button"
+              onClick={() => {
+                setLiveFaceFile(null);
+                setFacePreview(null);
+              }}
+              className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+              title="Remove photo"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ) : photoMethod === 'camera' ? (
+          /* Live Webcam View */
+          <div className="space-y-4">
+            {cameraError ? (
+              <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-xs font-bold">Camera Unavailable</p>
+                  <p className="text-xs text-amber-800">{cameraError}</p>
                   <button
                     type="button"
-                    onClick={e => {
-                      e.stopPropagation();
-                      faceInputRef.current?.click();
-                    }}
-                    className="px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-[#8B1E3F] hover:bg-[#721833] shadow-xs cursor-pointer"
+                    onClick={() => setPhotoMethod('upload')}
+                    className="text-xs font-bold text-blue-600 underline cursor-pointer mt-1"
                   >
-                    Select Photo
+                    Switch to file upload instead
                   </button>
-                  <p className="text-[10px] text-stone-400 font-normal">
-                    JPG or PNG • Max 5 MB
-                  </p>
                 </div>
               </div>
-            )
-          ) : (
-            /* Selected Face Photo Preview */
-            <div className="flex items-center justify-between p-4 bg-[#FFF5F7] border border-rose-200/90 rounded-2xl">
-              <div className="flex items-center gap-3.5 min-w-0 pr-2">
-                {facePreview && (
-                  <div className="h-12 w-12 rounded-xl overflow-hidden border border-rose-200 shrink-0 shadow-2xs">
-                    <img src={facePreview} alt="Selfie" className="h-full w-full object-cover" />
+            ) : (
+              <div className="relative rounded-2xl overflow-hidden bg-slate-900 max-w-md mx-auto aspect-4/3 flex items-center justify-center border border-slate-700 shadow-md">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover mirror"
+                />
+                
+                {/* Face oval guideline overlay */}
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <div className="w-48 h-64 border-2 border-dashed border-white/70 rounded-[50%] shadow-2xl ring-1 ring-black/40" />
+                </div>
+
+                {isCameraActive && (
+                  <div className="absolute bottom-4 inset-x-0 flex justify-center gap-3">
+                    <Button
+                      type="button"
+                      onClick={capturePhoto}
+                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg cursor-pointer flex items-center gap-2"
+                    >
+                      <Camera className="h-4 w-4" /> Capture Snapshot
+                    </Button>
                   </div>
                 )}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-bold text-stone-900 truncate max-w-[220px] sm:max-w-xs">
-                      {liveFaceFile.name}
-                    </p>
-                    <span className="inline-flex items-center text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">
-                      <Check className="h-3 w-3 mr-0.5" /> Ready
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-stone-500 font-medium">
-                    {formatFileSize(liveFaceFile.size)} • Verification Selfie
-                  </p>
-                </div>
               </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => faceInputRef.current?.click()}
-                  className="text-xs font-semibold text-[#8B1E3F] hover:underline px-2 py-1 cursor-pointer"
-                >
-                  Change
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLiveFaceFile(null);
-                    setFacePreview(null);
-                  }}
-                  className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 transition-colors cursor-pointer"
-                  title="Remove selfie"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+            )}
+          </div>
+        ) : (
+          /* Face File Upload Dropzone */
+          <div
+            onDragOver={e => {
+              e.preventDefault();
+              setIsFaceDragging(true);
+            }}
+            onDragLeave={() => setIsFaceDragging(false)}
+            onDrop={e => {
+              e.preventDefault();
+              setIsFaceDragging(false);
+              if (e.dataTransfer.files?.[0]) {
+                handleLiveFaceFile(e.dataTransfer.files[0]);
+              }
+            }}
+            onClick={() => faceInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-3 ${
+              isFaceDragging
+                ? 'border-blue-500 bg-blue-50/50'
+                : 'border-slate-300 hover:border-blue-400 hover:bg-slate-50/60 bg-white'
+            }`}
+          >
+            <input
+              ref={faceInputRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+              onChange={e => {
+                if (e.target.files?.[0]) {
+                  handleLiveFaceFile(e.target.files[0]);
+                }
+              }}
+              className="hidden"
+            />
+            <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-xs">
+              <Camera className="h-6 w-6 text-blue-600" />
             </div>
-          )}
+            <div className="space-y-1">
+              <p className="text-xs sm:text-sm font-bold text-slate-900">
+                Click to browse or drag and drop a clear, frontal selfie photo
+              </p>
+              <p className="text-[11px] text-slate-500">
+                Take a selfie without sunglasses or caps in good lighting (JPG, PNG up to 10 MB)
+              </p>
+            </div>
+          </div>
+        )}
 
-          {errors.live_face_file && (
-            <p className="text-xs text-rose-600 font-medium mt-1.5">{errors.live_face_file}</p>
-          )}
-        </div>
-
-        {/* 4. Encryption Security Pill Note */}
-        <div className="flex items-center justify-center gap-2 p-3 bg-[#FFF5F7] border border-rose-100/80 rounded-xl text-xs text-stone-600 font-medium text-center">
-          <Lock className="h-4 w-4 text-[#8B1E3F] shrink-0" />
-          <span>Your documents are encrypted and will be used only for verification purposes.</span>
-        </div>
-
+        {errors.live_face_file && (
+          <p className="text-xs text-rose-600 font-semibold">{errors.live_face_file}</p>
+        )}
       </div>
 
-      {/* 5. Bottom Action Button: Submit & Verify Later */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-        <button
-          type="button"
-          onClick={() => {
-            localStorage.setItem('verification_skipped', 'true');
-            navigate('/matching');
-          }}
-          className="order-2 sm:order-1 px-6 py-3 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors cursor-pointer"
-        >
-          Verify Later (Skip for now)
-        </button>
-        <button
+      {/* ── Submit Verification Action Bar ── */}
+      <div className="flex items-center justify-end pt-2 pb-8">
+        <Button
           type="submit"
-          disabled={isSubmitting}
-          className="order-1 sm:order-2 bg-[#8B1E3F] hover:bg-[#721833] text-white px-10 py-3.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isSubmitting || !documentFile || !liveFaceFile}
+          isLoading={isSubmitting}
+          className="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white shadow-md hover:shadow-lg text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2"
         >
-          {isSubmitting ? (
-            <>
-              <RefreshCw className="h-4 w-4 animate-spin" /> Submitting...
-            </>
-          ) : (
-            <>
-              Proceed to Next <ArrowRight className="h-4 w-4" />
-            </>
-          )}
-        </button>
+          <Sparkles className="h-4 w-4" />
+          {isSubmitting ? 'Verifying with AI Engine...' : 'Submit Verification'}
+          <ArrowRight className="h-4 w-4 ml-1" />
+        </Button>
       </div>
-
     </form>
   );
 };

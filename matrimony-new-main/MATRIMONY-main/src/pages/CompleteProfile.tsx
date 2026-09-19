@@ -19,6 +19,7 @@ import {
 } from '../hooks/useProfileOptions';
 import {
   User,
+  IdCard,
   GraduationCap,
   Sparkles,
   Users,
@@ -33,8 +34,16 @@ import {
   Briefcase,
   Check,
   Plus,
-  Play
+  Play,
+  Info,
+  ArrowRight,
+  ChevronDown,
+  ShieldCheck
 } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Separator } from '../components/ui/Separator';
+import { Badge } from '../components/ui/Badge';
+import { SearchableMultiSelect } from '../components/ui/SearchableMultiSelect';
 
 export const CompleteProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -476,106 +485,93 @@ export const CompleteProfile: React.FC = () => {
     }
   };
 
-  // Preset chip options for languages & hobbies
-  const commonLanguages = ['Telugu', 'English', 'Hindi', 'Tamil', 'Kannada', 'Malayalam', 'Marathi', 'Bengali', 'Gujarati', 'Punjabi'];
-  const commonHobbies = ['Singing', 'Traveling', 'Reading', 'Cooking', 'Music', 'Photography', 'Dancing', 'Gardening', 'Fitness / Gym', 'Sports'];
-
   return (
-    <div className="min-h-screen bg-transparent text-black pb-16 font-sans antialiased">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <main className="space-y-6">
-          
-          {/* Header with Title & Save Draft / Logout */}
-          <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black">
-                Create Your Profile
-              </h1>
-              <p className="text-xs font-semibold text-slate-700 mt-0.5">
-                Complete the details below to find your perfect matrimonial match.
-              </p>
+    <div className="min-h-screen bg-[#FAF6F0] py-8 px-3 sm:px-6 lg:px-8 font-sans antialiased text-slate-900">
+      <div className="max-w-5xl mx-auto space-y-5">
+        
+        {/* Informational Callout Banner */}
+        <div className="bg-[#e0f7fa] border border-[#b2ebf2] text-slate-800 rounded-2xl p-4 sm:p-4.5 flex items-start gap-3 shadow-2xs">
+          <div className="h-5 w-5 rounded-full bg-[#00838f] text-white flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+            <Info className="h-3.5 w-3.5 text-white stroke-[2.5]" />
+          </div>
+          <p className="text-xs sm:text-sm leading-relaxed text-slate-700">
+            <strong className="font-bold text-slate-900">User Profile (Actual)</strong> represents your own personal, educational, career, lifestyle, and location details. These are stored securely and used by our AI matching engine to find your ideal match.
+          </p>
+        </div>
+
+        {/* 3. Completion & Registration Bar */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-blue-50 border border-blue-200/80">
+              <span className="text-xs font-bold text-blue-900">Profile Completion:</span>
+              <span className="text-xs font-extrabold text-blue-600">{completionPercentage}%</span>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200/80">
-                <div className="text-[11px] font-bold text-rose-800">
-                  Completion: <span className="font-extrabold">{completionPercentage}%</span>
-                </div>
+            {(formData.gender || formData.date_of_birth) && (
+              <div className="flex items-center gap-2 text-xs text-slate-600">
+                <span className="hidden sm:inline text-slate-300">•</span>
+                {formData.gender && (
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-semibold text-xs">
+                    {formData.gender === 'Male' ? 'Male (Groom)' : 'Female (Bride)'}
+                  </span>
+                )}
+                {formData.date_of_birth && (
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-semibold text-xs">
+                    DOB: {formData.date_of_birth}
+                  </span>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={async () => {
-                  localStorage.setItem('user_profile_draft', JSON.stringify(formData));
-                  await logout();
-                  showToast('Logged out successfully.');
-                  navigate('/login');
-                }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 hover:border-rose-200 text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
-                title="Save draft and log out"
-              >
-                <LogOut className="h-3.5 w-3.5 text-rose-500" />
-                <span>Log Out</span>
-              </button>
-            </div>
+            )}
           </div>
 
-          {/* Registration Info Note (Read-only, set during registration) */}
-          {(formData.gender || formData.date_of_birth) && (
-            <div className="flex flex-wrap items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
-              <span className="font-bold text-slate-700 flex items-center gap-1.5">
-                <Shield className="h-4 w-4 text-emerald-600" />
-                Registration Details:
-              </span>
-              {formData.gender && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold text-xs shadow-2xs">
-                  <Heart className="h-3 w-3 text-[#C44569]" />
-                  {formData.gender === 'Male' ? 'Male (Groom)' : 'Female (Bride)'}
-                </span>
-              )}
-              {formData.date_of_birth && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold text-xs shadow-2xs">
-                  {formData.date_of_birth}
-                </span>
-              )}
-              <span className="text-[11px] font-medium text-slate-400 sm:ml-auto">
-                Set during registration
-              </span>
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={async () => {
+              localStorage.setItem('user_profile_draft', JSON.stringify(formData));
+              await logout();
+              showToast('Draft saved. Logged out successfully.');
+              navigate('/login');
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 text-xs font-bold transition-all shadow-2xs cursor-pointer ml-auto"
+          >
+            <LogOut className="h-3.5 w-3.5 text-slate-500" />
+            <span>Save Draft & Log Out</span>
+          </button>
+        </div>
+
+        {/* Profile Completion Form */}
+        <form onSubmit={handleSaveAndContinue} className="space-y-6">
 
           {/* ============================================================== */}
           {/* SECTION 1: Profile Display & Media                             */}
           {/* ============================================================== */}
-          <section id="section-media" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-5 hover:border-[#C44569]/30 transition-colors">
-            <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
-              <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                <User className="h-5 w-5 stroke-[2.2]" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-black">Profile Display & Media</h2>
-                <p className="text-[11px] font-semibold text-slate-600">Your profile photo, video and basic display info</p>
-              </div>
+          <div id="section-media" className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex items-center gap-2">
+              <User className="h-3.5 w-3.5 text-blue-600" />
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                1. Profile Display & Media
+              </h2>
             </div>
 
             {/* Display / Profile Name */}
-            <div>
-              <label className="block text-xs font-bold text-black mb-1">
-                Display / Profile Name <span className="text-rose-600 font-black">*</span>
+            <div className="space-y-1.5">
+              <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                Display / Profile Name <span className="text-rose-600 font-bold">*</span>
               </label>
               <input
                 type="text"
                 value={formData.profile_name}
                 onChange={e => handleChange('profile_name', e.target.value)}
-                placeholder="Enter display or profile name"
-                className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                placeholder="Enter display or profile name..."
+                className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
               />
             </div>
 
             {/* Primary Profile Photo */}
-            <div>
-              <label className="block text-xs font-bold text-black mb-1">
+            <div className="space-y-1.5">
+              <label className="block text-xs sm:text-sm font-bold text-slate-800">
                 Primary Profile Photo
               </label>
-              <div className="flex items-center gap-4 p-3 rounded-xl border border-dashed border-slate-300 bg-slate-50/60">
+              <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-slate-300 bg-slate-50/60">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -585,7 +581,7 @@ export const CompleteProfile: React.FC = () => {
                 />
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 overflow-hidden cursor-pointer ring-2 ring-rose-200 hover:ring-rose-400 transition-all relative group shadow-xs border border-slate-200 shrink-0"
+                  className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-slate-600 overflow-hidden cursor-pointer ring-2 ring-blue-100 hover:ring-blue-400 transition-all relative group shadow-2xs border border-slate-200 shrink-0"
                   title="Click to choose profile photo"
                 >
                   {formData.profile_photo ? (
@@ -595,7 +591,7 @@ export const CompleteProfile: React.FC = () => {
                       className="w-full h-full object-cover group-hover:opacity-85 transition-opacity"
                     />
                   ) : (
-                    <Camera className="h-6 w-6 text-rose-500 stroke-[2]" />
+                    <Camera className="h-6 w-6 text-blue-500 stroke-[2]" />
                   )}
                   {isUploadingPhoto && (
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white">
@@ -609,7 +605,7 @@ export const CompleteProfile: React.FC = () => {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isUploadingPhoto}
-                      className="py-1.5 px-3 rounded-lg bg-white border border-slate-300 hover:bg-rose-50 hover:border-rose-300 text-xs font-bold text-slate-700 hover:text-rose-700 transition-all cursor-pointer shadow-2xs"
+                      className="py-1.5 px-3 rounded-xl bg-white border border-slate-300 hover:bg-blue-50 hover:border-blue-300 text-xs font-bold text-slate-700 hover:text-blue-700 transition-all cursor-pointer shadow-2xs"
                     >
                       {isUploadingPhoto ? 'Uploading...' : 'Choose File'}
                     </button>
@@ -617,21 +613,21 @@ export const CompleteProfile: React.FC = () => {
                       {formData.profile_photo ? 'Photo selected' : 'No file chosen'}
                     </span>
                   </div>
-                  <p className="text-[10px] font-medium text-slate-400">JPG, PNG or WEBP (Max 5MB)</p>
+                  <p className="text-[11px] font-medium text-slate-400">JPG, PNG or WEBP (Max 5MB)</p>
                 </div>
               </div>
             </div>
 
             {/* Video Type & Video Media Inputs */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Video Type
                 </label>
                 <select
                   value={formData.video_type}
                   onChange={e => handleChange('video_type', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
                 >
                   <option value="None">None</option>
                   <option value="UPLOAD">File Upload</option>
@@ -639,8 +635,8 @@ export const CompleteProfile: React.FC = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Video File Upload
                 </label>
                 <input
@@ -650,12 +646,12 @@ export const CompleteProfile: React.FC = () => {
                   onChange={handleVideoUpload}
                   className="hidden"
                 />
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pt-0.5">
                   <button
                     type="button"
                     onClick={() => videoFileInputRef.current?.click()}
                     disabled={isUploadingVideo}
-                    className="py-2 px-3 rounded-lg bg-white border border-slate-300 hover:bg-rose-50 hover:border-rose-300 text-xs font-bold text-slate-700 hover:text-rose-700 transition-all cursor-pointer shadow-2xs shrink-0"
+                    className="py-2.5 px-3.5 rounded-xl bg-white border border-slate-300 hover:bg-blue-50 hover:border-blue-300 text-xs font-bold text-slate-700 hover:text-blue-700 transition-all cursor-pointer shadow-2xs shrink-0"
                   >
                     {isUploadingVideo ? 'Uploading...' : 'Choose File'}
                   </button>
@@ -665,8 +661,8 @@ export const CompleteProfile: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Video URL (YouTube/Link)
                 </label>
                 <input
@@ -674,45 +670,42 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.video_url}
                   onChange={e => handleChange('video_url', e.target.value)}
                   placeholder="https://..."
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
             </div>
 
             {/* About Me */}
-            <div>
-              <label className="block text-xs font-bold text-black mb-1">
-                About Me <span className="text-rose-600 font-black">*</span>
+            <div className="space-y-1.5">
+              <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                About Me <span className="text-rose-600 font-bold">*</span>
               </label>
               <textarea
                 rows={3}
                 value={formData.about_me}
                 onChange={e => handleChange('about_me', e.target.value)}
-                placeholder="Describe yourself..."
-                className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-y"
+                placeholder="Write a few lines about yourself, your personality, interests, and aspirations..."
+                className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 resize-y"
               />
             </div>
-          </section>
+          </div>
 
           {/* ============================================================== */}
           {/* SECTION 2: Education & Profession                             */}
           {/* ============================================================== */}
-          <section id="section-education" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
-            <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
-              <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                <GraduationCap className="h-5 w-5 stroke-[2.2]" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-black">Education & Profession</h2>
-                <p className="text-[11px] font-semibold text-slate-600">Your academic and career details</p>
-              </div>
+          <div id="section-education" className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-3.5 w-3.5 text-blue-600" />
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                2. Education & Profession
+              </h2>
             </div>
 
-            {/* Row 1: Highest Education, Degree Specialization */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Highest Education (Master) <span className="text-rose-600 font-black">*</span>
+            {/* Highest Education & Degree Specialization */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Highest Education (Master) <span className="text-rose-600 font-bold">*</span>
                 </label>
                 <select
                   value={formData.education_id || (formData.highest_education ? educations.find(e => e.name === formData.highest_education)?.id : '') || ''}
@@ -725,9 +718,9 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={isLoadingEducations}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60 text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">{isLoadingEducations ? 'Loading educations from backend...' : 'Select Highest Education'}</option>
                   {educations.map(edu => (
                     <option key={edu.id} value={edu.id}>
                       {edu.name} {edu.degree_level ? `(${edu.degree_level})` : ''}
@@ -735,8 +728,9 @@ export const CompleteProfile: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Degree Specialization / Notes
                 </label>
                 <input
@@ -744,16 +738,18 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.education_detail}
                   onChange={e => handleChange('education_detail', e.target.value)}
                   placeholder="College / Specialization"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
             </div>
 
-            {/* Row 2: Profession, Job Title, Employment Sector */}
+            <Separator className="bg-slate-100" />
+
+            {/* Profession, Job Title, Employment Sector */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Profession (Master) <span className="text-rose-600 font-black">*</span>
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Profession (Master) <span className="text-rose-600 font-bold">*</span>
                 </label>
                 <select
                   value={formData.profession_id || (formData.occupation ? professions.find(p => p.name === formData.occupation)?.id : '') || ''}
@@ -766,9 +762,9 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={isLoadingProfessions}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60 text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">{isLoadingProfessions ? 'Loading professions from backend...' : 'Select Profession'}</option>
                   {professions.map(prof => (
                     <option key={prof.id} value={prof.id}>
                       {prof.name} {prof.category ? `(${prof.category})` : ''}
@@ -776,8 +772,9 @@ export const CompleteProfile: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Job Title / Designation
                 </label>
                 <input
@@ -785,19 +782,20 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.job_title}
                   onChange={e => handleChange('job_title', e.target.value)}
                   placeholder="Job Title / Designation"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Employment Sector
                 </label>
                 <select
                   value={formData.employment_type}
                   onChange={e => handleChange('employment_type', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">Select Employment Sector</option>
                   <option value="Private Sector">Private Sector</option>
                   <option value="Government / Public Sector">Government / Public Sector</option>
                   <option value="Business / Self-Employed">Business / Self-Employed</option>
@@ -808,10 +806,10 @@ export const CompleteProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 3: Company / Organization, Work Location, Annual Income */}
+            {/* Company, Work Location, Annual Income */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Company / Organization
                 </label>
                 <input
@@ -819,11 +817,12 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.company_name}
                   onChange={e => handleChange('company_name', e.target.value)}
                   placeholder="Company / Organization"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Work Location
                 </label>
                 <input
@@ -831,20 +830,21 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.work_location}
                   onChange={e => handleChange('work_location', e.target.value)}
                   placeholder="Work Location"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Annual Income (Master Range)
                 </label>
                 <select
                   value={formData.annual_income}
                   onChange={e => handleChange('annual_income', e.target.value)}
                   disabled={isLoadingIncomes}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60 text-slate-900"
                 >
-                  <option value="">Select Annual Income Range</option>
+                  <option value="">{isLoadingIncomes ? 'Loading income brackets...' : 'Select Annual Income Range'}</option>
                   {incomeRanges.map(inc => (
                     <option key={inc.id} value={inc.label}>
                       {inc.label}
@@ -854,30 +854,26 @@ export const CompleteProfile: React.FC = () => {
                     <option value={formData.annual_income}>{formData.annual_income}</option>
                   )}
                 </select>
-                <p className="text-[10px] text-slate-400 mt-1">Select from admin-configured predefined income brackets</p>
               </div>
             </div>
-          </section>
+          </div>
 
           {/* ============================================================== */}
           {/* SECTION 3: Religion, Community & Horoscope                     */}
           {/* ============================================================== */}
-          <section id="section-religion" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
-            <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
-              <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                <Sparkles className="h-5 w-5 stroke-[2.2]" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-black">Religion, Community & Horoscope</h2>
-                <p className="text-[11px] font-semibold text-slate-600">Religious and astrological details</p>
-              </div>
+          <div id="section-religion" className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                3. Religion, Community & Horoscope
+              </h2>
             </div>
 
-            {/* Row 1: Religion, Caste, Sub-Caste */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Religion (Master) <span className="text-rose-600 font-black">*</span>
+            {/* Religion, Caste, Sub-Caste */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Religion (Master) <span className="text-rose-600 font-bold">*</span>
                 </label>
                 <select
                   value={formData.religion_id || (formData.religion ? religions.find(r => r.name === formData.religion)?.id : '') || ''}
@@ -892,9 +888,9 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={isLoadingReligions}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60 text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">{isLoadingReligions ? 'Loading religions...' : 'Select Religion'}</option>
                   {religions.map(rel => (
                     <option key={rel.id} value={rel.id}>
                       {rel.name}
@@ -902,9 +898,10 @@ export const CompleteProfile: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Caste / Community (Master) <span className="text-rose-600 font-black">*</span>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Caste / Community (Master) <span className="text-rose-600 font-bold">*</span>
                 </label>
                 <select
                   value={formData.caste_id || (formData.caste ? castes.find(c => c.name === formData.caste)?.id : '') || ''}
@@ -917,9 +914,15 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={!selectedReligionId || isLoadingCastes}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60 text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">
+                    {!selectedReligionId
+                      ? 'Select Religion first'
+                      : isLoadingCastes
+                      ? 'Loading castes from backend...'
+                      : 'Select Caste'}
+                  </option>
                   {castes.map(cst => (
                     <option key={cst.id} value={cst.id}>
                       {cst.name}
@@ -927,8 +930,9 @@ export const CompleteProfile: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Sub-Caste
                 </label>
                 <input
@@ -936,15 +940,17 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.sub_caste}
                   onChange={e => handleChange('sub_caste', e.target.value)}
                   placeholder="Sub-Caste"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
             </div>
 
-            {/* Row 2: Gothram, Rashi, Nakshatra */}
+            <Separator className="bg-slate-100" />
+
+            {/* Gothram, Rashi, Nakshatra */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Gothram
                 </label>
                 <input
@@ -952,11 +958,12 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.gothram}
                   onChange={e => handleChange('gothram', e.target.value)}
                   placeholder="Gothram"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Rashi (Moon Sign)
                 </label>
                 <input
@@ -964,11 +971,12 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.rashi}
                   onChange={e => handleChange('rashi', e.target.value)}
                   placeholder="Rashi (Moon Sign)"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Nakshatra (Star)
                 </label>
                 <input
@@ -976,23 +984,23 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.nakshatra}
                   onChange={e => handleChange('nakshatra', e.target.value)}
                   placeholder="Nakshatra (Star)"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
             </div>
 
-            {/* Row 3: Dosha / Manglik, Birth Place, Birth Time */}
+            {/* Dosha, Birth Place, Birth Time */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Dosha / Manglik
                 </label>
                 <select
                   value={formData.dosha}
                   onChange={e => handleChange('dosha', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
                 >
-                  <option value="">Dosha / Manglik</option>
+                  <option value="">Select Dosha / Manglik</option>
                   <option value="No Dosha">No Dosha</option>
                   <option value="Manglik">Manglik</option>
                   <option value="Sarpa Dosha">Sarpa Dosha</option>
@@ -1002,8 +1010,9 @@ export const CompleteProfile: React.FC = () => {
                   <option value="Don't Know">Don't Know</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Birth Place
                 </label>
                 <input
@@ -1011,11 +1020,12 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.birth_place}
                   onChange={e => handleChange('birth_place', e.target.value)}
                   placeholder="Birth Place"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Birth Time
                 </label>
                 <div className="relative">
@@ -1024,33 +1034,30 @@ export const CompleteProfile: React.FC = () => {
                     value={formData.birth_time}
                     onChange={e => handleChange('birth_time', e.target.value)}
                     placeholder="--:--"
-                    className="w-full pl-3.5 pr-9 py-2 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                    className="w-full pl-3.5 pr-9 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                   />
                   <Clock className="h-4 w-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
             </div>
-          </section>
+          </div>
 
           {/* ============================================================== */}
           {/* SECTION 4: Physical Attributes & Lifestyle                     */}
           {/* ============================================================== */}
-          <section id="section-physical" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
-            <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
-              <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                <Heart className="h-5 w-5 stroke-[2.2]" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-black">Physical Attributes & Lifestyle</h2>
-                <p className="text-[11px] font-semibold text-slate-600">Physical stats, personal habits and interests</p>
-              </div>
+          <div id="section-physical" className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex items-center gap-2">
+              <Heart className="h-3.5 w-3.5 text-blue-600" />
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                4. Physical Attributes & Lifestyle
+              </h2>
             </div>
 
-            {/* Row 1: Height, Weight, Complexion, Body Type */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-1">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Height (in cm) <span className="text-rose-600 font-black">*</span>
+            {/* Height, Weight, Complexion, Body Type */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Height (cm) <span className="text-rose-600 font-bold">*</span>
                 </label>
                 <input
                   type="number"
@@ -1059,12 +1066,13 @@ export const CompleteProfile: React.FC = () => {
                   step="0.5"
                   value={formData.height || ''}
                   onChange={e => handleChange('height', Number(e.target.value))}
-                  placeholder="Height in cm (e.g. 172.5)"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  placeholder="175"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Weight (kg)
                 </label>
                 <input
@@ -1073,20 +1081,21 @@ export const CompleteProfile: React.FC = () => {
                   max="200"
                   value={formData.weight || ''}
                   onChange={e => handleChange('weight', Number(e.target.value))}
-                  placeholder="Weight in kg"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  placeholder="65"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Complexion
                 </label>
                 <select
                   value={formData.complexion}
                   onChange={e => handleChange('complexion', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">Select Complexion</option>
                   <option value="Very Fair">Very Fair</option>
                   <option value="Fair">Fair</option>
                   <option value="Wheatish">Wheatish</option>
@@ -1094,16 +1103,17 @@ export const CompleteProfile: React.FC = () => {
                   <option value="Dark">Dark</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Body Type
                 </label>
                 <select
                   value={formData.body_type}
                   onChange={e => handleChange('body_type', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">Select Body Type</option>
                   <option value="Slim">Slim</option>
                   <option value="Athletic">Athletic</option>
                   <option value="Average">Average</option>
@@ -1112,23 +1122,26 @@ export const CompleteProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 2: Physical Disability, Disability Information */}
+            <Separator className="bg-slate-100" />
+
+            {/* Physical Disability & Information */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Physical Disability
                 </label>
                 <select
                   value={formData.physical_status}
                   onChange={e => handleChange('physical_status', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
                 >
                   <option value="No">No</option>
                   <option value="Yes">Yes</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Disability Information
                 </label>
                 <input
@@ -1136,24 +1149,25 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.disability_information}
                   onChange={e => handleChange('disability_information', e.target.value)}
                   placeholder="Provide details if physically disabled..."
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">Specify disability details if applicable (optional when No)</p>
               </div>
             </div>
 
-            {/* Row 3: Diet, Smoking, Drinking */}
+            <Separator className="bg-slate-100" />
+
+            {/* Diet, Smoking, Drinking */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Diet
                 </label>
                 <select
                   value={formData.diet}
                   onChange={e => handleChange('diet', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">Select Diet</option>
                   <option value="Vegetarian">Vegetarian</option>
                   <option value="Non-Vegetarian">Non-Vegetarian</option>
                   <option value="Eggetarian">Eggetarian</option>
@@ -1161,31 +1175,33 @@ export const CompleteProfile: React.FC = () => {
                   <option value="Vegan">Vegan</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Smoking
                 </label>
                 <select
                   value={formData.smoking}
                   onChange={e => handleChange('smoking', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">Select Smoking Habit</option>
                   <option value="No">No</option>
                   <option value="Yes">Yes</option>
                   <option value="Occasionally">Occasionally</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Drinking
                 </label>
                 <select
                   value={formData.drinking}
                   onChange={e => handleChange('drinking', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">Select Drinking Habit</option>
                   <option value="No">No</option>
                   <option value="Yes">Yes</option>
                   <option value="Occasionally">Occasionally</option>
@@ -1193,72 +1209,60 @@ export const CompleteProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 4: Languages Known (Chips / Multi-select) */}
-            <div>
-              <label className="block text-xs font-bold text-black mb-1.5">
-                Languages Known
-              </label>
-              <div className="flex flex-wrap gap-1.5 p-3 rounded-xl border border-slate-200 bg-slate-50/50">
-                {(languages.length > 0 ? languages.map(l => l.name) : commonLanguages).map(lang => {
-                  const isSelected = formData.languages_known.split(',').map(s => s.trim()).includes(lang);
-                  return (
-                    <button
-                      key={lang}
-                      type="button"
-                      onClick={() => toggleLanguage(lang)}
-                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#C44569] text-white shadow-2xs'
-                          : 'bg-white text-slate-700 border border-slate-200 hover:border-rose-300 hover:bg-rose-50'
-                      }`}
-                    >
-                      {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
-                      {lang}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <Separator className="bg-slate-100" />
 
-            {/* Row 5: Hobbies & Interests (Chips / Multi-select) */}
-            <div>
-              <label className="block text-xs font-bold text-black mb-1.5">
-                Hobbies & Interests
-              </label>
-              <div className="flex flex-wrap gap-1.5 p-3 rounded-xl border border-slate-200 bg-slate-50/50">
-                {(hobbies.length > 0 ? hobbies.map(h => h.name) : commonHobbies).map(hobby => {
-                  const isSelected = formData.hobbies_interests.split(',').map(s => s.trim()).includes(hobby);
-                  return (
-                    <button
-                      key={hobby}
-                      type="button"
-                      onClick={() => toggleHobby(hobby)}
-                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#C44569] text-white shadow-2xs'
-                          : 'bg-white text-slate-700 border border-slate-200 hover:border-rose-300 hover:bg-rose-50'
-                      }`}
-                    >
-                      {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
-                      {hobby}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Languages Known — with Shadcn Checkbox Dropdown */}
+            <SearchableMultiSelect
+              label="Languages Known"
+              placeholder={isLoadingLanguages ? "Loading languages from backend..." : "Search and select languages known..."}
+              items={languages.map(l => ({ id: l.id, name: l.name }))}
+              selectedIds={formData.language_ids}
+              onChange={ids => {
+                const names = languages.filter(l => ids.includes(l.id)).map(l => l.name).join(', ');
+                setFormData(prev => ({
+                  ...prev,
+                  language_ids: ids,
+                  languages_known: names
+                }));
+              }}
+              disabled={isLoadingLanguages}
+              disabledPlaceholder="Loading languages from backend..."
+            />
 
-            {/* Row 6: Marital Status, Children Count */}
+            <Separator className="bg-slate-100" />
+
+            {/* Hobbies & Interests — with Shadcn Checkbox Dropdown */}
+            <SearchableMultiSelect
+              label="Hobbies & Interests"
+              placeholder={isLoadingHobbies ? "Loading hobbies from backend..." : "Search and select hobbies..."}
+              items={hobbies.map(h => ({ id: h.id, name: h.name, extra: h.category }))}
+              selectedIds={formData.hobby_ids}
+              onChange={ids => {
+                const names = hobbies.filter(h => ids.includes(h.id)).map(h => h.name).join(', ');
+                setFormData(prev => ({
+                  ...prev,
+                  hobby_ids: ids,
+                  hobbies_interests: names
+                }));
+              }}
+              disabled={isLoadingHobbies}
+              disabledPlaceholder="Loading hobbies from backend..."
+            />
+
+            <Separator className="bg-slate-100" />
+
+            {/* Marital Status & Children Count */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Marital Status <span className="text-rose-600 font-black">*</span>
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Marital Status <span className="text-rose-600 font-bold">*</span>
                 </label>
                 <select
                   value={formData.marital_status}
                   onChange={e => handleChange('marital_status', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">Select Marital Status</option>
                   <option value="Never Married">Never Married</option>
                   <option value="Divorced">Divorced</option>
                   <option value="Widowed">Widowed</option>
@@ -1266,8 +1270,9 @@ export const CompleteProfile: React.FC = () => {
                   <option value="Annulled">Annulled</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Children Count
                 </label>
                 <input
@@ -1277,53 +1282,51 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.children_count}
                   onChange={e => handleChange('children_count', Number(e.target.value))}
                   placeholder="0"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
             </div>
-          </section>
+          </div>
 
           {/* ============================================================== */}
           {/* SECTION 5: Family Information                                  */}
           {/* ============================================================== */}
-          <section id="section-family" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
-            <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
-              <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                <Users className="h-5 w-5 stroke-[2.2]" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-black">Family Information</h2>
-                <p className="text-[11px] font-semibold text-slate-600">Details about your parents and siblings</p>
-              </div>
+          <div id="section-family" className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex items-center gap-2">
+              <Users className="h-3.5 w-3.5 text-blue-600" />
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                5. Family Information
+              </h2>
             </div>
 
-            {/* Row 1: Family Type, Family Status, Family Values */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+            {/* Family Type, Family Status, Family Values */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Family Type
                 </label>
                 <select
                   value={formData.family_type}
                   onChange={e => handleChange('family_type', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">Select Family Type</option>
                   <option value="Nuclear">Nuclear</option>
                   <option value="Joint">Joint</option>
                   <option value="Other">Other</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Family Status
                 </label>
                 <select
                   value={formData.family_status}
                   onChange={e => handleChange('family_status', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">Select Family Status</option>
                   <option value="Middle Class">Middle Class</option>
                   <option value="Upper Middle Class">Upper Middle Class</option>
                   <option value="Rich">Rich</option>
@@ -1331,16 +1334,17 @@ export const CompleteProfile: React.FC = () => {
                   <option value="Modest">Modest</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Family Values
                 </label>
                 <select
                   value={formData.family_values}
                   onChange={e => handleChange('family_values', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
                 >
-                  <option value="">---------</option>
+                  <option value="">Select Family Values</option>
                   <option value="Traditional">Traditional</option>
                   <option value="Moderate">Moderate</option>
                   <option value="Liberal">Liberal</option>
@@ -1348,10 +1352,12 @@ export const CompleteProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 2: Father's Profession, Mother's Profession */}
+            <Separator className="bg-slate-100" />
+
+            {/* Father's Profession & Mother's Profession */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Father's Profession
                 </label>
                 <input
@@ -1359,11 +1365,12 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.father_occupation}
                   onChange={e => handleChange('father_occupation', e.target.value)}
                   placeholder="Father's Profession"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Mother's Profession
                 </label>
                 <input
@@ -1371,15 +1378,15 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.mother_occupation}
                   onChange={e => handleChange('mother_occupation', e.target.value)}
                   placeholder="Mother's Profession"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
             </div>
 
-            {/* Row 3: Brothers Count, Brothers Married, Sisters Count, Sisters Married */}
+            {/* Brothers Count, Brothers Married, Sisters Count, Sisters Married */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Brothers Count
                 </label>
                 <input
@@ -1389,11 +1396,12 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.brothers_count}
                   onChange={e => handleChange('brothers_count', Number(e.target.value))}
                   placeholder="0"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Brothers Married
                 </label>
                 <input
@@ -1403,11 +1411,12 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.brothers_married_count}
                   onChange={e => handleChange('brothers_married_count', Number(e.target.value))}
                   placeholder="0"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Sisters Count
                 </label>
                 <input
@@ -1417,11 +1426,12 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.sisters_count}
                   onChange={e => handleChange('sisters_count', Number(e.target.value))}
                   placeholder="0"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Sisters Married
                 </label>
                 <input
@@ -1431,46 +1441,48 @@ export const CompleteProfile: React.FC = () => {
                   value={formData.sisters_married_count}
                   onChange={e => handleChange('sisters_married_count', Number(e.target.value))}
                   placeholder="0"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
             </div>
 
-            {/* Row 4: Family Information Notes */}
-            <div>
-              <label className="block text-xs font-bold text-black mb-1">
+            {/* Family Information Notes */}
+            <div className="space-y-1.5">
+              <label className="block text-xs sm:text-sm font-bold text-slate-800">
                 Family Information Notes
               </label>
               <textarea
                 rows={3}
                 value={formData.family_information}
                 onChange={e => handleChange('family_information', e.target.value)}
-                placeholder="Family Information Notes..."
-                className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-y"
+                placeholder="Additional notes about your family, background, or traditions..."
+                className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 resize-y"
               />
             </div>
-          </section>
+          </div>
 
           {/* ============================================================== */}
           {/* SECTION 6: Profile Location Details (Dependent Hierarchy)     */}
           {/* ============================================================== */}
-          <section id="section-location" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-4 hover:border-[#C44569]/30 transition-colors">
-            <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
-              <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                <MapPin className="h-5 w-5 stroke-[2.2]" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-black">Profile Location Details (Dependent Hierarchy)</h2>
-                <p className="text-[11px] font-semibold text-slate-600">Your geographical location details</p>
-              </div>
+          <div id="section-location" className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5 text-blue-600" />
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                6. Profile Location Details (Dependent Hierarchy)
+              </h2>
             </div>
 
-            {/* Row 1: Country, State, District */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Country <span className="text-rose-600 font-black">*</span>
-                </label>
+            {/* Country, State, District */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                    Country <span className="text-rose-600 font-bold">*</span>
+                  </label>
+                  <Badge variant="outline" className="text-[10px] px-2 py-0 font-semibold bg-slate-100 text-slate-700 border-slate-200">
+                    Level 1
+                  </Badge>
+                </div>
                 <select
                   value={formData.country_id || (formData.country ? countries.find(c => c.name === formData.country)?.id : '') || ''}
                   onChange={e => {
@@ -1491,9 +1503,9 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={isLoadingCountries}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60 text-slate-900"
                 >
-                  <option value="">Search or select country...</option>
+                  <option value="">{isLoadingCountries ? 'Loading countries from backend...' : 'Select Country'}</option>
                   {countries.map(c => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -1501,10 +1513,16 @@ export const CompleteProfile: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  State <span className="text-rose-600 font-black">*</span>
-                </label>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                    State <span className="text-rose-600 font-bold">*</span>
+                  </label>
+                  <Badge variant="outline" className="text-[10px] px-2 py-0 font-semibold bg-slate-100 text-slate-700 border-slate-200">
+                    Level 2
+                  </Badge>
+                </div>
                 <select
                   value={formData.state_id || (formData.state ? states.find(s => s.name === formData.state)?.id : '') || ''}
                   onChange={e => {
@@ -1523,14 +1541,14 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={!selectedCountryId || isLoadingStates}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60 text-slate-900"
                 >
                   <option value="">
                     {!selectedCountryId
                       ? 'Select Country first'
                       : isLoadingStates
-                      ? 'Loading states...'
-                      : 'Search or select state...'}
+                      ? 'Loading states from backend...'
+                      : 'Select State'}
                   </option>
                   {states.map(st => (
                     <option key={st.id} value={st.id}>
@@ -1539,10 +1557,16 @@ export const CompleteProfile: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  District <span className="text-rose-600 font-black">*</span>
-                </label>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                    District <span className="text-rose-600 font-bold">*</span>
+                  </label>
+                  <Badge variant="outline" className="text-[10px] px-2 py-0 font-semibold bg-slate-100 text-slate-700 border-slate-200">
+                    Level 3
+                  </Badge>
+                </div>
                 <select
                   value={formData.district_id || (formData.district ? districts.find(d => d.name === formData.district)?.id : '') || ''}
                   onChange={e => {
@@ -1559,14 +1583,14 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={!selectedStateId || isLoadingDistricts}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60 text-slate-900"
                 >
                   <option value="">
                     {!selectedStateId
                       ? 'Select State first'
                       : isLoadingDistricts
-                      ? 'Loading districts...'
-                      : 'Search or select district...'}
+                      ? 'Loading districts from backend...'
+                      : 'Select District'}
                   </option>
                   {districts.map(dst => (
                     <option key={dst.id} value={dst.id}>
@@ -1577,12 +1601,19 @@ export const CompleteProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 2: Mandal / City, Village / Locality, Pincode */}
+            <Separator className="bg-slate-100" />
+
+            {/* Mandal, Village, Pincode */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Mandal / City
-                </label>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                    Mandal / City
+                  </label>
+                  <Badge variant="outline" className="text-[10px] px-2 py-0 font-semibold bg-slate-100 text-slate-700 border-slate-200">
+                    Level 4
+                  </Badge>
+                </div>
                 <select
                   value={formData.mandal_id || (formData.mandal ? mandals.find(m => m.name === formData.mandal)?.id : '') || ''}
                   onChange={e => {
@@ -1597,14 +1628,14 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={!selectedDistrictId || isLoadingMandals}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60 text-slate-900"
                 >
                   <option value="">
                     {!selectedDistrictId
                       ? 'Select District first'
                       : isLoadingMandals
-                      ? 'Loading mandals...'
-                      : 'Search or select mandal/city...'}
+                      ? 'Loading mandals from backend...'
+                      : 'Select Mandal / City'}
                   </option>
                   {mandals.map(mnd => (
                     <option key={mnd.id} value={mnd.id}>
@@ -1613,10 +1644,16 @@ export const CompleteProfile: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Village / Locality
-                </label>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                    Village / Locality
+                  </label>
+                  <Badge variant="outline" className="text-[10px] px-2 py-0 font-semibold bg-slate-100 text-slate-700 border-slate-200">
+                    Level 5
+                  </Badge>
+                </div>
                 <select
                   value={formData.village_id || (formData.village ? villages.find(v => v.name === formData.village)?.id : '') || ''}
                   onChange={e => {
@@ -1629,14 +1666,14 @@ export const CompleteProfile: React.FC = () => {
                     }));
                   }}
                   disabled={!selectedMandalId || isLoadingVillages}
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all cursor-pointer disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60 text-slate-900"
                 >
                   <option value="">
                     {!selectedMandalId
                       ? 'Select Mandal first'
                       : isLoadingVillages
-                      ? 'Loading villages...'
-                      : 'Search or select village...'}
+                      ? 'Loading villages from backend...'
+                      : 'Select Village / Locality'}
                   </option>
                   {villages.map(vlg => (
                     <option key={vlg.id} value={vlg.id}>
@@ -1645,56 +1682,43 @@ export const CompleteProfile: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Pincode <span className="text-rose-600 font-black">*</span>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Pincode <span className="text-rose-600 font-bold">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.pincode}
                   onChange={e => handleChange('pincode', e.target.value)}
                   placeholder="Pincode"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
             </div>
-          </section>
-
-          {/* Bottom Form Actions */}
-          <div className="flex items-center justify-between pt-4 pb-8">
-            <button
-              type="button"
-              onClick={async () => {
-                localStorage.setItem('user_profile_draft', JSON.stringify(formData));
-                await logout();
-                showToast('Draft saved. Logged out successfully.');
-                navigate('/login');
-              }}
-              className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-700 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
-            >
-              <LogOut className="h-3.5 w-3.5 text-rose-500" />
-              <span>Log Out & Resume Later</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSaveAndContinue}
-              disabled={isSubmitting}
-              className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-[#C83259] to-[#E11D48] hover:from-[#A82547] hover:to-[#BE123C] text-white text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-70"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving Profile...
-                </>
-              ) : (
-                <>
-                  Save & Continue <span className="font-extrabold text-sm">→</span>
-                </>
-              )}
-            </button>
           </div>
 
-        </main>
+          {/* Bottom Action Bar */}
+          <div className="flex items-center justify-between pt-4 pb-12">
+            <button
+              type="button"
+              onClick={() => navigate('/profile')}
+              className="text-xs font-bold px-6 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-400 active:scale-[0.98] transition-all cursor-pointer shadow-2xs"
+            >
+              Back
+            </button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              isLoading={isSubmitting}
+              className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              Save & Continue
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+
+        </form>
       </div>
     </div>
   );

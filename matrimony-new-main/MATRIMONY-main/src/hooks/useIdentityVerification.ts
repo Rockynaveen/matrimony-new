@@ -1,28 +1,38 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   identityVerificationService,
   IdentityVerificationServiceError
 } from '../services/identityVerification.service';
 import type {
   NormalizedVerificationState,
-  IdentityDocumentUploadPayload
+  IdentityDocumentUploadPayload,
+  DocumentUploadVerificationOut
 } from '../types/identityVerification.types';
 import { useApp } from '../context/AppContext';
 
 export interface UseIdentityVerificationReturn {
   status: NormalizedVerificationState | null;
+  latestResult: DocumentUploadVerificationOut | null;
   isLoading: boolean;
   isSubmitting: boolean;
   error: string | null;
   successMessage: string | null;
   fetchStatus: () => Promise<NormalizedVerificationState | null>;
-  submitVerification: (payload: IdentityDocumentUploadPayload) => Promise<boolean>;
+  submitVerification: (payload: IdentityDocumentUploadPayload) => Promise<DocumentUploadVerificationOut | null>;
   resetError: () => void;
   resetSuccess: () => void;
 }
 
 export function useIdentityVerification(autoFetch = true): UseIdentityVerificationReturn {
   const [status, setStatus] = useState<NormalizedVerificationState | null>(null);
+  const [latestResult, setLatestResult] = useState<DocumentUploadVerificationOut | null>(() => {
+    try {
+      const stored = localStorage.getItem('latest_verification_result');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isLoading, setIsLoading] = useState<boolean>(autoFetch);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +53,6 @@ export function useIdentityVerification(autoFetch = true): UseIdentityVerificati
       const result = await identityVerificationService.getVerificationStatus();
       setStatus(result);
 
-      // Sync with global app context so navbar and badges reflect live state
       const currentEmail = (localStorage.getItem('logged_in_email') || currentUser?.email || '').toLowerCase().trim();
       if (result.code === 'VERIFIED') {
         saveStoredOnboardingStatus({
@@ -65,7 +74,7 @@ export function useIdentityVerification(autoFetch = true): UseIdentityVerificati
         saveStoredOnboardingStatus({
           verification_completed: false,
           verification_status: 'REJECTED',
-          rejection_reason: result.rejectionReason
+          rejection_reason: result.adminReviewMessage || result.message
         }, currentEmail);
         setVerificationStatusState('REJECTED');
         setCurrentUserStore({ verified: false });
@@ -83,22 +92,45 @@ export function useIdentityVerification(autoFetch = true): UseIdentityVerificati
   }, [saveStoredOnboardingStatus, setOnboardingStatusState, setVerificationStatusState, setCurrentUserStore, currentUser?.email]);
 
   const submitVerification = useCallback(
-    async (payload: IdentityDocumentUploadPayload): Promise<boolean> => {
+    async (payload: IdentityDocumentUploadPayload): Promise<DocumentUploadVerificationOut | null> => {
       setIsSubmitting(true);
       setError(null);
       setSuccessMessage(null);
 
       try {
         const response = await identityVerificationService.uploadIdentityDocument(payload);
+        setLatestResult(response);
+        try {
+          localStorage.setItem('latest_verification_result', JSON.stringify(response));
+        } catch {}
 
-        setSuccessMessage(
-          response.message ||
-            'Your identity documents have been submitted successfully. We will review them and update your verification status.'
-        );
+        const currentEmail = (localStorage.getItem('logged_in_email') || currentUser?.email || '').toLowerCase().trim();
 
-        // Refresh verification status from backend API to update UI without page reload
+        if (response.success && (response.verification_status === 'VERIFIED' || response.status === 'VERIFIED' || response.status === 'SUCCESS')) {
+          setSuccessMessage(response.message || 'Identity verified successfully! Green trust badge granted.');
+          saveStoredOnboardingStatus({
+            verification_completed: true,
+            verification_status: 'VERIFIED',
+            rejection_reason: null
+          }, currentEmail);
+          setVerificationStatusState('VERIFIED');
+          setCurrentUserStore({ verified: true });
+          localStorage.setItem('verification_completed', 'true');
+        } else if (response.status === 'PENDING' || response.verification_status === 'PENDING') {
+          setSuccessMessage(response.message || 'Verification submitted for safety review.');
+          saveStoredOnboardingStatus({
+            verification_completed: true,
+            verification_status: 'PENDING',
+            rejection_reason: null
+          }, currentEmail);
+          setVerificationStatusState('PENDING');
+        } else {
+          setSuccessMessage(response.message || 'Document uploaded successfully.');
+        }
+
+        // Refresh latest status from backend
         await fetchStatus();
-        return true;
+        return response;
       } catch (err: any) {
         let msg = 'Unable to submit your verification right now. Please check your documents and try again.';
         if (err instanceof IdentityVerificationServiceError) {
@@ -107,12 +139,12 @@ export function useIdentityVerification(autoFetch = true): UseIdentityVerificati
           msg = err.message;
         }
         setError(msg);
-        return false;
+        return null;
       } finally {
         setIsSubmitting(false);
       }
     },
-    [fetchStatus]
+    [fetchStatus, saveStoredOnboardingStatus, setOnboardingStatusState, setVerificationStatusState, setCurrentUserStore, currentUser?.email]
   );
 
   const resetError = useCallback(() => setError(null), []);
@@ -126,6 +158,7 @@ export function useIdentityVerification(autoFetch = true): UseIdentityVerificati
 
   return {
     status,
+    latestResult,
     isLoading,
     isSubmitting,
     error,

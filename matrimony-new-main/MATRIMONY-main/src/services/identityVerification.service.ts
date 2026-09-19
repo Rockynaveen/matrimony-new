@@ -1,10 +1,10 @@
 import { axiosClient } from '../api/axiosClient';
 import type {
-  RawVerificationStatusResponse,
+  IdentityVerificationStatusOut,
+  DocumentUploadVerificationOut,
   NormalizedVerificationState,
   VerificationStatusCode,
-  IdentityDocumentUploadPayload,
-  IdentityVerificationUploadResponse
+  IdentityDocumentUploadPayload
 } from '../types/identityVerification.types';
 
 export class IdentityVerificationServiceError extends Error {
@@ -22,24 +22,23 @@ export class IdentityVerificationServiceError extends Error {
 /**
  * Normalizes any backend status representation to a standardized VerificationStatusCode
  */
-export function normalizeVerificationStatus(rawStatus?: string | null, isVerified?: boolean | null): VerificationStatusCode {
+export function normalizeVerificationStatus(
+  rawStatus?: string | null,
+  isVerified?: boolean | null,
+  adminStatus?: string | null
+): VerificationStatusCode {
   if (isVerified === true) {
     return 'VERIFIED';
   }
 
-  if (!rawStatus || typeof rawStatus !== 'string') {
-    return 'NOT_VERIFIED';
-  }
+  const statusStr = (rawStatus || adminStatus || '').trim().toLowerCase().replace(/[\s_-]+/g, '');
 
-  const normalized = rawStatus.trim().toLowerCase().replace(/[\s_-]+/g, '');
-
-  switch (normalized) {
-    case 'notverified':
-    case 'notsubmitted':
-    case 'unverified':
-    case 'none':
-    case '':
-      return 'NOT_VERIFIED';
+  switch (statusStr) {
+    case 'verified':
+    case 'approved':
+    case 'completed':
+    case 'success':
+      return 'VERIFIED';
 
     case 'pending':
     case 'underreview':
@@ -48,12 +47,6 @@ export function normalizeVerificationStatus(rawStatus?: string | null, isVerifie
     case 'processing':
     case 'queued':
       return 'PENDING';
-
-    case 'verified':
-    case 'approved':
-    case 'completed':
-    case 'success':
-      return 'VERIFIED';
 
     case 'rejected':
     case 'declined':
@@ -65,6 +58,14 @@ export function normalizeVerificationStatus(rawStatus?: string | null, isVerifie
     case 'invalid':
       return 'FAILED';
 
+    case 'notverified':
+    case 'notsubmitted':
+    case 'unverified':
+    case 'unsubmitted':
+    case 'none':
+    case '':
+      return 'NOT_VERIFIED';
+
     default:
       return 'UNKNOWN';
   }
@@ -73,46 +74,65 @@ export function normalizeVerificationStatus(rawStatus?: string | null, isVerifie
 export const identityVerificationService = {
   /**
    * GET /api/identity/verification/status
-   * Fetches the current identity verification status for the authenticated user
+   * Retrieves authenticated user's verification history and status
    */
   async getVerificationStatus(): Promise<NormalizedVerificationState> {
     try {
-      const response = await axiosClient.get<RawVerificationStatusResponse>('/identity/verification/status');
-      
-      const rawData = response.data || {};
-      const rawStatus = rawData.status || rawData.verification_status || (rawData.is_verified ? 'Verified' : 'Not Verified');
-      const isVerified = Boolean(rawData.is_verified || String(rawStatus).toLowerCase() === 'verified');
-      const statusCode = normalizeVerificationStatus(rawStatus, isVerified);
+      const response = await axiosClient.get<IdentityVerificationStatusOut>('/identity/verification/status');
+      const data = response.data || { is_identity_verified: false, verifications: [] };
+
+      const isVerified = Boolean(data.is_identity_verified || data.badge_granted);
+      const adminStatus = data.admin_review_status || 'UNSUBMITTED';
+      const latestVerification = Array.isArray(data.verifications) && data.verifications.length > 0
+        ? data.verifications[0]
+        : null;
+
+      const rawStatus = latestVerification?.status || adminStatus;
+      const statusCode = normalizeVerificationStatus(rawStatus, isVerified, adminStatus);
 
       return {
         code: statusCode,
         rawStatus: String(rawStatus),
         isVerified,
-        documentType: rawData.document_type || null,
-        rejectionReason: rawData.rejection_reason || rawData.reason || null,
-        submittedAt: rawData.submitted_at || rawData.created_at || null,
-        verifiedAt: rawData.verified_at || null,
-        documentUrl: rawData.document_url || rawData.id_document_url || null,
-        liveFaceUrl: rawData.live_face_url || rawData.live_photo_url || null,
-        message: rawData.message || null
+        isAdminConfirmed: Boolean(data.is_admin_confirmed),
+        badgeGranted: Boolean(data.badge_granted),
+        adminReviewStatus: data.admin_review_status || null,
+        adminReviewMessage: data.admin_review_message || null,
+        documentType: latestVerification?.document_type || null,
+        extractedName: latestVerification?.verified_name || null,
+        maskedId: latestVerification?.document_number_masked || null,
+        faceMatchScore: latestVerification?.face_match_score || null,
+        submittedAt: latestVerification?.created_at || null,
+        verifiedAt: latestVerification?.verified_at || null,
+        documentUrl: null,
+        liveFaceUrl: latestVerification?.image_source || null,
+        message: data.admin_review_message || null,
+        history: data.verifications || []
       };
     } catch (err: any) {
       const status = err?.status || err?.response?.status || 500;
       const message = err?.message || err?.response?.data?.message || 'Unable to retrieve verification status.';
-      
-      // If 404 or unverified, gracefully return NOT_VERIFIED state instead of throwing hard error
+
+      // If 404, gracefully return NOT_VERIFIED state
       if (status === 404) {
         return {
           code: 'NOT_VERIFIED',
-          rawStatus: 'Not Verified',
+          rawStatus: 'UNSUBMITTED',
           isVerified: false,
+          isAdminConfirmed: false,
+          badgeGranted: false,
+          adminReviewStatus: 'UNSUBMITTED',
+          adminReviewMessage: null,
           documentType: null,
-          rejectionReason: null,
+          extractedName: null,
+          maskedId: null,
+          faceMatchScore: null,
           submittedAt: null,
           verifiedAt: null,
           documentUrl: null,
           liveFaceUrl: null,
-          message: 'No verification record found. Please verify your identity.'
+          message: 'No verification record found. Please verify your identity.',
+          history: []
         };
       }
 
@@ -122,57 +142,46 @@ export const identityVerificationService = {
 
   /**
    * POST /api/identity/verify/document-upload
-   * Uploads the user's government ID document and live face image
+   * Uploads Government ID Document + Live Face Photo to Railway OCR & Face Matching Engine
    */
-  async uploadIdentityDocument(payload: IdentityDocumentUploadPayload): Promise<IdentityVerificationUploadResponse> {
+  async uploadIdentityDocument(payload: IdentityDocumentUploadPayload): Promise<DocumentUploadVerificationOut> {
     try {
       const formData = new FormData();
+      // Required parameters matching Railway OpenAPI: document_type, document_file, live_face_file
       formData.append('document_type', payload.document_type);
-      
-      // Default to "N" if no password is provided as required by backend API spec
-      const pdfPassword = payload.pdf_password?.trim() ? payload.pdf_password.trim() : 'N';
-      formData.append('pdf_password', pdfPassword);
-
       formData.append('document_file', payload.document_file);
       formData.append('live_face_file', payload.live_face_file);
 
-      // Using axiosClient.postForm (which sends FormData without setting Content-Type, allowing browser boundary generation)
-      const response = await axiosClient.postForm<IdentityVerificationUploadResponse>(
+      // Using axiosClient.postForm which sends FormData with Authorization header and correct boundaries
+      const response = await axiosClient.postForm<DocumentUploadVerificationOut>(
         '/identity/verify/document-upload',
         formData
       );
 
-      if (response.status >= 200 && response.status < 300) {
-        return {
-          success: true,
-          message: response.data?.message || 'Identity documents submitted successfully.',
-          status: response.data?.status || 'Pending',
-          verification_id: response.data?.verification_id,
-          data: response.data
-        };
+      if (response.status >= 200 && response.status < 300 && response.data) {
+        return response.data;
       }
 
-      const errorMsg = response.data?.message || `Server returned status ${response.status}`;
+      const errorMsg = (response.data as any)?.message || `Server returned status ${response.status}`;
       throw new IdentityVerificationServiceError(errorMsg, response.status, response.data);
     } catch (err: any) {
       const status = err?.status || err?.response?.status || 500;
-      let userFriendlyMessage = 'Unable to submit your verification right now. Please check your documents and try again.';
+      const respData = err?.data || err?.response?.data || {};
+      let userFriendlyMessage = respData?.message || err?.message || 'Verification submission failed.';
 
       if (status === 400) {
-        userFriendlyMessage = err?.data?.message || err?.message || 'Invalid document format or details. Please check your files.';
+        userFriendlyMessage = respData?.message || 'Invalid document format or details. Please ensure the document is clear and readable.';
       } else if (status === 401) {
-        userFriendlyMessage = 'Your session has expired. Please log in again to continue verification.';
-      } else if (status === 403) {
-        userFriendlyMessage = 'Access denied. You do not have permission to verify this profile.';
+        userFriendlyMessage = 'Your session has expired. Please log in again to complete verification.';
       } else if (status === 413) {
         userFriendlyMessage = 'The uploaded file is too large. Please upload files under 10MB.';
       } else if (status === 422) {
-        userFriendlyMessage = err?.data?.message || err?.message || 'Validation error: Please ensure document type and files are valid.';
+        userFriendlyMessage = respData?.message || 'Validation error: Please ensure document type and files are valid.';
       } else if (status >= 500) {
         userFriendlyMessage = 'Verification service is temporarily unavailable. Please try again in a few moments.';
       }
 
-      throw new IdentityVerificationServiceError(userFriendlyMessage, status, err?.data || err?.response?.data);
+      throw new IdentityVerificationServiceError(userFriendlyMessage, status, respData);
     }
   }
 };

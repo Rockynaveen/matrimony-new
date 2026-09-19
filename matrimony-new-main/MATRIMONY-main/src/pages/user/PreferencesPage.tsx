@@ -26,9 +26,11 @@ import { Label } from '../../components/ui/Label';
 import { Select } from '../../components/ui/Select';
 import { Separator } from '../../components/ui/Separator';
 import { Switch } from '../../components/ui/Switch';
+import { Checkbox } from '../../components/ui/Checkbox';
 
 import {
-  UserCheck,
+  User,
+  IdCard,
   GraduationCap,
   Sparkles,
   Heart,
@@ -39,206 +41,16 @@ import {
   Check,
   Compass,
   ChevronDown,
-  ArrowRight
+  ArrowRight,
+  Info,
+  ShieldCheck
 } from 'lucide-react';
 
-// Reusable Required Toggle Component using Shadcn Switch & Badge
-interface RequiredToggleProps {
-  checked: boolean;
-  onChange: (val: boolean) => void;
-  label?: string;
-}
-
-const RequiredToggle: React.FC<RequiredToggleProps> = ({ checked, onChange, label = 'Required' }) => (
-  <div className="flex items-center gap-2 select-none">
-    <span className="text-xs font-semibold text-slate-700">{label}</span>
-    <Switch checked={checked} onCheckedChange={onChange} />
-    {checked ? (
-      <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4 font-bold bg-[#C44569]/10 text-[#C44569] border-[#C44569]/20">
-        Strict
-      </Badge>
-    ) : (
-      <span className="text-[10px] text-muted-foreground font-medium">Optional</span>
-    )}
-  </div>
-);
-
-// Reusable Searchable Multi-Select Component using Shadcn UI standards
-interface SearchableMultiSelectProps {
-  label: string;
-  placeholder: string;
-  items: { id: number; name: string; extra?: string }[];
-  selectedIds: number[];
-  onChange: (ids: number[]) => void;
-  isRequired?: boolean;
-  onRequiredChange?: (val: boolean) => void;
-  levelBadge?: string;
-  disabled?: boolean;
-  disabledPlaceholder?: string;
-}
-
-const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
-  label,
-  placeholder,
-  items,
-  selectedIds,
-  onChange,
-  isRequired,
-  onRequiredChange,
-  levelBadge,
-  disabled = false,
-  disabledPlaceholder
-}) => {
-  const [query, setQuery] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const filteredItems = useMemo(() => {
-    if (!query.trim()) return items;
-    const lower = query.toLowerCase();
-    return items.filter(
-      item => item.name.toLowerCase().includes(lower) || (item.extra && item.extra.toLowerCase().includes(lower))
-    );
-  }, [items, query]);
-
-  const selectedItems = useMemo(() => {
-    return items.filter(item => selectedIds.includes(item.id));
-  }, [items, selectedIds]);
-
-  const toggleItem = (id: number) => {
-    if (selectedIds.includes(id)) {
-      onChange(selectedIds.filter(itemId => itemId !== id));
-    } else {
-      onChange([...selectedIds, id]);
-    }
-  };
-
-  const removeItem = (id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    onChange(selectedIds.filter(itemId => itemId !== id));
-  };
-
-  return (
-    <div className="space-y-2" ref={containerRef}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Label className="text-xs font-bold text-foreground">{label}</Label>
-          {levelBadge && (
-            <Badge variant="outline" className="text-[10px] px-2 py-0 font-semibold bg-muted/30">
-              {levelBadge}
-            </Badge>
-          )}
-        </div>
-        {onRequiredChange !== undefined && (
-          <RequiredToggle checked={Boolean(isRequired)} onChange={onRequiredChange} />
-        )}
-      </div>
-
-      {/* Selected Tags Display */}
-      {selectedItems.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/60">
-          {selectedItems.map(item => (
-            <Badge
-              key={item.id}
-              variant="outline"
-              className="pl-2.5 pr-1 py-1 bg-background text-foreground border-border flex items-center gap-1 text-xs shadow-2xs"
-            >
-              <span>{item.name}</span>
-              <button
-                type="button"
-                onClick={e => removeItem(item.id, e)}
-                className="h-3.5 w-3.5 rounded-full flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              >
-                <X className="h-2.5 w-2.5" />
-              </button>
-            </Badge>
-          ))}
-          <button
-            type="button"
-            onClick={() => onChange([])}
-            className="text-[10px] font-bold text-rose-600 hover:text-rose-800 underline self-center px-1.5 cursor-pointer ml-auto"
-          >
-            Clear all
-          </button>
-        </div>
-      )}
-
-      {/* Search & Trigger Box */}
-      <div className="relative">
-        <div
-          onClick={() => !disabled && setIsOpen(prev => !prev)}
-          className={`flex items-center gap-2 w-full px-3 py-2 text-xs rounded-xl border bg-background transition-all cursor-pointer ${
-            disabled
-              ? 'opacity-60 bg-muted/40 border-border cursor-not-allowed'
-              : isOpen
-              ? 'border-[#C44569] ring-2 ring-[#C44569]/20'
-              : 'border-input hover:border-slate-400'
-          }`}
-        >
-          <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-          <input
-            type="text"
-            disabled={disabled}
-            value={query}
-            onChange={e => {
-              setQuery(e.target.value);
-              if (!isOpen) setIsOpen(true);
-            }}
-            onClick={e => e.stopPropagation()}
-            onFocus={() => !disabled && setIsOpen(true)}
-            placeholder={disabled ? disabledPlaceholder || placeholder : placeholder}
-            className="w-full bg-transparent text-xs text-foreground focus:outline-none placeholder:text-muted-foreground"
-          />
-          <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-        </div>
-
-        {/* Dropdown Options */}
-        {isOpen && !disabled && (
-          <div className="absolute z-30 left-0 right-0 mt-1 max-h-56 overflow-y-auto bg-popover border border-border rounded-xl shadow-lg p-1.5 space-y-0.5 animate-in fade-in-50 zoom-in-95">
-            {filteredItems.length === 0 ? (
-              <div className="p-3 text-center text-xs text-muted-foreground">
-                {items.length === 0 ? 'No options available' : 'No matches found'}
-              </div>
-            ) : (
-              filteredItems.map(item => {
-                const isSelected = selectedIds.includes(item.id);
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => toggleItem(item.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg font-medium transition-colors text-left cursor-pointer ${
-                      isSelected
-                        ? 'bg-rose-50 text-[#C44569] font-bold'
-                        : 'text-foreground hover:bg-muted'
-                    }`}
-                  >
-                    <span>
-                      {item.name}
-                      {item.extra && <span className="text-[11px] text-muted-foreground font-normal ml-1.5">({item.extra})</span>}
-                    </span>
-                    {isSelected && <Check className="h-4 w-4 text-[#C44569] stroke-[2.5]" />}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+import {
+  RequiredToggle,
+  SearchableMultiSelect,
+  StringMultiSelectDropdown
+} from '../../components/ui/SearchableMultiSelect';
 
 export const PreferencesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -296,30 +108,30 @@ export const PreferencesPage: React.FC = () => {
     village_ids: [] as number[]
   });
 
-  // Dynamic Master Queries
+  // Dynamic Master Queries — strictly using live backend database data
   const { data: incomeRanges = [], isLoading: isLoadingIncomes } = useIncomeRanges();
-  const { data: educations = [] } = useEducations();
-  const { data: professions = [] } = useProfessions();
-  const { data: religions = [] } = useReligions();
-  const { data: languagesList = [] } = useLanguages();
-  const { data: countries = [] } = useCountries();
+  const { data: educations = [], isLoading: isLoadingEducations } = useEducations();
+  const { data: professions = [], isLoading: isLoadingProfessions } = useProfessions();
+  const { data: religions = [], isLoading: isLoadingReligions } = useReligions();
+  const { data: languagesList = [], isLoading: isLoadingLanguages } = useLanguages();
+  const { data: countries = [], isLoading: isLoadingCountries } = useCountries();
 
   // Location Hierarchy Queries
   const selectedCountryId = formData.country_ids.length > 0 ? formData.country_ids[0] : null;
-  const { data: states = [] } = useStates(selectedCountryId);
+  const { data: states = [], isLoading: isLoadingStates } = useStates(selectedCountryId);
 
   const selectedStateId = formData.state_ids.length > 0 ? formData.state_ids[0] : null;
-  const { data: districts = [] } = useDistricts(selectedStateId);
+  const { data: districts = [], isLoading: isLoadingDistricts } = useDistricts(selectedStateId);
 
   const selectedDistrictId = formData.district_ids.length > 0 ? formData.district_ids[0] : null;
-  const { data: mandals = [] } = useMandals(selectedDistrictId);
+  const { data: mandals = [], isLoading: isLoadingMandals } = useMandals(selectedDistrictId);
 
   const selectedMandalId = formData.mandal_ids.length > 0 ? formData.mandal_ids[0] : null;
-  const { data: villages = [] } = useVillages(selectedMandalId);
+  const { data: villages = [], isLoading: isLoadingVillages } = useVillages(selectedMandalId);
 
   // Castes Query
   const selectedReligionId = formData.religion_ids.length > 0 ? formData.religion_ids[0] : null;
-  const { data: castes = [] } = useCastes(selectedReligionId);
+  const { data: castes = [], isLoading: isLoadingCastes } = useCastes(selectedReligionId);
 
   // Load existing saved preferences from backend API on mount
   useEffect(() => {
@@ -471,7 +283,7 @@ export const PreferencesPage: React.FC = () => {
       if (redirectUrl) {
         navigate(redirectUrl);
       } else {
-        navigate('/matches');
+        navigate('/verification');
       }
     } catch (err: any) {
       console.error('Failed to save partner preferences:', err);
@@ -479,7 +291,11 @@ export const PreferencesPage: React.FC = () => {
       localStorage.setItem('partner_preferences_draft', JSON.stringify(formData));
       showToast(err.message || 'Preferences saved locally', 'info');
       markPreferencesCompleted();
-      if (redirectUrl) navigate(redirectUrl);
+      if (redirectUrl) {
+        navigate(redirectUrl);
+      } else {
+        navigate('/verification');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -487,7 +303,7 @@ export const PreferencesPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
           <Loader2 className="h-8 w-8 text-[#C44569] animate-spin" />
           <p className="text-sm font-semibold text-slate-700">Loading your preferences...</p>
@@ -497,38 +313,17 @@ export const PreferencesPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/60 py-8 px-3 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[#FAF6F0] py-8 px-3 sm:px-6 lg:px-8 font-sans antialiased text-slate-900">
+      <div className="max-w-5xl mx-auto space-y-5">
 
-        {/* Page Header */}
-        <div className="bg-white rounded-2xl border border-border/70 p-6 sm:p-8 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <Badge variant="secondary" className="bg-[#C44569]/10 text-[#C44569] border-[#C44569]/20 font-bold px-2.5 py-0.5 text-xs">
-                  Step 2 of 2
-                </Badge>
-                <span className="text-xs font-semibold text-muted-foreground">Matchmaking Setup</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-serif">
-                Partner Preferences
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Customize your ideal match criteria across demographics, lifestyle, horoscope, and location.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(redirectUrl || '/matches')}
-                className="text-xs"
-              >
-                Skip for now
-              </Button>
-            </div>
+        {/* Informational Callout Banner */}
+        <div className="bg-[#e0f7fa] border border-[#b2ebf2] text-slate-800 rounded-2xl p-4 sm:p-4.5 flex items-start gap-3 shadow-2xs">
+          <div className="h-5 w-5 rounded-full bg-[#00838f] text-white flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+            <Info className="h-3.5 w-3.5 text-white stroke-[2.5]" />
           </div>
+          <p className="text-xs sm:text-sm leading-relaxed text-slate-700">
+            <strong className="font-bold text-slate-900">Partner Preferences</strong> represent what the user is looking for in a partner. They are stored separately and use structured options and required vs preferred toggles for future AI matching.
+          </p>
         </div>
 
         {/* The Preferences Form */}
@@ -537,563 +332,424 @@ export const PreferencesPage: React.FC = () => {
           {/* ============================================================== */}
           {/* 1. Basic Preferences                                           */}
           {/* ============================================================== */}
-          <Card className="border-border/80 shadow-xs hover:border-[#C44569]/30 transition-all">
-            <CardHeader className="pb-4 border-b border-border/40">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <UserCheck className="h-5 w-5 stroke-[2.2]" />
-                </div>
-                <div>
-                  <CardTitle className="text-base font-bold text-foreground font-sans">
-                    1. Basic Preferences
-                  </CardTitle>
-                  <CardDescription className="text-xs text-muted-foreground">
-                    Age range, height range, and annual income criteria
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              {/* Age Range & Required */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-bold text-foreground">Preferred Age</Label>
-                  <RequiredToggle
-                    checked={formData.is_age_required}
-                    onChange={val => handleChange('is_age_required', val)}
-                  />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-[11px] font-semibold text-muted-foreground">Preferred Age (Min)</Label>
-                    <Input
-                      type="number"
-                      min={18}
-                      max={80}
-                      value={formData.minimum_age}
-                      onChange={e => handleChange('minimum_age', Number(e.target.value))}
-                      placeholder="18"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-[11px] font-semibold text-muted-foreground">Preferred Age (Max)</Label>
-                    <Input
-                      type="number"
-                      min={18}
-                      max={80}
-                      value={formData.maximum_age}
-                      onChange={e => handleChange('maximum_age', Number(e.target.value))}
-                      placeholder="60"
-                    />
-                  </div>
-                </div>
-              </div>
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex items-center gap-2">
+              <User className="h-3.5 w-3.5 text-blue-600" />
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                1. Basic Preferences
+              </h2>
+            </div>
 
-              <Separator className="bg-border/60" />
-
-              {/* Height Range & Required */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-bold text-foreground">Preferred Height (cm)</Label>
-                  <RequiredToggle
-                    checked={formData.is_height_required}
-                    onChange={val => handleChange('is_height_required', val)}
-                  />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-[11px] font-semibold text-muted-foreground">Preferred Height (Min cm)</Label>
-                    <Input
-                      type="number"
-                      value={formData.minimum_height}
-                      onChange={e => handleChange('minimum_height', e.target.value ? Number(e.target.value) : '')}
-                      placeholder="Min cm"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-[11px] font-semibold text-muted-foreground">Preferred Height (Max cm)</Label>
-                    <Input
-                      type="number"
-                      value={formData.maximum_height}
-                      onChange={e => handleChange('maximum_height', e.target.value ? Number(e.target.value) : '')}
-                      placeholder="Max cm"
-                    />
-                  </div>
-                </div>
+            {/* Preferred Age (Min) & (Max) with Required Toggle */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+              <div className="md:col-span-5 space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Preferred Age (Min)
+                </label>
+                <input
+                  type="number"
+                  min={18}
+                  max={80}
+                  value={formData.minimum_age}
+                  onChange={e => handleChange('minimum_age', e.target.value ? Number(e.target.value) : '')}
+                  placeholder="18"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+                />
               </div>
-
-              <Separator className="bg-border/60" />
-
-              {/* Annual Income Brackets & Required */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-bold text-foreground">Preferred Annual Income Brackets</Label>
-                  <RequiredToggle
-                    checked={formData.is_income_required}
-                    onChange={val => handleChange('is_income_required', val)}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-2 p-3 rounded-xl border border-border/60 bg-muted/20">
-                  {isLoadingIncomes ? (
-                    <p className="text-xs text-muted-foreground">Loading income brackets...</p>
-                  ) : (
-                    incomeRanges.map(inc => {
-                      const isSelected = formData.income_range_ids.includes(inc.id);
-                      return (
-                        <button
-                          key={inc.id}
-                          type="button"
-                          onClick={() => toggleIncomeRangeId(inc.id)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-[#C44569] text-white shadow-2xs'
-                              : 'bg-background text-foreground border border-border hover:border-rose-300 hover:bg-rose-50/50'
-                          }`}
-                        >
-                          {isSelected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
-                          {inc.label}
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
+              <div className="md:col-span-5 space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Preferred Age (Max)
+                </label>
+                <input
+                  type="number"
+                  min={18}
+                  max={80}
+                  value={formData.maximum_age}
+                  onChange={e => handleChange('maximum_age', e.target.value ? Number(e.target.value) : '')}
+                  placeholder="60"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+                />
               </div>
-            </CardContent>
-          </Card>
+              <div className="md:col-span-2 flex items-center justify-start md:justify-end pb-2 sm:pb-3">
+                <RequiredToggle
+                  checked={formData.is_age_required}
+                  onChange={val => handleChange('is_age_required', val)}
+                />
+              </div>
+            </div>
+
+            {/* Preferred Height (Min cm) & (Max cm) with Required Toggle */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+              <div className="md:col-span-5 space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Preferred Height (Min cm)
+                </label>
+                <input
+                  type="number"
+                  value={formData.minimum_height}
+                  onChange={e => handleChange('minimum_height', e.target.value ? Number(e.target.value) : '')}
+                  placeholder="Min cm"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+                />
+              </div>
+              <div className="md:col-span-5 space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Preferred Height (Max cm)
+                </label>
+                <input
+                  type="number"
+                  value={formData.maximum_height}
+                  onChange={e => handleChange('maximum_height', e.target.value ? Number(e.target.value) : '')}
+                  placeholder="Max cm"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+                />
+              </div>
+              <div className="md:col-span-2 flex items-center justify-start md:justify-end pb-2 sm:pb-3">
+                <RequiredToggle
+                  checked={formData.is_height_required}
+                  onChange={val => handleChange('is_height_required', val)}
+                />
+              </div>
+            </div>
+
+            {/* Preferred Annual Income Brackets with Dropdown & Checkboxes */}
+            <div className="pt-1">
+              <SearchableMultiSelect
+                label="Preferred Annual Income Brackets"
+                placeholder={isLoadingIncomes ? "Loading income brackets from backend..." : "Select income brackets..."}
+                items={incomeRanges.map(inc => ({ id: inc.id, name: inc.label }))}
+                selectedIds={formData.income_range_ids}
+                onChange={ids => handleChange('income_range_ids', ids)}
+                isRequired={formData.is_income_required}
+                onRequiredChange={val => handleChange('is_income_required', val)}
+                disabled={isLoadingIncomes}
+                disabledPlaceholder="Loading income brackets from backend..."
+              />
+            </div>
+          </div>
 
           {/* ============================================================== */}
           {/* 2. Education & Profession                                      */}
           {/* ============================================================== */}
-          <Card className="border-border/80 shadow-xs hover:border-[#C44569]/30 transition-all">
-            <CardHeader className="pb-4 border-b border-border/40">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <GraduationCap className="h-5 w-5 stroke-[2.2]" />
-                </div>
-                <div>
-                  <CardTitle className="text-base font-bold text-foreground font-sans">
-                    2. Education & Profession
-                  </CardTitle>
-                  <CardDescription className="text-xs text-muted-foreground">
-                    Educational background and career qualifications
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-5">
-              {/* Preferred Educations */}
-              <SearchableMultiSelect
-                label="Preferred Educations"
-                placeholder="Search and select educations..."
-                items={educations.map(e => ({ id: e.id, name: e.name, extra: e.degree_level }))}
-                selectedIds={formData.education_ids}
-                onChange={ids => handleChange('education_ids', ids)}
-                isRequired={formData.is_education_required}
-                onRequiredChange={val => handleChange('is_education_required', val)}
-              />
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-3.5 w-3.5 text-blue-600" />
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                2. Education & Profession
+              </h2>
+            </div>
 
-              <Separator className="bg-border/60" />
+            {/* Preferred Educations */}
+            <SearchableMultiSelect
+              label="Preferred Educations"
+              placeholder={isLoadingEducations ? "Loading educations from backend..." : "Search and select educations..."}
+              items={educations.map(e => ({ id: e.id, name: e.name, extra: e.degree_level }))}
+              selectedIds={formData.education_ids}
+              onChange={ids => handleChange('education_ids', ids)}
+              isRequired={formData.is_education_required}
+              onRequiredChange={val => handleChange('is_education_required', val)}
+              disabled={isLoadingEducations}
+              disabledPlaceholder="Loading educations from backend..."
+            />
 
-              {/* Preferred Professions */}
-              <SearchableMultiSelect
-                label="Preferred Professions"
-                placeholder="Search and select professions..."
-                items={professions.map(p => ({ id: p.id, name: p.name, extra: p.category }))}
-                selectedIds={formData.profession_ids}
-                onChange={ids => handleChange('profession_ids', ids)}
-                isRequired={formData.is_profession_required}
-                onRequiredChange={val => handleChange('is_profession_required', val)}
-              />
-            </CardContent>
-          </Card>
+            <Separator className="bg-slate-100" />
+
+            {/* Preferred Professions */}
+            <SearchableMultiSelect
+              label="Preferred Professions"
+              placeholder={isLoadingProfessions ? "Loading professions from backend..." : "Search and select professions..."}
+              items={professions.map(p => ({ id: p.id, name: p.name, extra: p.category }))}
+              selectedIds={formData.profession_ids}
+              onChange={ids => handleChange('profession_ids', ids)}
+              isRequired={formData.is_profession_required}
+              onRequiredChange={val => handleChange('is_profession_required', val)}
+              disabled={isLoadingProfessions}
+              disabledPlaceholder="Loading professions from backend..."
+            />
+          </div>
 
           {/* ============================================================== */}
           {/* 3. Religion & Caste                                            */}
           {/* ============================================================== */}
-          <Card className="border-border/80 shadow-xs hover:border-[#C44569]/30 transition-all">
-            <CardHeader className="pb-4 border-b border-border/40">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Sparkles className="h-5 w-5 stroke-[2.2]" />
-                </div>
-                <div>
-                  <CardTitle className="text-base font-bold text-foreground font-sans">
-                    3. Religion & Caste
-                  </CardTitle>
-                  <CardDescription className="text-xs text-muted-foreground">
-                    Community and religious background criteria
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-5">
-              {/* Preferred Religions */}
-              <SearchableMultiSelect
-                label="Preferred Religions"
-                placeholder="Search and select religions..."
-                items={religions.map(r => ({ id: r.id, name: r.name }))}
-                selectedIds={formData.religion_ids}
-                onChange={ids => {
-                  handleChange('religion_ids', ids);
-                  handleChange('caste_ids', []); // reset downstream castes
-                }}
-                isRequired={formData.is_religion_required}
-                onRequiredChange={val => handleChange('is_religion_required', val)}
-              />
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                3. Religion & Caste
+              </h2>
+            </div>
 
-              <Separator className="bg-border/60" />
+            {/* Preferred Religions */}
+            <SearchableMultiSelect
+              label="Preferred Religions"
+              placeholder={isLoadingReligions ? "Loading religions from backend..." : "Search and select religions..."}
+              items={religions.map(r => ({ id: r.id, name: r.name }))}
+              selectedIds={formData.religion_ids}
+              onChange={ids => {
+                handleChange('religion_ids', ids);
+                handleChange('caste_ids', []);
+              }}
+              isRequired={formData.is_religion_required}
+              onRequiredChange={val => handleChange('is_religion_required', val)}
+              disabled={isLoadingReligions}
+              disabledPlaceholder="Loading religions from backend..."
+            />
 
-              {/* Preferred Castes */}
-              <SearchableMultiSelect
-                label="Preferred Castes"
-                placeholder="Search and select castes..."
-                items={castes.map(c => ({ id: c.id, name: c.name }))}
-                selectedIds={formData.caste_ids}
-                onChange={ids => handleChange('caste_ids', ids)}
-                isRequired={formData.is_caste_required}
-                onRequiredChange={val => handleChange('is_caste_required', val)}
-                disabled={formData.religion_ids.length === 0}
-                disabledPlaceholder="Select religion first to load castes..."
-              />
-            </CardContent>
-          </Card>
+            <Separator className="bg-slate-100" />
+
+            {/* Preferred Castes */}
+            <SearchableMultiSelect
+              label="Preferred Castes"
+              placeholder={isLoadingCastes ? "Loading castes from backend..." : "Search and select castes..."}
+              items={castes.map(c => ({ id: c.id, name: c.name }))}
+              selectedIds={formData.caste_ids}
+              onChange={ids => handleChange('caste_ids', ids)}
+              isRequired={formData.is_caste_required}
+              onRequiredChange={val => handleChange('is_caste_required', val)}
+              disabled={formData.religion_ids.length === 0 || isLoadingCastes}
+              disabledPlaceholder={formData.religion_ids.length === 0 ? "Select religion first to load castes..." : "Loading castes from backend..."}
+            />
+          </div>
 
           {/* ============================================================== */}
           {/* 4. Lifestyle & Languages                                       */}
           {/* ============================================================== */}
-          <Card className="border-border/80 shadow-xs hover:border-[#C44569]/30 transition-all">
-            <CardHeader className="pb-4 border-b border-border/40">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <Heart className="h-5 w-5 stroke-[2.2]" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base font-bold text-foreground font-sans">
-                      4. Lifestyle & Languages
-                    </CardTitle>
-                    <CardDescription className="text-xs text-muted-foreground">
-                      Manage diet, smoking, drinking habits and language preferences.
-                    </CardDescription>
-                  </div>
-                </div>
-
-                {/* Requirement toggles */}
-                <div className="flex items-center gap-4">
-                  <RequiredToggle
-                    label="Diet Required"
-                    checked={formData.is_diet_required}
-                    onChange={val => handleChange('is_diet_required', val)}
-                  />
-                  <RequiredToggle
-                    label="Lifestyle Required"
-                    checked={formData.is_lifestyle_required}
-                    onChange={val => handleChange('is_lifestyle_required', val)}
-                  />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              {/* Preferred Diets */}
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-foreground">Preferred Diets</Label>
-                <div className="flex flex-wrap gap-2">
-                  {['Vegetarian', 'Non-Vegetarian', 'Eggetarian', 'Vegan', 'Jain'].map(diet => {
-                    const isSelected = formData.preferred_diets.includes(diet);
-                    return (
-                      <button
-                        key={diet}
-                        type="button"
-                        onClick={() => toggleArrayValue('preferred_diets', diet)}
-                        className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-[#C44569] text-white shadow-2xs'
-                            : 'bg-background text-foreground border border-border hover:border-rose-300 hover:bg-rose-50/50'
-                        }`}
-                      >
-                        {isSelected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
-                        {diet}
-                      </button>
-                    );
-                  })}
-                </div>
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Heart className="h-3.5 w-3.5 text-blue-600" />
+                <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                  4. Lifestyle & Languages
+                </h2>
               </div>
 
-              <Separator className="bg-border/60" />
-
-              {/* Preferred Smoking Habits */}
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-foreground">Preferred Smoking Habits</Label>
-                <div className="flex flex-wrap gap-2">
-                  {['No', 'Occasionally', 'Yes'].map(smoke => {
-                    const isSelected = formData.preferred_smoking.includes(smoke);
-                    return (
-                      <button
-                        key={smoke}
-                        type="button"
-                        onClick={() => toggleArrayValue('preferred_smoking', smoke)}
-                        className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-[#C44569] text-white shadow-2xs'
-                            : 'bg-background text-foreground border border-border hover:border-rose-300 hover:bg-rose-50/50'
-                        }`}
-                      >
-                        {isSelected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
-                        {smoke}
-                      </button>
-                    );
-                  })}
-                </div>
+              {/* Requirement toggles */}
+              <div className="flex items-center gap-4">
+                <RequiredToggle
+                  label="Diet Required"
+                  checked={formData.is_diet_required}
+                  onChange={val => handleChange('is_diet_required', val)}
+                />
+                <RequiredToggle
+                  label="Lifestyle Required"
+                  checked={formData.is_lifestyle_required}
+                  onChange={val => handleChange('is_lifestyle_required', val)}
+                />
               </div>
+            </div>
 
-              <Separator className="bg-border/60" />
+            {/* Preferred Diets with Dropdown & Checkboxes */}
+            <StringMultiSelectDropdown
+              label="Preferred Diets"
+              placeholder="Select preferred diets..."
+              options={['Vegetarian', 'Non-Vegetarian', 'Eggetarian', 'Vegan', 'Jain']}
+              selectedValues={formData.preferred_diets}
+              onChange={vals => handleChange('preferred_diets', vals)}
+            />
 
-              {/* Preferred Drinking Habits */}
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-foreground">Preferred Drinking Habits</Label>
-                <div className="flex flex-wrap gap-2">
-                  {['No', 'Occasionally', 'Yes'].map(drink => {
-                    const isSelected = formData.preferred_drinking.includes(drink);
-                    return (
-                      <button
-                        key={drink}
-                        type="button"
-                        onClick={() => toggleArrayValue('preferred_drinking', drink)}
-                        className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-[#C44569] text-white shadow-2xs'
-                            : 'bg-background text-foreground border border-border hover:border-rose-300 hover:bg-rose-50/50'
-                        }`}
-                      >
-                        {isSelected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
-                        {drink}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+            <Separator className="bg-slate-100" />
 
-              <Separator className="bg-border/60" />
+            {/* Preferred Smoking Habits with Dropdown & Checkboxes */}
+            <StringMultiSelectDropdown
+              label="Preferred Smoking Habits"
+              placeholder="Select smoking preferences..."
+              options={['No', 'Occasionally', 'Yes']}
+              selectedValues={formData.preferred_smoking}
+              onChange={vals => handleChange('preferred_smoking', vals)}
+            />
 
-              {/* Preferred Languages */}
-              <SearchableMultiSelect
-                label="Preferred Languages"
-                placeholder="Search and select languages..."
-                items={languagesList.map(l => ({ id: l.id, name: l.name }))}
-                selectedIds={formData.language_ids}
-                onChange={ids => handleChange('language_ids', ids)}
-              />
-            </CardContent>
-          </Card>
+            <Separator className="bg-slate-100" />
+
+            {/* Preferred Drinking Habits with Dropdown & Checkboxes */}
+            <StringMultiSelectDropdown
+              label="Preferred Drinking Habits"
+              placeholder="Select drinking preferences..."
+              options={['No', 'Occasionally', 'Yes']}
+              selectedValues={formData.preferred_drinking}
+              onChange={vals => handleChange('preferred_drinking', vals)}
+            />
+
+            <Separator className="bg-slate-100" />
+
+            {/* Preferred Languages */}
+            <SearchableMultiSelect
+              label="Preferred Languages"
+              placeholder={isLoadingLanguages ? "Loading languages from backend..." : "Search and select languages..."}
+              items={languagesList.map(l => ({ id: l.id, name: l.name }))}
+              selectedIds={formData.language_ids}
+              onChange={ids => handleChange('language_ids', ids)}
+              disabled={isLoadingLanguages}
+              disabledPlaceholder="Loading languages from backend..."
+            />
+          </div>
 
           {/* ============================================================== */}
           {/* 5. Marital Status & Horoscope                                  */}
           {/* ============================================================== */}
-          <Card className="border-border/80 shadow-xs hover:border-[#C44569]/30 transition-all">
-            <CardHeader className="pb-4 border-b border-border/40">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Compass className="h-5 w-5 stroke-[2.2]" />
-                </div>
-                <div>
-                  <CardTitle className="text-base font-bold text-foreground font-sans">
-                    5. Marital Status & Horoscope
-                  </CardTitle>
-                  <CardDescription className="text-xs text-muted-foreground">
-                    Set marital status and astrological compatibility criteria.
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              {/* Preferred Marital Status */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-bold text-foreground">Preferred Marital Status</Label>
-                  <RequiredToggle
-                    checked={formData.is_marital_status_required}
-                    onChange={val => handleChange('is_marital_status_required', val)}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {['Never Married', 'Divorced', 'Widowed', 'Separated', 'Awaiting Divorce'].map(status => {
-                    const isSelected = formData.preferred_marital_statuses.includes(status);
-                    return (
-                      <button
-                        key={status}
-                        type="button"
-                        onClick={() => toggleArrayValue('preferred_marital_statuses', status)}
-                        className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-[#C44569] text-white shadow-2xs'
-                            : 'bg-background text-foreground border border-border hover:border-rose-300 hover:bg-rose-50/50'
-                        }`}
-                      >
-                        {isSelected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
-                        {status}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex items-center gap-2">
+              <Compass className="h-3.5 w-3.5 text-blue-600" />
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                5. Marital Status & Horoscope
+              </h2>
+            </div>
 
-              <Separator className="bg-border/60" />
+            {/* Preferred Marital Status with Dropdown & Checkboxes */}
+            <StringMultiSelectDropdown
+              label="Preferred Marital Status"
+              placeholder="Select marital statuses..."
+              options={['Never Married', 'Divorced', 'Widowed', 'Separated', 'Awaiting Divorce']}
+              selectedValues={formData.preferred_marital_statuses}
+              onChange={vals => handleChange('preferred_marital_statuses', vals)}
+              isRequired={formData.is_marital_status_required}
+              onRequiredChange={val => handleChange('is_marital_status_required', val)}
+            />
 
-              {/* Preferred Manglik Status */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-bold text-foreground">Preferred Manglik Status</Label>
-                  <RequiredToggle
-                    checked={formData.is_horoscope_required}
-                    onChange={val => handleChange('is_horoscope_required', val)}
-                  />
-                </div>
-                <Select
-                  value={formData.preferred_manglik}
-                  onChange={e => handleChange('preferred_manglik', e.target.value)}
-                  options={[
-                    { value: 'Does Not Matter / Any', label: 'Does Not Matter / Any' },
-                    { value: 'Manglik', label: 'Manglik' },
-                    { value: 'Non-Manglik', label: 'Non-Manglik' }
-                  ]}
+            <Separator className="bg-slate-100" />
+
+            {/* Preferred Manglik Status */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">Preferred Manglik Status</label>
+                <RequiredToggle
+                  checked={formData.is_horoscope_required}
+                  onChange={val => handleChange('is_horoscope_required', val)}
                 />
-                <p className="text-[11px] text-muted-foreground font-medium">
-                  Defines strictness of horoscope/dosha matching filter.
-                </p>
               </div>
-            </CardContent>
-          </Card>
+              <Select
+                value={formData.preferred_manglik}
+                onChange={e => handleChange('preferred_manglik', e.target.value)}
+                options={[
+                  { value: 'Does Not Matter / Any', label: 'Does Not Matter / Any' },
+                  { value: 'Manglik', label: 'Manglik' },
+                  { value: 'Non-Manglik', label: 'Non-Manglik' }
+                ]}
+              />
+              <p className="text-[11px] text-muted-foreground font-medium">
+                Defines strictness of horoscope/dosha matching filter.
+              </p>
+            </div>
+          </div>
 
           {/* ============================================================== */}
           {/* 6. Preferred Locations (Dependent Hierarchy)                   */}
           {/* ============================================================== */}
-          <Card className="border-border/80 shadow-xs hover:border-[#C44569]/30 transition-all">
-            <CardHeader className="pb-4 border-b border-border/40">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <MapPin className="h-5 w-5 stroke-[2.2]" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base font-bold text-foreground font-sans">
-                      6. Preferred Locations (Dependent Hierarchy)
-                    </CardTitle>
-                    <CardDescription className="text-xs text-muted-foreground">
-                      Country → State → District → Mandal → Village. Options load progressively based on selected parents.
-                    </CardDescription>
-                  </div>
-                </div>
-
-                <RequiredToggle
-                  checked={formData.is_location_required}
-                  onChange={val => handleChange('is_location_required', val)}
-                />
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-3.5 w-3.5 text-blue-600" />
+                <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                  6. Preferred Locations (Dependent Hierarchy)
+                </h2>
               </div>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-5">
-              {/* Level 1: Preferred Countries */}
-              <SearchableMultiSelect
-                label="Preferred Countries"
-                levelBadge="Level 1"
-                placeholder="Select Countries..."
-                items={countries.map(c => ({ id: c.id, name: c.name }))}
-                selectedIds={formData.country_ids}
-                onChange={ids => {
-                  handleChange('country_ids', ids);
-                  handleChange('state_ids', []);
-                  handleChange('district_ids', []);
-                  handleChange('mandal_ids', []);
-                  handleChange('village_ids', []);
-                }}
+
+              <RequiredToggle
+                checked={formData.is_location_required}
+                onChange={val => handleChange('is_location_required', val)}
               />
+            </div>
 
-              <Separator className="bg-border/60" />
+            {/* Level 1: Preferred Countries */}
+            <SearchableMultiSelect
+              label="Preferred Countries"
+              levelBadge="Level 1"
+              placeholder={isLoadingCountries ? "Loading countries from backend..." : "Select Countries..."}
+              items={countries.map(c => ({ id: c.id, name: c.name }))}
+              selectedIds={formData.country_ids}
+              onChange={ids => {
+                handleChange('country_ids', ids);
+                handleChange('state_ids', []);
+                handleChange('district_ids', []);
+                handleChange('mandal_ids', []);
+                handleChange('village_ids', []);
+              }}
+              disabled={isLoadingCountries}
+              disabledPlaceholder="Loading countries from backend..."
+            />
 
-              {/* Level 2: Preferred States */}
-              <SearchableMultiSelect
-                label="Preferred States"
-                levelBadge="Level 2"
-                placeholder="Select States..."
-                items={states.map(s => ({ id: s.id, name: s.name }))}
-                selectedIds={formData.state_ids}
-                onChange={ids => {
-                  handleChange('state_ids', ids);
-                  handleChange('district_ids', []);
-                  handleChange('mandal_ids', []);
-                  handleChange('village_ids', []);
-                }}
-                disabled={formData.country_ids.length === 0}
-                disabledPlaceholder="Select country first to load states..."
-              />
+            <Separator className="bg-slate-100" />
 
-              <Separator className="bg-border/60" />
+            {/* Level 2: Preferred States */}
+            <SearchableMultiSelect
+              label="Preferred States"
+              levelBadge="Level 2"
+              placeholder={isLoadingStates ? "Loading states from backend..." : "Select States..."}
+              items={states.map(s => ({ id: s.id, name: s.name }))}
+              selectedIds={formData.state_ids}
+              onChange={ids => {
+                handleChange('state_ids', ids);
+                handleChange('district_ids', []);
+                handleChange('mandal_ids', []);
+                handleChange('village_ids', []);
+              }}
+              disabled={formData.country_ids.length === 0 || isLoadingStates}
+              disabledPlaceholder={formData.country_ids.length === 0 ? "Select country first to load states..." : "Loading states from backend..."}
+            />
 
-              {/* Level 3: Preferred Districts */}
-              <SearchableMultiSelect
-                label="Preferred Districts"
-                levelBadge="Level 3"
-                placeholder="Select Districts..."
-                items={districts.map(d => ({ id: d.id, name: d.name }))}
-                selectedIds={formData.district_ids}
-                onChange={ids => {
-                  handleChange('district_ids', ids);
-                  handleChange('mandal_ids', []);
-                  handleChange('village_ids', []);
-                }}
-                disabled={formData.state_ids.length === 0}
-                disabledPlaceholder="Select state first to load districts..."
-              />
+            <Separator className="bg-slate-100" />
 
-              <Separator className="bg-border/60" />
+            {/* Level 3: Preferred Districts */}
+            <SearchableMultiSelect
+              label="Preferred Districts"
+              levelBadge="Level 3"
+              placeholder={isLoadingDistricts ? "Loading districts from backend..." : "Select Districts..."}
+              items={districts.map(d => ({ id: d.id, name: d.name }))}
+              selectedIds={formData.district_ids}
+              onChange={ids => {
+                handleChange('district_ids', ids);
+                handleChange('mandal_ids', []);
+                handleChange('village_ids', []);
+              }}
+              disabled={formData.state_ids.length === 0 || isLoadingDistricts}
+              disabledPlaceholder={formData.state_ids.length === 0 ? "Select state first to load districts..." : "Loading districts from backend..."}
+            />
 
-              {/* Level 4: Preferred Mandals / Cities */}
-              <SearchableMultiSelect
-                label="Preferred Mandals / Cities"
-                levelBadge="Level 4"
-                placeholder="Select Mandals..."
-                items={mandals.map(m => ({ id: m.id, name: m.name }))}
-                selectedIds={formData.mandal_ids}
-                onChange={ids => {
-                  handleChange('mandal_ids', ids);
-                  handleChange('village_ids', []);
-                }}
-                disabled={formData.district_ids.length === 0}
-                disabledPlaceholder="Select district first to load mandals/cities..."
-              />
+            <Separator className="bg-slate-100" />
 
-              <Separator className="bg-border/60" />
+            {/* Level 4: Preferred Mandals / Cities */}
+            <SearchableMultiSelect
+              label="Preferred Mandals / Cities"
+              levelBadge="Level 4"
+              placeholder={isLoadingMandals ? "Loading mandals from backend..." : "Select Mandals..."}
+              items={mandals.map(m => ({ id: m.id, name: m.name }))}
+              selectedIds={formData.mandal_ids}
+              onChange={ids => {
+                handleChange('mandal_ids', ids);
+                handleChange('village_ids', []);
+              }}
+              disabled={formData.district_ids.length === 0 || isLoadingMandals}
+              disabledPlaceholder={formData.district_ids.length === 0 ? "Select district first to load mandals/cities..." : "Loading mandals from backend..."}
+            />
 
-              {/* Level 5: Preferred Villages / Localities */}
-              <SearchableMultiSelect
-                label="Preferred Villages / Localities"
-                levelBadge="Level 5"
-                placeholder="Select Villages..."
-                items={villages.map(v => ({ id: v.id, name: v.name, extra: v.pincode }))}
-                selectedIds={formData.village_ids}
-                onChange={ids => handleChange('village_ids', ids)}
-                disabled={formData.mandal_ids.length === 0}
-                disabledPlaceholder="Select mandal/city first to load villages..."
-              />
-            </CardContent>
-          </Card>
+            <Separator className="bg-slate-100" />
+
+            {/* Level 5: Preferred Villages / Localities */}
+            <SearchableMultiSelect
+              label="Preferred Villages / Localities"
+              levelBadge="Level 5"
+              placeholder={isLoadingVillages ? "Loading villages from backend..." : "Select Villages..."}
+              items={villages.map(v => ({ id: v.id, name: v.name, extra: v.pincode }))}
+              selectedIds={formData.village_ids}
+              onChange={ids => handleChange('village_ids', ids)}
+              disabled={formData.mandal_ids.length === 0 || isLoadingVillages}
+              disabledPlaceholder={formData.mandal_ids.length === 0 ? "Select mandal/city first to load villages..." : "Loading villages from backend..."}
+            />
+          </div>
 
           {/* Bottom Action Bar */}
           <div className="flex items-center justify-between pt-4 pb-12">
-            <Button
+            <button
               type="button"
-              variant="outline"
               onClick={() => navigate(-1)}
-              className="text-xs"
+              className="text-xs font-bold px-6 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-400 active:scale-[0.98] transition-all cursor-pointer shadow-2xs"
             >
               Back
-            </Button>
+            </button>
             <Button
               type="submit"
-              variant="primary"
-              size="lg"
               disabled={isSubmitting}
               isLoading={isSubmitting}
-              className="px-8 shadow-md hover:shadow-lg text-xs font-bold"
+              className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg text-xs font-bold rounded-xl transition-all cursor-pointer"
             >
               Save Preferences
               <ArrowRight className="h-4 w-4 ml-1.5" />

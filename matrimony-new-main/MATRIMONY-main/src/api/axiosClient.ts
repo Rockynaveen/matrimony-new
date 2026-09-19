@@ -288,6 +288,6 @@ class AxiosClient {
 
 // Direct Railway backend URL (Railway handles CORS natively for localhost and production)
 export const RAILWAY_API_URL = 'https://matrimony-production-4b00.up.railway.app/api';
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || RAILWAY_API_URL;
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '/api' : RAILWAY_API_URL);
 
 export const axiosClient = new AxiosClient(API_BASE_URL);

@@ -10,6 +10,7 @@ interface MatchAvatarProps {
   className?: string;
   imgClassName?: string;
   alt?: string;
+  showName?: boolean;
 }
 
 export const isDummyImage = (url?: string | null): boolean => {
@@ -74,7 +75,8 @@ export const MatchAvatar: React.FC<MatchAvatarProps> = ({
   variant = 'card',
   className = '',
   imgClassName = '',
-  alt
+  alt,
+  showName = false
 }) => {
   const [hasError, setHasError] = useState(false);
 
@@ -132,9 +134,11 @@ export const MatchAvatar: React.FC<MatchAvatarProps> = ({
         </span>
       </div>
 
-      <span className="relative z-10 mt-2 text-[11px] font-bold text-amber-200/90 tracking-wide uppercase max-w-[85%] truncate text-center px-2">
-        {firstName || name || 'Member'}
-      </span>
+      {showName && (
+        <span className="relative z-10 mt-2 text-[11px] font-bold text-amber-200/90 tracking-wide uppercase max-w-[85%] truncate text-center px-2">
+          {firstName || name || 'Member'}
+        </span>
+      )}
     </div>
   );
 };

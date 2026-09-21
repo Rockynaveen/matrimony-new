@@ -1277,32 +1277,60 @@ export const SearchPage: React.FC = () => {
                           />
                         </button>
 
-                        {/* Bottom-Left Online / Offline Pill inside Photo */}
-                        <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-xs flex items-center gap-1.5 text-[9px] font-bold text-white">
+                        {/* Top-Left Online / Offline Pill inside Photo */}
+                        <div className="absolute top-2 left-2 z-10">
                           <span
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              isOnline ? 'bg-emerald-400' : 'bg-stone-400'
+                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md shadow-2xs ${
+                              isOnline
+                                ? 'bg-emerald-600/90 text-white'
+                                : 'bg-black/50 text-stone-200'
                             }`}
-                          />
-                          <span>{isOnline ? 'Online' : 'Offline'}</span>
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                isOnline ? 'bg-white animate-pulse' : 'bg-stone-300'
+                              }`}
+                            />
+                            <span>{isOnline ? 'Online' : 'Offline'}</span>
+                          </span>
                         </div>
                       </div>
 
                       {/* Center Info Column */}
                       <div className="flex-1 min-w-0 space-y-2">
-                        {/* Name + Verified Check Badge */}
-                        <div className="flex items-center gap-1.5">
-                          <h3
-                            onClick={() => handleViewProfile(profile)}
-                            className="font-bold text-base text-stone-900 hover:text-[#B81D4F] transition-colors cursor-pointer"
+                        {/* Name + Verified Check Badge + Online Status Badge */}
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <h3
+                              onClick={() => handleViewProfile(profile)}
+                              className="font-bold text-base sm:text-lg text-stone-900 hover:text-[#B81D4F] transition-colors cursor-pointer truncate"
+                              title={profile.name}
+                            >
+                              {profile.name}
+                            </h3>
+                            {profile.verified && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[10px] font-bold shrink-0">
+                                <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                                <span>Verified</span>
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Neat Online / Offline Status Badge */}
+                          <div
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border shrink-0 transition-all ${
+                              isOnline
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-2xs'
+                                : 'bg-stone-50 text-stone-500 border-stone-200'
+                            }`}
                           >
-                            {profile.name}
-                          </h3>
-                          {profile.verified && (
-                            <div className="h-4 w-4 rounded-full bg-[#B81D4F] text-white flex items-center justify-center text-[10px]">
-                              <Check className="h-2.5 w-2.5 stroke-[3]" />
-                            </div>
-                          )}
+                            <span
+                              className={`h-2 w-2 rounded-full shrink-0 ${
+                                isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'
+                              }`}
+                            />
+                            <span>{isOnline ? 'Active Now' : 'Offline'}</span>
+                          </div>
                         </div>
 
                         {/* Sub-row 1: Age | Height | Religion | Caste | Education */}
@@ -1457,21 +1485,55 @@ export const SearchPage: React.FC = () => {
                         >
                           <Heart className={`h-4 w-4 ${isShortlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
                         </button>
-                        <div className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-xs flex items-center gap-1.5 text-[9px] font-bold text-white z-10">
-                          <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-stone-400'}`} />
-                          <span>{isOnline ? 'Online' : 'Offline'}</span>
+                        {/* Top-Left Online Presence Pill */}
+                        <div className="absolute top-2.5 left-2.5 z-10">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md shadow-2xs ${
+                              isOnline
+                                ? 'bg-emerald-600/90 text-white'
+                                : 'bg-black/50 text-stone-200'
+                            }`}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                isOnline ? 'bg-white animate-pulse' : 'bg-stone-300'
+                              }`}
+                            />
+                            <span>{isOnline ? 'Online' : 'Offline'}</span>
+                          </span>
                         </div>
                       </div>
 
                       <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                         <div>
-                          <div className="flex items-center gap-1.5">
-                            <h4 className="font-bold text-base text-stone-900">{profile.name}</h4>
-                            {profile.verified && (
-                              <div className="h-3.5 w-3.5 rounded-full bg-[#B81D4F] text-white flex items-center justify-center text-[9px]">
-                                <Check className="h-2 w-2 stroke-[3]" />
-                              </div>
-                            )}
+                          {/* Name + Verified + Online Status Badge Header */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <h4
+                                onClick={() => handleViewProfile(profile)}
+                                className="font-bold text-base text-stone-900 hover:text-[#B81D4F] transition-colors cursor-pointer truncate"
+                                title={profile.name}
+                              >
+                                {profile.name}
+                              </h4>
+                              {profile.verified && (
+                                <div className="h-4 w-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0" title="Verified Member">
+                                  <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Online Badge */}
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${
+                                isOnline
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : 'bg-stone-50 text-stone-500 border-stone-200'
+                              }`}
+                            >
+                              <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'}`} />
+                              <span>{isOnline ? 'Online' : 'Offline'}</span>
+                            </span>
                           </div>
                           <p className="text-xs text-stone-600 mt-1">
                             {[

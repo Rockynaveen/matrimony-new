@@ -43,7 +43,8 @@ import {
   ChevronDown,
   ArrowRight,
   Info,
-  ShieldCheck
+  Sliders,
+  Trash2
 } from 'lucide-react';
 
 import {
@@ -52,6 +53,52 @@ import {
   StringMultiSelectDropdown
 } from '../../components/ui/SearchableMultiSelect';
 
+const defaultPreferencesFormData = {
+  // 1. Basic Preferences
+  minimum_age: 18,
+  maximum_age: 60,
+  is_age_required: false,
+  minimum_height: '' as number | string,
+  maximum_height: '' as number | string,
+  is_height_required: false,
+  income_range_ids: [] as number[],
+  is_income_required: false,
+
+  // 2. Education & Profession
+  education_ids: [] as number[],
+  is_education_required: false,
+  profession_ids: [] as number[],
+  is_profession_required: false,
+
+  // 3. Religion & Caste
+  religion_ids: [] as number[],
+  is_religion_required: false,
+  caste_ids: [] as number[],
+  is_caste_required: false,
+
+  // 4. Lifestyle & Languages
+  is_diet_required: false,
+  is_lifestyle_required: false,
+  preferred_diets: [] as string[],
+  preferred_smoking: [] as string[],
+  preferred_drinking: [] as string[],
+  language_ids: [] as number[],
+
+  // 5. Marital Status & Horoscope
+  preferred_marital_statuses: [] as string[],
+  is_marital_status_required: false,
+  preferred_manglik: 'Does Not Matter / Any',
+  is_horoscope_required: false,
+
+  // 6. Preferred Locations (Dependent Hierarchy)
+  is_location_required: false,
+  country_ids: [] as number[],
+  state_ids: [] as number[],
+  district_ids: [] as number[],
+  mandal_ids: [] as number[],
+  village_ids: [] as number[]
+};
+
 export const PreferencesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -59,54 +106,11 @@ export const PreferencesPage: React.FC = () => {
   const { showToast, markPreferencesCompleted } = useApp();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Form State adhering strictly to the user's requirements
-  const [formData, setFormData] = useState({
-    // 1. Basic Preferences
-    minimum_age: 18,
-    maximum_age: 60,
-    is_age_required: false,
-    minimum_height: '' as number | string,
-    maximum_height: '' as number | string,
-    is_height_required: false,
-    income_range_ids: [] as number[],
-    is_income_required: false,
-
-    // 2. Education & Profession
-    education_ids: [] as number[],
-    is_education_required: false,
-    profession_ids: [] as number[],
-    is_profession_required: false,
-
-    // 3. Religion & Caste
-    religion_ids: [] as number[],
-    is_religion_required: false,
-    caste_ids: [] as number[],
-    is_caste_required: false,
-
-    // 4. Lifestyle & Languages
-    is_diet_required: false,
-    is_lifestyle_required: false,
-    preferred_diets: [] as string[],
-    preferred_smoking: [] as string[],
-    preferred_drinking: [] as string[],
-    language_ids: [] as number[],
-
-    // 5. Marital Status & Horoscope
-    preferred_marital_statuses: [] as string[],
-    is_marital_status_required: false,
-    preferred_manglik: 'Does Not Matter / Any',
-    is_horoscope_required: false,
-
-    // 6. Preferred Locations (Dependent Hierarchy)
-    is_location_required: false,
-    country_ids: [] as number[],
-    state_ids: [] as number[],
-    district_ids: [] as number[],
-    mandal_ids: [] as number[],
-    village_ids: [] as number[]
-  });
+  const [formData, setFormData] = useState(defaultPreferencesFormData);
 
   // Dynamic Master Queries — strictly using live backend database data
   const { data: incomeRanges = [], isLoading: isLoadingIncomes } = useIncomeRanges();
@@ -330,6 +334,24 @@ export const PreferencesPage: React.FC = () => {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeletePreferences = async () => {
+    if (!window.confirm('Are you sure you want to reset and delete your partner preferences?')) {
+      return;
+    }
+    try {
+      setIsDeleting(true);
+      await partnerPreferencesService.deletePreferences();
+      localStorage.removeItem('partner_preferences_draft');
+      setFormData(defaultPreferencesFormData);
+      showToast('Partner preferences reset successfully', 'info');
+    } catch (err: any) {
+      console.error('Failed to delete partner preferences:', err);
+      showToast(err.message || 'Failed to delete partner preferences', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -769,7 +791,7 @@ export const PreferencesPage: React.FC = () => {
           </div>
 
           {/* Bottom Action Bar */}
-          <div className="flex items-center justify-between pt-4 pb-12">
+          <div className="flex items-center justify-between pt-4 pb-12 gap-3 flex-wrap">
             <button
               type="button"
               onClick={() => navigate(-1)}
@@ -777,15 +799,27 @@ export const PreferencesPage: React.FC = () => {
             >
               Back
             </button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              isLoading={isSubmitting}
-              className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg text-xs font-bold rounded-xl transition-all cursor-pointer"
-            >
-              Save Preferences
-              <ArrowRight className="h-4 w-4 ml-1.5" />
-            </Button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleDeletePreferences}
+                disabled={isDeleting || isSubmitting}
+                className="text-xs font-semibold px-4 py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-800 transition-all cursor-pointer flex items-center gap-1.5"
+                title="Delete your saved partner preferences from the server"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {isDeleting ? 'Resetting...' : 'Reset Preferences'}
+              </button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || isDeleting}
+                isLoading={isSubmitting}
+                className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg text-xs font-bold rounded-xl transition-all cursor-pointer"
+              >
+                Save Preferences
+                <ArrowRight className="h-4 w-4 ml-1.5" />
+              </Button>
+            </div>
           </div>
 
         </form>

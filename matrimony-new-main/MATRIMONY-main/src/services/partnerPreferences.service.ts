@@ -1,10 +1,10 @@
 // ──────────────────────────────────────────────────────────────
 // Partner Preferences Service
 // Endpoints:
-//   POST   /api/partner-preferences/create/
-//   GET    /api/partner-preferences/get/
-//   PUT    /api/partner-preferences/update/
-//   DELETE /api/partner-preferences/delete/
+//   POST   https://matrimony-production-4b00.up.railway.app/api/partner-preferences/create/
+//   GET    https://matrimony-production-4b00.up.railway.app/api/partner-preferences/get/
+//   PUT    https://matrimony-production-4b00.up.railway.app/api/partner-preferences/update/
+//   DELETE https://matrimony-production-4b00.up.railway.app/api/partner-preferences/delete/
 // ──────────────────────────────────────────────────────────────
 
 import { axiosClient } from '../api/axiosClient';
@@ -13,6 +13,18 @@ import type {
   PartnerPreferenceCreateRequest,
   PartnerPreferenceUpdateRequest,
 } from '../types/partnerPreferences.types';
+
+export const PARTNER_PREFERENCES_ENDPOINTS = {
+  CREATE: '/partner-preferences/create/',
+  GET: '/partner-preferences/get/',
+  UPDATE: '/partner-preferences/update/',
+  DELETE: '/partner-preferences/delete/',
+  // Explicit Production Railway Endpoints
+  PROD_CREATE: 'https://matrimony-production-4b00.up.railway.app/api/partner-preferences/create/',
+  PROD_GET: 'https://matrimony-production-4b00.up.railway.app/api/partner-preferences/get/',
+  PROD_UPDATE: 'https://matrimony-production-4b00.up.railway.app/api/partner-preferences/update/',
+  PROD_DELETE: 'https://matrimony-production-4b00.up.railway.app/api/partner-preferences/delete/',
+} as const;
 
 export class PartnerPreferenceServiceError extends Error {
   status: number;
@@ -44,7 +56,7 @@ export const partnerPreferencesService = {
    */
   async getPreferences(): Promise<PartnerPreferenceAPI | null> {
     try {
-      const res = await axiosClient.get<any>('/partner-preferences/get/');
+      const res = await axiosClient.get<any>(PARTNER_PREFERENCES_ENDPOINTS.GET);
 
       if (res.status === 200 && res.data) {
         const raw = res.data;
@@ -76,7 +88,7 @@ export const partnerPreferencesService = {
    */
   async createPreferences(payload: PartnerPreferenceCreateRequest): Promise<PartnerPreferenceAPI> {
     try {
-      const res = await axiosClient.post<PartnerPreferenceAPI>('/partner-preferences/create/', payload);
+      const res = await axiosClient.post<PartnerPreferenceAPI>(PARTNER_PREFERENCES_ENDPOINTS.CREATE, payload);
 
       if (res.status === 200 || res.status === 201) return res.data;
       if (res.status === 401) throw new PartnerPreferenceServiceError('Unauthorized — please log in', 401);
@@ -112,7 +124,7 @@ export const partnerPreferencesService = {
    */
   async updatePreferences(payload: PartnerPreferenceUpdateRequest): Promise<PartnerPreferenceAPI> {
     try {
-      const res = await axiosClient.put<PartnerPreferenceAPI>('/partner-preferences/update/', payload);
+      const res = await axiosClient.put<PartnerPreferenceAPI>(PARTNER_PREFERENCES_ENDPOINTS.UPDATE, payload);
 
       if (res.status === 200 || res.status === 201) return res.data;
       if (res.status === 401) throw new PartnerPreferenceServiceError('Unauthorized — please log in', 401);
@@ -157,7 +169,7 @@ export const partnerPreferencesService = {
    */
   async deletePreferences(): Promise<{ success: boolean; message: string }> {
     try {
-      const res = await axiosClient.delete<{ success: boolean; message: string }>('/partner-preferences/delete/');
+      const res = await axiosClient.delete<{ success: boolean; message: string }>(PARTNER_PREFERENCES_ENDPOINTS.DELETE);
 
       if (res.status === 200 || res.status === 204 || res.status === 404) {
         return res.data || { success: true, message: 'Partner preferences deleted' };

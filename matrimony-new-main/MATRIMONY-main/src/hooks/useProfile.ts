@@ -40,7 +40,8 @@ export function useProfile(
   return useQuery<ProfileOutAPI | null, Error>({
     queryKey: profileKeys.detail(),
     queryFn: () => profileService.getProfile(),
-    staleTime: 5 * 60 * 1000,   // 5 mins
+    staleTime: 0,
+    refetchOnMount: 'always',
     retry: false,
     ...options,
   });

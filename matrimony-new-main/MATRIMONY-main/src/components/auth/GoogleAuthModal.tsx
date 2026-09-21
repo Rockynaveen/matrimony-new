@@ -122,8 +122,8 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       setPasswordError('Password is required.');
       return;
     }
-    if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters.');
+    if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters.');
       return;
     }
 
@@ -301,7 +301,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Minimum 6 characters"
+                  placeholder="Minimum 8 characters"
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);

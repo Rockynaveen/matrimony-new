@@ -20,7 +20,7 @@ export const partnerPreferencesKeys = {
   detail: () => [...partnerPreferencesKeys.all, 'detail'] as const,
 };
 
-// ─── GET /api/partner-preferences/ ────────────────────────────
+// ─── GET /api/partner-preferences/get/ ────────────────────────
 
 export function usePartnerPreferences(
   options?: Omit<UseQueryOptions<PartnerPreferenceAPI | null, Error>, 'queryKey' | 'queryFn'>,
@@ -34,7 +34,7 @@ export function usePartnerPreferences(
   });
 }
 
-// ─── POST /api/partner-preferences/ ───────────────────────────
+// ─── POST /api/partner-preferences/create/ ─────────────────────
 
 export function useCreatePartnerPreferences() {
   const queryClient = useQueryClient();
@@ -47,7 +47,7 @@ export function useCreatePartnerPreferences() {
   });
 }
 
-// ─── PUT /api/partner-preferences/ ────────────────────────────
+// ─── PUT /api/partner-preferences/update/ ──────────────────────
 
 export function useUpdatePartnerPreferences() {
   const queryClient = useQueryClient();
@@ -60,7 +60,7 @@ export function useUpdatePartnerPreferences() {
   });
 }
 
-// ─── DELETE /api/partner-preferences/ ─────────────────────────
+// ─── DELETE /api/partner-preferences/delete/ ───────────────────
 
 export function useDeletePartnerPreferences() {
   const queryClient = useQueryClient();

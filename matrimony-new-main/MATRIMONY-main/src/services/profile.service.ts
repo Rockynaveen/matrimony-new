@@ -255,7 +255,14 @@ export const profileService = {
       // ignore
     }
     const local = localStorage.getItem('vivah_mock_profile');
-    return local ? JSON.parse(local) : null;
+    if (local) {
+      try { return JSON.parse(local); } catch {}
+    }
+    const draft = localStorage.getItem('user_profile_draft');
+    if (draft) {
+      try { return JSON.parse(draft); } catch {}
+    }
+    return null;
   },
 
   /**

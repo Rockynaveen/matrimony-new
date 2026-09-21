@@ -15,6 +15,50 @@ export interface GoogleLoginSchemaAPI {
   phone?: string | null;
 }
 
+function extractApiErrorMessage(data: any, fallback: string): string {
+  if (!data) return fallback;
+  if (typeof data === 'string') {
+    const msgMatch = data.match(/'msg':\s*'([^']+)'/) || data.match(/"msg":\s*"([^"]+)"/);
+    if (msgMatch && msgMatch[1]) {
+      return msgMatch[1].replace(/^Value error,\s*/i, '');
+    }
+    const errMatch = data.match(/'error':\s*'([^']+)'/) || data.match(/"error":\s*"([^"]+)"/);
+    if (errMatch && errMatch[1]) {
+      return errMatch[1];
+    }
+    return data;
+  }
+  if (typeof data.message === 'string' && data.message) {
+    return data.message;
+  }
+  if (Array.isArray(data.detail) && data.detail.length > 0) {
+    const first = data.detail[0];
+    if (typeof first === 'string') return first;
+    if (first && typeof first.msg === 'string') {
+      return first.msg.replace(/^Value error,\s*/i, '');
+    }
+    if (first && typeof first.error === 'string') {
+      return first.error;
+    }
+    return JSON.stringify(data.detail);
+  }
+  if (typeof data.detail === 'string' && data.detail) {
+    const msgMatch = data.detail.match(/'msg':\s*'([^']+)'/) || data.detail.match(/"msg":\s*"([^"]+)"/);
+    if (msgMatch && msgMatch[1]) {
+      return msgMatch[1].replace(/^Value error,\s*/i, '');
+    }
+    const errMatch = data.detail.match(/'error':\s*'([^']+)'/) || data.detail.match(/"error":\s*"([^"]+)"/);
+    if (errMatch && errMatch[1]) {
+      return errMatch[1];
+    }
+    return data.detail;
+  }
+  if (typeof data.error === 'string' && data.error) {
+    return data.error;
+  }
+  return fallback;
+}
+
 export const googleAuthApi = {
   /**
    * POST /api/google-register
@@ -58,8 +102,8 @@ export const googleAuthApi = {
       };
     }
 
-    const errMsg = (response.data as any)?.message || (response.data as any)?.detail || 'Google registration failed.';
-    throw new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
+    const errMsg = extractApiErrorMessage(response.data, 'Google registration failed.');
+    throw new Error(errMsg);
   },
 
   /**
@@ -97,7 +141,7 @@ export const googleAuthApi = {
       };
     }
 
-    const errMsg = (response.data as any)?.message || (response.data as any)?.detail || 'Google login failed.';
-    throw new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
+    const errMsg = extractApiErrorMessage(response.data, 'Google login failed.');
+    throw new Error(errMsg);
   }
 };

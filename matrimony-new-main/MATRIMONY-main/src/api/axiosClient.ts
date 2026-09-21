@@ -194,7 +194,19 @@ class AxiosClient {
   }
 
   private buildUrl(url: string, params?: Record<string, any>): string {
-    const fullUrl = `${this.baseURL}${url}`;
+    let fullUrl: string;
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      fullUrl = url;
+    } else if (url.startsWith('/api/') && this.baseURL.endsWith('/api')) {
+      fullUrl = `${this.baseURL}${url.substring(4)}`;
+    } else if (url.startsWith('/') && this.baseURL.endsWith('/')) {
+      fullUrl = `${this.baseURL.slice(0, -1)}${url}`;
+    } else if (!url.startsWith('/') && !this.baseURL.endsWith('/')) {
+      fullUrl = `${this.baseURL}/${url}`;
+    } else {
+      fullUrl = `${this.baseURL}${url}`;
+    }
+
     if (!params || Object.keys(params).length === 0) return fullUrl;
     const query = new URLSearchParams();
     for (const [key, val] of Object.entries(params)) {
@@ -208,13 +220,35 @@ class AxiosClient {
     return `${fullUrl}${sep}${queryString}`;
   }
 
+  private async executeFetch(
+    url: string,
+    init: RequestInit,
+    params?: Record<string, any>
+  ): Promise<Response> {
+    const primaryUrl = this.buildUrl(url, params);
+    try {
+      return await fetch(primaryUrl, init);
+    } catch (primaryErr: any) {
+      // If primary fetch threw (e.g. proxy offline or network error), fallback to direct Railway URL
+      if (this.baseURL.startsWith('/') && !primaryUrl.startsWith('http')) {
+        const fallbackUrl = this.buildUrl(`${RAILWAY_API_URL}${url.startsWith('/') ? '' : '/'}${url}`, params);
+        console.warn(`[AxiosClient] Proxy fetch to ${primaryUrl} failed (${primaryErr.message}). Retrying via ${fallbackUrl}...`);
+        return await fetch(fallbackUrl, init);
+      }
+      throw primaryErr;
+    }
+  }
+
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    const targetUrl = this.buildUrl(url, config?.params);
     return this.handleResponse(() =>
-      fetch(targetUrl, {
-        method: 'GET',
-        headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) }
-      })
+      this.executeFetch(
+        url,
+        {
+          method: 'GET',
+          headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) }
+        },
+        config?.params
+      )
     );
   }
 
@@ -222,67 +256,82 @@ class AxiosClient {
     if (body instanceof FormData) {
       return this.postForm<T>(url, body, config);
     }
-    const targetUrl = this.buildUrl(url, config?.params);
     return this.handleResponse(() =>
-      fetch(targetUrl, {
-        method: 'POST',
-        headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) },
-        body: body !== undefined ? JSON.stringify(body) : undefined
-      })
+      this.executeFetch(
+        url,
+        {
+          method: 'POST',
+          headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) },
+          body: body !== undefined ? JSON.stringify(body) : undefined
+        },
+        config?.params
+      )
     );
   }
 
   async patch<T>(url: string, body?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    const targetUrl = this.buildUrl(url, config?.params);
     return this.handleResponse(() =>
-      fetch(targetUrl, {
-        method: 'PATCH',
-        headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) },
-        body: body !== undefined ? JSON.stringify(body) : undefined
-      })
+      this.executeFetch(
+        url,
+        {
+          method: 'PATCH',
+          headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) },
+          body: body !== undefined ? JSON.stringify(body) : undefined
+        },
+        config?.params
+      )
     );
   }
 
   async put<T>(url: string, body?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    const targetUrl = this.buildUrl(url, config?.params);
     return this.handleResponse(() =>
-      fetch(targetUrl, {
-        method: 'PUT',
-        headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) },
-        body: body !== undefined ? JSON.stringify(body) : undefined
-      })
+      this.executeFetch(
+        url,
+        {
+          method: 'PUT',
+          headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) },
+          body: body !== undefined ? JSON.stringify(body) : undefined
+        },
+        config?.params
+      )
     );
   }
 
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    const targetUrl = this.buildUrl(url, config?.params);
     return this.handleResponse(() =>
-      fetch(targetUrl, {
-        method: 'DELETE',
-        headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) }
-      })
+      this.executeFetch(
+        url,
+        {
+          method: 'DELETE',
+          headers: { ...this.getAuthHeaders(), ...(config?.headers || {}) }
+        },
+        config?.params
+      )
     );
   }
 
   async postForm<T>(url: string, formData: FormData, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    const targetUrl = this.buildUrl(url, config?.params);
-    return this.handleResponse(() => {
-      const token = localStorage.getItem('access_token');
-      const csrfToken = getCsrfToken();
-      const headers: Record<string, string> = { ...(config?.headers || {}) };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      if (csrfToken) {
-        headers['X-CSRFToken'] = csrfToken;
-      }
-      return fetch(targetUrl, {
-        method: 'POST',
-        headers,
-        body: formData,
-        credentials: 'same-origin'
-      });
-    });
+    const token = localStorage.getItem('access_token');
+    const csrfToken = getCsrfToken();
+    const headers: Record<string, string> = { ...(config?.headers || {}) };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (csrfToken) {
+      headers['X-CSRFToken'] = csrfToken;
+    }
+    return this.handleResponse(() =>
+      this.executeFetch(
+        url,
+        {
+          method: 'POST',
+          headers,
+          body: formData,
+          credentials: 'same-origin'
+        },
+        config?.params
+      )
+    );
   }
 }
 

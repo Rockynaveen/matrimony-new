@@ -12,6 +12,7 @@ export const chatKeys = {
   all: ['chat'] as const,
   conversations: () => [...chatKeys.all, 'conversations'] as const,
   messages: (roomId: number | string) => [...chatKeys.all, 'messages', String(roomId)] as const,
+  image: (roomId: number | string, messageId: number | string) => [...chatKeys.all, 'image', String(roomId), String(messageId)] as const,
   activeCall: (roomId?: number | string) => [...chatKeys.all, 'activeCall', String(roomId || 'global')] as const,
 };
 
@@ -207,6 +208,19 @@ export function useSendImageMessage() {
       queryClient.invalidateQueries({ queryKey: chatKeys.messages(variables.roomId) });
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
     }
+  });
+}
+
+// 10.5 Get Image Message (GET /api/chat/send-image?room_id=1&message_id=1)
+export function useGetImageMessage(roomId?: number | string, messageId?: number | string, enabled: boolean = true) {
+  const hasToken = !!localStorage.getItem('access_token');
+  const valid = Boolean(roomId && messageId);
+  return useQuery({
+    queryKey: chatKeys.image(roomId || 0, messageId || 0),
+    queryFn: () => chatApi.getImageMessage(roomId!, messageId!),
+    enabled: hasToken && enabled && valid,
+    staleTime: 60000,
+    retry: 1
   });
 }
 

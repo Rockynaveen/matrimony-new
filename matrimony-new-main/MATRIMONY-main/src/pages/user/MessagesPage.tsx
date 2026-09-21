@@ -54,7 +54,8 @@ import {
   useActiveCall
 } from '../../hooks/useChat';
 import { useRecommendations, useShortlist, useReceivedInterests, useSentInterests } from '../../hooks/useMatching';
-import { formatMediaUrl } from '../../api/chatApi';
+import { chatApi, formatMediaUrl } from '../../api/chatApi';
+import { ChatImageAttachment } from '../../components/chat/ChatImageAttachment';
 import type { ChatMessageOut } from '../../types/chat.types';
 
 const formatMessageTimestamp = (rawTs?: string | number): string => {
@@ -928,8 +929,17 @@ export const MessagesPage: React.FC = () => {
                     const msgType = msg.message_type || 'text';
                     const isSeenByReceiver = Boolean(msg.read || (msg as any).is_read || (msg as any).seen || msg.status === 'read' || msg.status === 'seen');
                     const rawMediaUrl = msg.attachment_url || (msg as any).image || (msg as any).image_url || (msg as any).url || (msg as any).file || (msg as any).voice || (msg as any).video || (msg as any).attachment;
-                    const mediaUrl = formatMediaUrl(rawMediaUrl);
-                    const hasAttachment = Boolean(mediaUrl || msgType === 'image' || msgType === 'video' || msgType === 'voice' || msgType === 'document' || msgType === 'attachment');
+                    let mediaUrl = formatMediaUrl(rawMediaUrl);
+                    const isImageMsg = msgType === 'image' || Boolean((msg as any).image || (msg as any).image_url) || Boolean(mediaUrl && (String(mediaUrl).match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || String(mediaUrl).includes('send-image')));
+
+                    if (!mediaUrl && isImageMsg) {
+                      const rId = msg.room_id || numericRoomId;
+                      const mId = msg.id || (msg as any).message_id;
+                      if (rId && mId) {
+                        mediaUrl = chatApi.getImageMessageUrl(rId, mId);
+                      }
+                    }
+                    const hasAttachment = Boolean(mediaUrl || isImageMsg || msgType === 'video' || msgType === 'voice' || msgType === 'document' || msgType === 'attachment');
 
                     return (
                       <div
@@ -968,9 +978,15 @@ export const MessagesPage: React.FC = () => {
                               {/* Media / Voice / File Rendering */}
                               {hasAttachment && (
                                 <div className="mb-1 rounded-2xl overflow-hidden border border-stone-300 bg-stone-100 max-w-xs sm:max-w-sm shadow-2xs">
-                                  {msgType === 'image' || (mediaUrl && (String(mediaUrl).match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || String(mediaUrl).startsWith('blob:') || String(mediaUrl).startsWith('data:image'))) ? (
-                                    <div className="relative group/img cursor-pointer" onClick={() => setPreviewModalImageUrl(mediaUrl || null)}>
-                                      <img src={mediaUrl} alt="Attachment" className="w-full h-auto object-cover max-h-60 rounded-2xl" />
+                                  {isImageMsg ? (
+                                    <div className="relative group/img cursor-pointer" onClick={() => setPreviewModalImageUrl(mediaUrl || (msg.room_id && msg.id ? chatApi.getImageMessageUrl(msg.room_id, msg.id) : null))}>
+                                      <ChatImageAttachment
+                                        roomId={msg.room_id || numericRoomId}
+                                        messageId={msg.id}
+                                        src={mediaUrl}
+                                        alt="Attachment"
+                                        className="w-full h-auto object-cover max-h-60 rounded-2xl"
+                                      />
                                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
                                         <Maximize2 className="h-5 w-5" />
                                       </div>
@@ -1204,7 +1220,7 @@ export const MessagesPage: React.FC = () => {
             onClick={() => setPreviewModalImageUrl(null)}
           >
             <div className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl" onClick={e => e.stopPropagation()}>
-              <img src={previewModalImageUrl} alt="Preview" className="w-full h-auto max-h-[85vh] object-contain rounded-2xl" />
+              <ChatImageAttachment src={previewModalImageUrl} alt="Preview" className="w-full h-auto max-h-[85vh] object-contain rounded-2xl" />
               <button
                 onClick={() => setPreviewModalImageUrl(null)}
                 className="absolute top-3 right-3 h-9 w-9 bg-black/60 hover:bg-black text-white rounded-full flex items-center justify-center shadow-lg"

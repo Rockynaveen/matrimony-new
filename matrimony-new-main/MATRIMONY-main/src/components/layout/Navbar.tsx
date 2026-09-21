@@ -35,7 +35,27 @@ import { useShortlistStore } from '../../store/useShortlistStore';
 import { useChatHeartbeat } from '../../hooks/useChat';
 
 export const Navbar: React.FC = () => {
-  const { currentUser, verificationStatus, notifications, unreadCount, markNotificationRead, logout, isAuthenticated, onboardingStatus, getPendingRoute } = useApp();
+  const navigate = useNavigate();
+  const { currentUser, verificationStatus, notifications, unreadCount, markNotificationRead, logout, isAuthenticated, onboardingStatus, getPendingRoute, showToast } = useApp();
+
+  const handleRegisterClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isAuthenticated) {
+      navigate('/dashboard');
+      return;
+    }
+    const hasRegistered = localStorage.getItem('has_registered') === 'true'
+      || !!localStorage.getItem('last_registered_phone')
+      || !!localStorage.getItem('last_registered_email');
+
+    if (hasRegistered) {
+      showToast('You are already registered! Please log in.');
+      const lastPhone = localStorage.getItem('last_registered_phone');
+      navigate(lastPhone ? `/login?phone=${lastPhone}` : '/login');
+    } else {
+      navigate('/register');
+    }
+  };
   
   // Continuous global online status heartbeat for logged-in user
   useChatHeartbeat(undefined, isAuthenticated);
@@ -61,7 +81,6 @@ export const Navbar: React.FC = () => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   
-  const navigate = useNavigate();
   const location = useLocation();
 
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -143,7 +162,7 @@ export const Navbar: React.FC = () => {
                   Login
                 </Button>
               </Link>
-              <Link to="/register">
+              <Link to="/register" onClick={handleRegisterClick}>
                 <Button size="sm" variant="primary" className="font-bold text-xs bg-[#8B1E3F] hover:bg-[#721733] text-white shadow-md">
                   Register Free
                 </Button>
@@ -349,7 +368,7 @@ export const Navbar: React.FC = () => {
                   Login
                 </Button>
               </Link>
-              <Link to="/register" onClick={() => setIsMobileMenuOpen(false)} className="flex-1">
+              <Link to="/register" onClick={(e) => { setIsMobileMenuOpen(false); handleRegisterClick(e); }} className="flex-1">
                 <Button size="sm" variant="primary" className="w-full font-bold text-xs bg-[#8B1E3F] text-white">
                   Register Free
                 </Button>

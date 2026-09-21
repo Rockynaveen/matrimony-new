@@ -462,9 +462,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const skipVerificationForSession = () => {
+    localStorage.setItem('verification_skipped', 'true');
     sessionStorage.setItem('verification_skipped_session', 'true');
     setOnboardingStatusState(prev => ({
       ...prev,
+      verification_skipped: true,
       verification_skipped_for_session: true
     }));
     useOnboardingStore.getState().skipVerificationForSession();
@@ -839,6 +841,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     });
 
+    localStorage.setItem('has_registered', 'true');
+    if (userEmail) localStorage.setItem('last_registered_email', userEmail);
+    if (payload.phone) localStorage.setItem('last_registered_phone', payload.phone);
+
     showToastStore('Logged in successfully!');
 
     const userOnboarding = getStoredOnboardingStatus(userEmail);
@@ -896,6 +902,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       });
 
+      localStorage.setItem('has_registered', 'true');
+      if (payload.phone) localStorage.setItem('last_registered_phone', payload.phone);
+      if (payload.email) localStorage.setItem('last_registered_email', payload.email);
+
       const newStatus = saveStoredOnboardingStatus({
         registration_completed: true,
         registration_method: 'manual',
@@ -922,6 +932,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const emailName = extractNameFromEmail(payload.email);
     const finalName = (fullNamePayload && !isGenericName(fullNamePayload)) ? fullNamePayload : emailName;
 
+    localStorage.setItem('has_registered', 'true');
+    if (payload.phone) localStorage.setItem('last_registered_phone', payload.phone);
+    if (payload.email) localStorage.setItem('last_registered_email', payload.email);
     localStorage.setItem('logged_in_name', finalName);
     localStorage.setItem('logged_in_email', payload.email);
     localStorage.setItem('login_method', 'google_register');
@@ -991,6 +1004,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('logged_in_email', userEmail);
     }
 
+    localStorage.setItem('has_registered', 'true');
+    if (userEmail) localStorage.setItem('last_registered_email', userEmail);
     localStorage.setItem('login_method', 'google');
     localStorage.removeItem('google_avatar');
 

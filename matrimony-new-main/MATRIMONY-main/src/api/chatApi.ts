@@ -1,4 +1,4 @@
-import { axiosClient } from './axiosClient';
+import { axiosClient, RAILWAY_API_URL } from './axiosClient';
 import type {
   ConversationOut,
   ChatMessageOut,
@@ -69,6 +69,8 @@ export const toNumericId = (val: any): number => {
   }
   return 0;
 };
+
+export const imageBlobCache = new Map<string, string>();
 
 export const chatApi = {
   // 1. GET /api/chat/conversations
@@ -147,7 +149,7 @@ export const chatApi = {
       })
       .map((item, idx) => {
         const rawUrl = item.attachment_url || item.image || item.image_url || item.url || item.file || item.file_url || item.media || item.audio || item.voice || item.video || (item.attachment && (typeof item.attachment === 'string' ? item.attachment : item.attachment?.url || item.attachment?.file || item.attachment?.image)) || undefined;
-        const attachmentUrl = formatMediaUrl(rawUrl);
+        let attachmentUrl = formatMediaUrl(rawUrl);
         let detectedType = item.message_type || item.type;
         if (!detectedType && attachmentUrl) {
           const lowerUrl = String(attachmentUrl).toLowerCase();
@@ -161,19 +163,30 @@ export const chatApi = {
             detectedType = 'attachment';
           }
         }
+        if (item.image || item.image_url || detectedType === 'image') {
+          detectedType = 'image';
+          const msgId = item.id || item.message_id;
+          const rId = Number(item.room_id || roomId);
+          if (!attachmentUrl && rId && msgId) {
+            attachmentUrl = `${RAILWAY_API_URL}/chat/send-image?room_id=${rId}&message_id=${msgId}`;
+          }
+        }
         const isRead = item.read ?? item.is_read ?? item.seen ?? (item.status === 'read' || item.status === 'seen');
         const senderId = parseUserId(item.sender_id || item.sender || item.from_user || item.user_id || item.from_user_id || 0);
         const receiverId = parseUserId(item.receiver_id || item.receiver || item.to_user || item.recipient_id || item.to_user_id || roomId);
+        const msgId = item.id || item.message_id || `msg_${Date.now()}_${idx}`;
+        const roomNum = Number(item.room_id || roomId);
 
         return {
-          id: item.id || item.message_id || `msg_${Date.now()}_${idx}`,
-          room_id: Number(item.room_id || roomId),
+          id: msgId,
+          room_id: roomNum,
           sender_id: senderId,
           receiver_id: receiverId,
           message: item.message || item.content || item.text || '',
           content: item.content || item.message || item.text || '',
           message_type: detectedType || 'text',
           attachment_url: attachmentUrl,
+          image_url: detectedType === 'image' ? (attachmentUrl || `${RAILWAY_API_URL}/chat/send-image?room_id=${roomNum}&message_id=${msgId}`) : undefined,
           status: item.status || (isRead ? 'read' : 'delivered'),
           created_at: item.created_at || item.timestamp || item.created_on || new Date().toISOString(),
           timestamp: item.timestamp || item.created_at || item.created_on || new Date().toISOString(),
@@ -710,6 +723,66 @@ export const chatApi = {
     } catch {}
 
     return createdMsg;
+  },
+
+  // 10.5 GET /api/chat/send-image?room_id=1&message_id=1
+  // Retrieves image messages and attachments in chat rooms
+  getImageMessage: async (roomId: number | string, messageId: number | string): Promise<any> => {
+    const rId = toNumericId(roomId);
+    const mId = toNumericId(messageId) || messageId;
+    const res = await axiosClient.get('/chat/send-image', {
+      params: {
+        room_id: rId,
+        message_id: mId
+      }
+    });
+    return res.data;
+  },
+
+  // Get raw GET URL for image endpoint
+  getImageMessageUrl: (roomId: number | string, messageId: number | string): string => {
+    const rId = toNumericId(roomId);
+    const mId = toNumericId(messageId) || messageId;
+    return `${RAILWAY_API_URL}/chat/send-image?room_id=${rId}&message_id=${mId}`;
+  },
+
+  // Fetch authenticated image and convert to Blob URL (caching in memory)
+  fetchImageBlobUrl: async (roomId: number | string, messageId: number | string): Promise<string> => {
+    const rId = toNumericId(roomId);
+    const mId = toNumericId(messageId) || messageId;
+    const cacheKey = `${rId}_${mId}`;
+    if (imageBlobCache.has(cacheKey)) {
+      return imageBlobCache.get(cacheKey)!;
+    }
+
+    const token = localStorage.getItem('access_token');
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const url = `${RAILWAY_API_URL}/chat/send-image?room_id=${rId}&message_id=${mId}`;
+    const response = await fetch(url, { headers });
+
+    if (!response.ok) {
+      throw new Error(`Failed to load chat image (${response.status})`);
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const json = await response.json();
+      const direct = json.image_url || json.url || json.attachment_url || json.image || json.data?.image_url || json.data?.url || (json.images && json.images[0]?.image_url);
+      if (direct) {
+        const formatted = formatMediaUrl(direct) || direct;
+        imageBlobCache.set(cacheKey, formatted);
+        return formatted;
+      }
+    }
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    imageBlobCache.set(cacheKey, objectUrl);
+    return objectUrl;
   },
 
   // 11. POST /api/chat/send-video

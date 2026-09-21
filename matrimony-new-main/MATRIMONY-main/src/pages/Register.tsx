@@ -32,12 +32,23 @@ export const Register: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const maxAllowedDob = getMaxDobDateString();
 
-  // Redirect if already logged in
+  // Redirect if already logged in or previously registered
   useEffect(() => {
     if (isAuthenticated || localStorage.getItem('access_token')) {
       navigate(redirectUrl || '/dashboard', { replace: true });
+      return;
     }
-  }, [isAuthenticated, redirectUrl, navigate]);
+    const force = searchParams.get('force') === 'true';
+    const hasRegistered = localStorage.getItem('has_registered') === 'true'
+      || !!localStorage.getItem('last_registered_phone')
+      || !!localStorage.getItem('last_registered_email');
+
+    if (hasRegistered && !force) {
+      showToast('You are already registered! Please log in to your account.');
+      const lastPhone = localStorage.getItem('last_registered_phone');
+      navigate(lastPhone ? `/login?phone=${lastPhone}` : '/login', { replace: true });
+    }
+  }, [isAuthenticated, redirectUrl, navigate, searchParams, showToast]);
 
   // OTP State
   const [otpSent, setOtpSent] = useState(false);
@@ -81,9 +92,14 @@ export const Register: React.FC = () => {
     } catch (err: any) {
       const msg = err.message || 'Failed to send OTP. Please try again.';
       const lower = msg.toLowerCase();
-      if (lower.includes('already') || lower.includes('registered') || lower.includes('please login')) {
+      if (lower.includes('already') || lower.includes('registered') || lower.includes('please login') || lower.includes('exists')) {
         setAlreadyRegisteredPhone(cleanPhone);
-        showToast('This mobile number is already registered. Please log in or reset your password.');
+        localStorage.setItem('has_registered', 'true');
+        localStorage.setItem('last_registered_phone', cleanPhone);
+        showToast('This mobile number is already registered. Please log in.');
+        setTimeout(() => {
+          navigate(`/login?phone=${cleanPhone}`);
+        }, 1500);
       } else {
         showToast(msg);
       }

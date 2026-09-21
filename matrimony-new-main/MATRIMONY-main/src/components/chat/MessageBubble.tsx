@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CheckCheck, Check, Trash2, FileText, Download } from 'lucide-react';
 import { AudioBubblePlayer } from './AudioBubblePlayer';
+import { ChatImageAttachment } from './ChatImageAttachment';
 import type { ChatMessageOut } from '../../types/chat.types';
 
 interface MessageBubbleProps {
@@ -22,11 +23,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 }) => {
   const msgType = message.message_type || 'text';
   const isAudio = msgType === 'voice' || msgType === 'audio' || Boolean(message.voice_url || message.audio_url);
-  const isImage = msgType === 'image' || Boolean(message.image_url);
+  const isImage = msgType === 'image' || Boolean(message.image_url) || Boolean(message.attachment_url && (message.attachment_url.includes('send-image') || message.attachment_url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i)));
   const isVideo = msgType === 'video' || Boolean(message.video_url);
   const isDoc = msgType === 'document' || Boolean(message.file_url);
 
-  const mediaUrl = message.image_url || message.video_url || message.file_url || message.voice_url || message.audio_url || '';
+  const rawImageSrc = message.image_url || message.attachment_url || '';
+  const mediaUrl = message.image_url || message.attachment_url || message.video_url || message.file_url || message.voice_url || message.audio_url || '';
+  const [resolvedImageSrc, setResolvedImageSrc] = useState<string>(rawImageSrc);
 
   return (
     <div className={`flex flex-col group relative ${isMe ? 'items-end' : 'items-start'}`}>
@@ -43,15 +46,18 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         )}
 
         {/* Render Image Attachment */}
-        {isImage && mediaUrl && (
+        {isImage && (
           <div
-            onClick={() => onOpenMediaModal(mediaUrl, 'image')}
+            onClick={() => onOpenMediaModal(resolvedImageSrc || rawImageSrc, 'image')}
             className="cursor-pointer overflow-hidden rounded-xl mb-1.5 border border-black/10 group/img relative"
           >
-            <img
-              src={mediaUrl}
+            <ChatImageAttachment
+              roomId={message.room_id}
+              messageId={message.id}
+              src={rawImageSrc}
               alt="Attachment"
               className="max-h-60 w-full object-cover transition-transform group-hover/img:scale-105"
+              onResolvedUrl={url => setResolvedImageSrc(url)}
             />
           </div>
         )}

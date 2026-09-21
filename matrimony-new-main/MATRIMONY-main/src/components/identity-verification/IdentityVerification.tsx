@@ -26,7 +26,14 @@ import { useApp } from '../../context/AppContext';
 
 export const IdentityVerification: React.FC = () => {
   const navigate = useNavigate();
-  const { logout } = useApp();
+  const { logout, skipVerificationForSession } = useApp();
+
+  const handleSkipForNow = () => {
+    localStorage.setItem('verification_skipped', 'true');
+    sessionStorage.setItem('verification_skipped_session', 'true');
+    skipVerificationForSession();
+    navigate('/matches');
+  };
   const {
     status,
     latestResult,
@@ -83,6 +90,14 @@ export const IdentityVerification: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
+            <button
+              type="button"
+              onClick={handleSkipForNow}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-blue-200 bg-blue-50/90 hover:bg-blue-100 text-blue-800 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            >
+              <span>Skip for now →</span>
+            </button>
+
             <button
               type="button"
               onClick={() => fetchStatus()}
@@ -278,7 +293,7 @@ export const IdentityVerification: React.FC = () => {
 
               <Button
                 type="button"
-                onClick={() => navigate('/matches')}
+                onClick={handleSkipForNow}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 text-xs font-bold rounded-xl shadow-xs cursor-pointer inline-flex items-center gap-1.5"
               >
                 Explore Matches While You Wait <ArrowRight className="h-3.5 w-3.5" />
@@ -306,6 +321,7 @@ export const IdentityVerification: React.FC = () => {
               serverError={error}
               serverSuccess={successMessage}
               onClearError={resetError}
+              onSkipForNow={handleSkipForNow}
             />
           </div>
         )}
@@ -322,10 +338,11 @@ export const IdentityVerification: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => navigate('/matches')}
-            className="text-xs font-bold text-slate-600 hover:text-blue-600 hover:underline cursor-pointer"
+            onClick={handleSkipForNow}
+            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-5 py-2.5 rounded-xl cursor-pointer shadow-2xs transition-all active:scale-[0.98]"
           >
-            Skip &amp; Verify Later →
+            <span>Skip for now &amp; Verify Later</span>
+            <ArrowRight className="h-4 w-4" />
           </button>
         </div>
 

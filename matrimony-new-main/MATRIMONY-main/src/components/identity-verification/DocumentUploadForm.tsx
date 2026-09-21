@@ -31,6 +31,7 @@ export interface DocumentUploadFormProps {
   serverError?: string | null;
   serverSuccess?: string | null;
   onClearError?: () => void;
+  onSkipForNow?: () => void;
 }
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -52,7 +53,8 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
   isSubmitting,
   serverError,
   serverSuccess,
-  onClearError
+  onClearError,
+  onSkipForNow
 }) => {
   const [documentType, setDocumentType] = useState<BackendGovtDocumentType>('AADHAAR');
   const [documentFile, setDocumentFile] = useState<File | null>(null);
@@ -599,12 +601,21 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
       </div>
 
       {/* ── Submit Verification Action Bar ── */}
-      <div className="flex items-center justify-end pt-2 pb-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 pb-8">
+        {onSkipForNow && (
+          <button
+            type="button"
+            onClick={onSkipForNow}
+            className="px-6 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-2xs hover:border-slate-400"
+          >
+            Skip for now →
+          </button>
+        )}
         <Button
           type="submit"
           disabled={isSubmitting || !documentFile || !liveFaceFile}
           isLoading={isSubmitting}
-          className="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white shadow-md hover:shadow-lg text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2"
+          className="ml-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white shadow-md hover:shadow-lg text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2"
         >
           <Sparkles className="h-4 w-4" />
           {isSubmitting ? 'Verifying with AI Engine...' : 'Submit Verification'}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
+import { useOnboardingStore } from '../../store/useOnboardingStore';
 
 export type StepRequirement =
   | 'authenticated'
@@ -67,7 +68,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     onboardingStatus.verification_status === 'VERIFIED' ||
     localStorage.getItem('verification_completed') === 'true' ||
     localStorage.getItem('verification_skipped') === 'true' ||
-    Boolean((onboardingStatus as any).verification_skipped);
+    sessionStorage.getItem('verification_skipped_session') === 'true' ||
+    Boolean((onboardingStatus as any).verification_skipped) ||
+    Boolean((onboardingStatus as any).verification_skipped_for_session) ||
+    useOnboardingStore.getState().isVerificationSkipped;
 
   if (!onboardingStatus.complete_profile_completed) {
     return <Navigate to="/profile/complete" replace />;

@@ -37,6 +37,11 @@ export interface ChatMessageOut {
   text?: string;
   message_type?: MessageType;
   attachment_url?: string;
+  image_url?: string;
+  video_url?: string;
+  voice_url?: string;
+  audio_url?: string;
+  file_url?: string;
   file_name?: string;
   file_size?: string;
   duration?: string;

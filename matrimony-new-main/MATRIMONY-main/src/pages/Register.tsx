@@ -18,11 +18,26 @@ export const Register: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
-  const { registerUser, googleRegisterUser, updateCurrentUserAvatar, showToast } = useApp();
+  const {
+    registerUser,
+    googleRegisterUser,
+    googleLoginUser,
+    isAuthenticated,
+    checkProfileStatus,
+    updateCurrentUserAvatar,
+    showToast
+  } = useApp();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const maxAllowedDob = getMaxDobDateString();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated || localStorage.getItem('access_token')) {
+      navigate(redirectUrl || '/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, redirectUrl, navigate]);
 
   // OTP State
   const [otpSent, setOtpSent] = useState(false);
@@ -220,7 +235,10 @@ export const Register: React.FC = () => {
       const lower = msg.toLowerCase();
       if (lower.includes('already') || lower.includes('registered') || lower.includes('exists') || lower.includes('please login')) {
         setAlreadyRegisteredPhone(cleanPhone);
-        showToast('This mobile number or email is already registered. Please log in or reset password.');
+        showToast('This mobile number or email is already registered. Redirecting to login...');
+        setTimeout(() => {
+          navigate(`/login?phone=${cleanPhone}`);
+        }, 1200);
       } else {
         showToast(msg);
       }
@@ -239,10 +257,6 @@ export const Register: React.FC = () => {
       const emailName = extractNameFromEmail(email);
       const resolvedName = (fullName && !isGenericName(fullName)) ? fullName : emailName;
 
-      const nameParts = resolvedName.split(' ');
-      const firstName = tokenPayload?.given_name || nameParts[0] || '';
-      const lastName = tokenPayload?.family_name || nameParts.slice(1).join(' ') || '';
-
       if (resolvedName && !isGenericName(resolvedName)) {
         localStorage.setItem('logged_in_name', resolvedName);
       }
@@ -252,6 +266,32 @@ export const Register: React.FC = () => {
       if (tokenPayload?.picture) {
         localStorage.setItem('logged_in_avatar', tokenPayload.picture);
         updateCurrentUserAvatar(tokenPayload.picture);
+      }
+
+      // 1. If detected as existing user by GoogleAuthModal, log in immediately!
+      if (extraData?.is_existing_user) {
+        showToast('Welcome back! You are already registered. Logging you in...');
+        await googleLoginUser({
+          id_token: idToken,
+          action: 'login'
+        });
+        await checkProfileStatus();
+        navigate(redirectUrl || '/dashboard');
+        return;
+      }
+
+      // 2. Proactive Login check: Try logging in first in case user was already registered
+      try {
+        await googleLoginUser({
+          id_token: idToken,
+          action: 'login'
+        });
+        showToast('Welcome back! You are already registered. Logged in successfully.');
+        await checkProfileStatus();
+        navigate(redirectUrl || '/dashboard');
+        return;
+      } catch {
+        // User not found in database; proceed with registration
       }
 
       const formValues = getValues();
@@ -272,33 +312,48 @@ export const Register: React.FC = () => {
         localStorage.setItem('logged_in_phone', cleanPhone);
       }
 
-      await googleRegisterUser({
-        first_name: firstName || formValues.first_name || 'User',
-        last_name: lastName || formValues.last_name || '',
-        email: email || formValues.email,
-        google_id: tokenPayload?.sub || 'google_user',
-        password: finalPassword,
-        confirm_password: finalConfirmPassword,
-        date_of_birth: finalDob || '2000-01-01',
-        gender: finalGender,
-        phone: cleanPhone,
-        register_for: formValues.register_for || 'SELF'
-      });
+      try {
+        await googleRegisterUser({
+          first_name: tokenPayload?.given_name || resolvedName.split(' ')[0] || formValues.first_name || 'User',
+          last_name: tokenPayload?.family_name || resolvedName.split(' ').slice(1).join(' ') || formValues.last_name || '',
+          email: email || formValues.email,
+          google_id: tokenPayload?.sub || 'google_user',
+          password: finalPassword,
+          confirm_password: finalConfirmPassword,
+          date_of_birth: finalDob || '2000-01-01',
+          gender: finalGender,
+          phone: cleanPhone,
+          register_for: formValues.register_for || 'SELF'
+        });
 
-      showToast('Google Registration successful. Please complete your profile.');
-      if (redirectUrl) {
-        navigate(`/profile/complete?redirect=${encodeURIComponent(redirectUrl)}`);
-      } else {
-        navigate('/profile/complete');
+        showToast('Google Registration successful. Please complete your profile.');
+        if (redirectUrl) {
+          navigate(`/profile/complete?redirect=${encodeURIComponent(redirectUrl)}`);
+        } else {
+          navigate('/profile/complete');
+        }
+      } catch (regErr: any) {
+        const msg = regErr?.message || '';
+        // 3. Fallback: If registration fails because account already exists, auto-login immediately!
+        if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('exists')) {
+          showToast('Account already exists! Logging you in...');
+          try {
+            await googleLoginUser({
+              id_token: idToken,
+              action: 'login'
+            });
+            await checkProfileStatus();
+            navigate(redirectUrl || '/dashboard');
+          } catch {
+            showToast('Account already registered. Please sign in.');
+            navigate(`/login?email=${encodeURIComponent(email)}`);
+          }
+        } else {
+          showToast(msg || 'Google Registration failed');
+        }
       }
     } catch (err: any) {
-      const msg = err.message || 'Google Registration failed';
-      if (msg.toLowerCase().includes('already')) {
-        showToast(msg);
-        navigate('/login');
-      } else {
-        showToast(msg);
-      }
+      showToast(err.message || 'Authentication error');
     } finally {
       setIsSubmitting(false);
     }

@@ -3,6 +3,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { X, Calendar, Phone, Heart, ArrowRight, Loader2, ShieldCheck, Lock, Eye, EyeOff } from 'lucide-react';
 import { decodeGoogleIdToken, extractNameFromEmail } from '../../utils/nameUtils';
 import { getMaxDobDateString, isAtLeast18YearsOld } from '../../utils/validationSchemas';
+import { googleAuthApi } from '../../api/googleAuthApi';
 
 export interface GoogleExtraData {
   gender?: string;
@@ -10,6 +11,7 @@ export interface GoogleExtraData {
   phone?: string;
   password?: string;
   confirm_password?: string;
+  is_existing_user?: boolean;
 }
 
 interface GoogleAuthModalProps {
@@ -37,6 +39,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
 }) => {
   const [googleToken, setGoogleToken] = useState<string | null>(null);
   const [googleUser, setGoogleUser] = useState<{ name?: string; email?: string; picture?: string } | null>(null);
+  const [isCheckingAccount, setIsCheckingAccount] = useState(false);
 
   const [gender, setGender] = useState(initialGender || 'Male');
   const [dob, setDob] = useState(initialDob || '');
@@ -65,12 +68,13 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       setPhoneError('');
       setPasswordError('');
       setConfirmPasswordError('');
+      setIsCheckingAccount(false);
     }
   }, [isOpen, initialGender, initialDob, initialPhone, initialPassword, initialConfirmPassword]);
 
   if (!isOpen) return null;
 
-  const handleGoogleSuccess = (credentialResponse: any) => {
+  const handleGoogleSuccess = async (credentialResponse: any) => {
     const idToken = credentialResponse.credential;
     if (!idToken) return;
 
@@ -84,7 +88,28 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       return;
     }
 
-    // In Register mode: decode user and ask for real DOB, Gender, Phone, Password & Confirm Password
+    // In Register mode: First check if user is ALREADY registered in the database!
+    setIsCheckingAccount(true);
+    try {
+      const loginRes = await googleAuthApi.googleLogin({ id_token: idToken, action: 'login' });
+      if (loginRes && loginRes.access_token) {
+        // User already has an account! Do not ask them to register again.
+        onSuccessToken?.(idToken, {
+          is_existing_user: true,
+          gender: initialGender || 'Male',
+          date_of_birth: initialDob,
+          phone: initialPhone
+        });
+        handleClose();
+        return;
+      }
+    } catch {
+      // Account does not exist yet (400 Bad Request) -> Proceed to Step 2 for new registration.
+    } finally {
+      setIsCheckingAccount(false);
+    }
+
+    // Decode user and ask for real DOB, Gender, Phone, Password & Confirm Password
     const decoded = decodeGoogleIdToken(idToken);
     const email = decoded?.email || '';
     const fullName = decoded?.name || extractNameFromEmail(email);
@@ -169,7 +194,13 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
           <X className="h-5 w-5" />
         </button>
 
-        {!googleToken ? (
+        {isCheckingAccount ? (
+          <div className="py-12 flex flex-col items-center justify-center space-y-3">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            <p className="text-sm font-semibold text-stone-800">Checking your account...</p>
+            <p className="text-xs text-stone-400">Verifying if your Google account is already registered.</p>
+          </div>
+        ) : !googleToken ? (
           /* STEP 1: Google OAuth Button */
           <div className="space-y-5">
             <div className="text-center space-y-1">

@@ -56,6 +56,7 @@ import { UserManagement } from '../pages/admin/UserManagement';
 import { ProfileApprovals } from '../pages/admin/ProfileApprovals';
 import { PhotoModeration } from '../pages/admin/PhotoModeration';
 import { AdminVerificationQueue } from '../pages/admin/AdminVerificationQueue';
+import { AdminMembershipManagement } from '../pages/admin/AdminMembershipManagement';
 
 // Super Admin
 import { SuperAdminDashboard } from '../pages/super-admin/SuperAdminDashboard';
@@ -154,6 +155,8 @@ export const AppRouter: React.FC = () => (
         {/* Admin Workspace Routes */}
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerificationQueue /></ProtectedRoute>} />
+        <Route path="/admin/memberships" element={<ProtectedRoute><AdminMembershipManagement /></ProtectedRoute>} />
+        <Route path="/admin/membership" element={<ProtectedRoute><AdminMembershipManagement /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
         <Route path="/admin/approvals" element={<ProtectedRoute><ProfileApprovals /></ProtectedRoute>} />
         <Route path="/admin/moderation" element={<ProtectedRoute><PhotoModeration /></ProtectedRoute>} />

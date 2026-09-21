@@ -133,6 +133,21 @@ export const PreferencesPage: React.FC = () => {
   const selectedReligionId = formData.religion_ids.length > 0 ? formData.religion_ids[0] : null;
   const { data: castes = [], isLoading: isLoadingCastes } = useCastes(selectedReligionId);
 
+  // Helper to extract numeric IDs from either ID array or list of objects
+  const extractIds = (idsArray: any, objectsArray: any): number[] => {
+    if (Array.isArray(idsArray) && idsArray.length > 0) {
+      return idsArray
+        .map((x: any) => (typeof x === 'object' && x !== null ? x.id : Number(x)))
+        .filter((n: number) => !isNaN(n) && n > 0);
+    }
+    if (Array.isArray(objectsArray) && objectsArray.length > 0) {
+      return objectsArray
+        .map((x: any) => (typeof x === 'object' && x !== null ? x.id : Number(x)))
+        .filter((n: number) => !isNaN(n) && n > 0);
+    }
+    return [];
+  };
+
   // Load existing saved preferences from backend API on mount
   useEffect(() => {
     const loadPreferences = async () => {
@@ -153,43 +168,43 @@ export const PreferencesPage: React.FC = () => {
           markPreferencesCompleted();
           setFormData(prev => ({
             ...prev,
-            minimum_age: apiData.minimum_age ?? prev.minimum_age,
-            maximum_age: apiData.maximum_age ?? prev.maximum_age,
+            minimum_age: apiData.minimum_age ?? (apiData as any).age_min ?? prev.minimum_age,
+            maximum_age: apiData.maximum_age ?? (apiData as any).age_max ?? prev.maximum_age,
             is_age_required: Boolean(apiData.is_age_required),
-            minimum_height: apiData.minimum_height ?? prev.minimum_height,
-            maximum_height: apiData.maximum_height ?? prev.maximum_height,
+            minimum_height: apiData.minimum_height ?? (apiData as any).height_min ?? prev.minimum_height,
+            maximum_height: apiData.maximum_height ?? (apiData as any).height_max ?? prev.maximum_height,
             is_height_required: Boolean(apiData.is_height_required),
-            income_range_ids: Array.isArray(apiData.income_range_ids) ? apiData.income_range_ids : prev.income_range_ids,
+            income_range_ids: extractIds(apiData.income_range_ids, (apiData as any).preferred_income_ranges || (apiData as any).income_ranges),
             is_income_required: Boolean(apiData.is_income_required),
 
-            education_ids: Array.isArray(apiData.education_ids) ? apiData.education_ids : prev.education_ids,
+            education_ids: extractIds(apiData.education_ids, (apiData as any).preferred_educations || (apiData as any).educations),
             is_education_required: Boolean(apiData.is_education_required),
-            profession_ids: Array.isArray(apiData.profession_ids) ? apiData.profession_ids : prev.profession_ids,
+            profession_ids: extractIds(apiData.profession_ids, (apiData as any).preferred_professions || (apiData as any).professions),
             is_profession_required: Boolean(apiData.is_profession_required),
 
-            religion_ids: Array.isArray(apiData.religion_ids) ? apiData.religion_ids : prev.religion_ids,
+            religion_ids: extractIds(apiData.religion_ids, (apiData as any).preferred_religions || (apiData as any).religions),
             is_religion_required: Boolean(apiData.is_religion_required),
-            caste_ids: Array.isArray(apiData.caste_ids) ? apiData.caste_ids : prev.caste_ids,
+            caste_ids: extractIds(apiData.caste_ids, (apiData as any).preferred_castes || (apiData as any).castes),
             is_caste_required: Boolean(apiData.is_caste_required),
 
             is_diet_required: Boolean(apiData.is_diet_required),
             is_lifestyle_required: Boolean(apiData.is_lifestyle_required),
-            preferred_diets: Array.isArray(apiData.preferred_diets) ? apiData.preferred_diets : prev.preferred_diets,
+            preferred_diets: Array.isArray(apiData.preferred_diets) ? apiData.preferred_diets : (Array.isArray((apiData as any).diets) ? (apiData as any).diets : prev.preferred_diets),
             preferred_smoking: Array.isArray(apiData.preferred_smoking) ? apiData.preferred_smoking : prev.preferred_smoking,
             preferred_drinking: Array.isArray(apiData.preferred_drinking) ? apiData.preferred_drinking : prev.preferred_drinking,
-            language_ids: Array.isArray(apiData.language_ids) ? apiData.language_ids : prev.language_ids,
+            language_ids: extractIds(apiData.language_ids, (apiData as any).preferred_languages || (apiData as any).languages),
 
-            preferred_marital_statuses: Array.isArray(apiData.preferred_marital_statuses) ? apiData.preferred_marital_statuses : prev.preferred_marital_statuses,
+            preferred_marital_statuses: Array.isArray(apiData.preferred_marital_statuses) ? apiData.preferred_marital_statuses : (Array.isArray((apiData as any).marital_statuses) ? (apiData as any).marital_statuses : prev.preferred_marital_statuses),
             is_marital_status_required: Boolean(apiData.is_marital_status_required),
-            preferred_manglik: apiData.preferred_manglik || prev.preferred_manglik,
+            preferred_manglik: apiData.preferred_manglik || (apiData as any).manglik || prev.preferred_manglik,
             is_horoscope_required: Boolean(apiData.is_horoscope_required),
 
             is_location_required: Boolean(apiData.is_location_required),
-            country_ids: Array.isArray(apiData.country_ids) ? apiData.country_ids : prev.country_ids,
-            state_ids: Array.isArray(apiData.state_ids) ? apiData.state_ids : prev.state_ids,
-            district_ids: Array.isArray(apiData.district_ids) ? apiData.district_ids : prev.district_ids,
-            mandal_ids: Array.isArray(apiData.mandal_ids) ? apiData.mandal_ids : prev.mandal_ids,
-            village_ids: Array.isArray(apiData.village_ids) ? apiData.village_ids : prev.village_ids
+            country_ids: extractIds(apiData.country_ids, (apiData as any).preferred_countries || (apiData as any).countries),
+            state_ids: extractIds(apiData.state_ids, (apiData as any).preferred_states || (apiData as any).states),
+            district_ids: extractIds(apiData.district_ids, (apiData as any).preferred_districts || (apiData as any).districts),
+            mandal_ids: extractIds(apiData.mandal_ids, (apiData as any).preferred_mandals || (apiData as any).mandals),
+            village_ids: extractIds(apiData.village_ids, (apiData as any).preferred_villages || (apiData as any).villages)
           }));
         }
       } catch (err) {
@@ -229,43 +244,59 @@ export const PreferencesPage: React.FC = () => {
     try {
       setIsSubmitting(true);
 
-      const apiPayload: PartnerPreferenceAPI = {
+      const minHeight = formData.minimum_height ? Number(formData.minimum_height) : null;
+      const maxHeight = formData.maximum_height ? Number(formData.maximum_height) : null;
+
+      const apiPayload: any = {
         minimum_age: Number(formData.minimum_age) || 18,
         maximum_age: Number(formData.maximum_age) || 60,
+        age_min: Number(formData.minimum_age) || 18,
+        age_max: Number(formData.maximum_age) || 60,
         is_age_required: Boolean(formData.is_age_required),
 
-        minimum_height: Number(formData.minimum_height) || 0,
-        maximum_height: Number(formData.maximum_height) || 0,
+        minimum_height: minHeight,
+        maximum_height: maxHeight,
+        height_min: minHeight,
+        height_max: maxHeight,
         is_height_required: Boolean(formData.is_height_required),
 
         income_range_ids: formData.income_range_ids,
+        preferred_income_ranges: formData.income_range_ids,
         minimum_salary: 0,
         maximum_salary: 0,
         is_income_required: Boolean(formData.is_income_required),
 
         education_ids: formData.education_ids,
+        preferred_educations: formData.education_ids,
         is_education_required: Boolean(formData.is_education_required),
 
         profession_ids: formData.profession_ids,
+        preferred_professions: formData.profession_ids,
         is_profession_required: Boolean(formData.is_profession_required),
 
         religion_ids: formData.religion_ids,
+        preferred_religions: formData.religion_ids,
         is_religion_required: Boolean(formData.is_religion_required),
 
         caste_ids: formData.caste_ids,
+        preferred_castes: formData.caste_ids,
         is_caste_required: Boolean(formData.is_caste_required),
 
         preferred_diets: formData.preferred_diets,
+        diets: formData.preferred_diets,
         preferred_smoking: formData.preferred_smoking,
         preferred_drinking: formData.preferred_drinking,
         language_ids: formData.language_ids,
+        preferred_languages: formData.language_ids,
         is_diet_required: Boolean(formData.is_diet_required),
         is_lifestyle_required: Boolean(formData.is_lifestyle_required),
 
         preferred_marital_statuses: formData.preferred_marital_statuses,
+        marital_statuses: formData.preferred_marital_statuses,
         is_marital_status_required: Boolean(formData.is_marital_status_required),
 
         preferred_manglik: formData.preferred_manglik,
+        manglik: formData.preferred_manglik,
         is_horoscope_required: Boolean(formData.is_horoscope_required),
 
         country_ids: formData.country_ids,

@@ -1,5 +1,8 @@
 import { axiosClient } from './axiosClient';
 import type { NotificationItem } from '../types';
+import { resolveNotificationLink } from '../utils/notificationUtils';
+
+export { resolveNotificationLink };
 
 export interface NotificationResponseSchema {
   id: number | string;
@@ -122,7 +125,7 @@ export const notificationApi = {
           ? item.image
           : ((item.avatar && typeof item.avatar === 'string' && item.avatar.trim()) ? item.avatar : undefined);
 
-        const redirectUrl = item.redirect_url || item.link || item.url || undefined;
+        const redirectUrl = resolveNotificationLink(item);
         const isReadBool = Boolean(item.is_read ?? item.read ?? (item.status === 'read') ?? false);
 
         return {
@@ -351,7 +354,7 @@ export const notificationApi = {
 
   // 9. POST /api/notifications/device-token
   registerDeviceToken: async (token: string, deviceType: 'web' | 'ios' | 'android' = 'web'): Promise<any> => {
-    if (!token) return null;
+    if (!token || import.meta.env.VITE_ENABLE_DEVICE_TOKEN !== 'true') return null;
     const payload: DeviceTokenPayload = {
       token,
       device_type: deviceType,

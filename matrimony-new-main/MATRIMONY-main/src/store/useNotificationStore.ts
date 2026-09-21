@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { NotificationItem } from '../types';
 import { notificationApi } from '../api/notificationApi';
 import { queryClient } from '../lib/queryClient';
+import { resolveNotificationLink } from '../utils/notificationUtils';
 
 interface NotificationState {
   notifications: NotificationItem[];
@@ -107,7 +108,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       category: item.category,
       timestamp: 'Just now',
       read: false,
-      link: item.link,
+      link: resolveNotificationLink(item),
       avatar: item.avatar
     };
 

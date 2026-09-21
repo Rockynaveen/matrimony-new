@@ -279,6 +279,8 @@ export const MyProfilePage: React.FC = () => {
     rashi: toText(apiData.rashi || localDraft?.rashi, 'Not Specified'),
     nakshatra: toText(apiData.nakshatra || localDraft?.nakshatra, 'Not Specified'),
     dosha: toText(apiData.dosha || localDraft?.dosha, 'Not Specified'),
+    birth_place: toText(apiData.birth_place || apiData.birthPlace || localDraft?.birth_place, 'Not Specified'),
+    birth_time: toText(apiData.birth_time || apiData.birthTime || localDraft?.birth_time, 'Not Specified'),
 
     // Family
     family_type: toText(apiData.family_type || localDraft?.family_type, 'Not Specified'),
@@ -287,6 +289,17 @@ export const MyProfilePage: React.FC = () => {
     father_occupation: toText(apiData.father_occupation || localDraft?.father_occupation, 'Not Specified'),
     mother_occupation: toText(apiData.mother_occupation || localDraft?.mother_occupation, 'Not Specified'),
     family_information: toText(apiData.family_information || apiData.family_details || apiData.family || localDraft?.family_information, ''),
+    brothers_count: apiData.brothers_count ?? apiData.brothersCount ?? localDraft?.brothers_count ?? 0,
+    brothers_married: apiData.brothers_married ?? apiData.brothersMarried ?? localDraft?.brothers_married ?? 0,
+    sisters_count: apiData.sisters_count ?? apiData.sistersCount ?? localDraft?.sisters_count ?? 0,
+    sisters_married: apiData.sisters_married ?? apiData.sistersMarried ?? localDraft?.sisters_married ?? 0,
+    living_with_parents: apiData.living_with_parents ?? apiData.livingWithParents ?? localDraft?.living_with_parents ?? null,
+    family_location: toText(apiData.family_location || apiData.familyLocation || localDraft?.family_location, 'Not Specified'),
+
+    // Personal & Additional
+    children_count: apiData.children_count ?? apiData.childrenCount ?? localDraft?.children_count ?? 0,
+    children_living_status: toText(apiData.children_living_status || apiData.childrenLivingStatus || localDraft?.children_living_status, 'Not Specified'),
+    physical_disability: toText(apiData.physical_disability || apiData.physicalDisability || localDraft?.physical_disability, 'None'),
 
     // Lifestyle
     diet: toText(apiData.diet ?? localDraft?.diet, 'Not Specified'),
@@ -324,7 +337,7 @@ export const MyProfilePage: React.FC = () => {
   const realGalleryImages = (galleryImages || []).filter((img) => !isDummyImage(img.image_url));
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6 font-sans text-stone-900 pb-16">
+    <div className="w-full max-w-5xl mx-auto space-y-6 font-sans text-stone-900 pb-16 profile-root" data-profile="true">
 
       {/* Sync Status Banner */}
       {isFetching && (
@@ -482,7 +495,10 @@ export const MyProfilePage: React.FC = () => {
         {/* ── 2. ABOUT MYSELF ── */}
         <div className="p-6 sm:p-8 space-y-4">
           <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
-            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+            <h2
+              className="text-[0.95rem] font-bold text-stone-800 uppercase tracking-wider"
+              style={{ fontSize: '0.95rem' }}
+            >
               About Myself
             </h2>
             <button
@@ -526,7 +542,10 @@ export const MyProfilePage: React.FC = () => {
         {/* ── 3. BASIC & PERSONAL DETAILS ── */}
         <div className="p-6 sm:p-8 space-y-4">
           <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
-            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+            <h2
+              className="text-[0.95rem] font-bold text-stone-800 uppercase tracking-wider"
+              style={{ fontSize: '0.95rem' }}
+            >
               Personal & Lifestyle Details
             </h2>
             <button
@@ -543,6 +562,18 @@ export const MyProfilePage: React.FC = () => {
               <span className="text-stone-400 text-[11px] block mb-0.5">Marital Status</span>
               <span className="font-semibold text-stone-800 text-xs">{profile.marital_status}</span>
             </div>
+            {profile.marital_status !== 'Never Married' && profile.marital_status !== 'Not Specified' && (
+              <>
+                <div>
+                  <span className="text-stone-400 text-[11px] block mb-0.5">No. of Children</span>
+                  <span className="font-semibold text-stone-800 text-xs">{profile.children_count}</span>
+                </div>
+                <div>
+                  <span className="text-stone-400 text-[11px] block mb-0.5">Children Living Status</span>
+                  <span className="font-semibold text-stone-800 text-xs">{profile.children_living_status}</span>
+                </div>
+              </>
+            )}
             <div>
               <span className="text-stone-400 text-[11px] block mb-0.5">Height</span>
               <span className="font-semibold text-stone-800 text-xs">{profile.height}</span>
@@ -567,6 +598,12 @@ export const MyProfilePage: React.FC = () => {
               <span className="text-stone-400 text-[11px] block mb-0.5">Physical Status</span>
               <span className="font-semibold text-stone-800 text-xs">{profile.physical_status}</span>
             </div>
+            {profile.physical_disability && profile.physical_disability !== 'None' && (
+              <div>
+                <span className="text-stone-400 text-[11px] block mb-0.5">Disability Details</span>
+                <span className="font-semibold text-stone-800 text-xs">{profile.physical_disability}</span>
+              </div>
+            )}
             <div>
               <span className="text-stone-400 text-[11px] block mb-0.5">Smoking / Drinking</span>
               <span className="font-semibold text-stone-800 text-xs">
@@ -581,7 +618,10 @@ export const MyProfilePage: React.FC = () => {
         {/* ── 4. EDUCATION & CAREER ── */}
         <div className="p-6 sm:p-8 space-y-4">
           <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
-            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+            <h2
+              className="text-[0.95rem] font-bold text-stone-800 uppercase tracking-wider"
+              style={{ fontSize: '0.95rem' }}
+            >
               Education & Career
             </h2>
             <button
@@ -624,7 +664,10 @@ export const MyProfilePage: React.FC = () => {
         {/* ── 5. RELIGION & HOROSCOPE ── */}
         <div className="p-6 sm:p-8 space-y-4">
           <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
-            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+            <h2
+              className="text-[0.95rem] font-bold text-stone-800 uppercase tracking-wider"
+              style={{ fontSize: '0.95rem' }}
+            >
               Religion & Horoscope
             </h2>
             <button
@@ -665,13 +708,24 @@ export const MyProfilePage: React.FC = () => {
               <span className="text-stone-400 text-[11px] block mb-0.5">Dosha / Manglik</span>
               <span className="font-semibold text-stone-800 text-xs">{profile.dosha}</span>
             </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Birth Place</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.birth_place}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Birth Time</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.birth_time}</span>
+            </div>
           </div>
         </div>
 
         {/* ── 6. FAMILY DETAILS ── */}
         <div className="p-6 sm:p-8 space-y-4">
           <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
-            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+            <h2
+              className="text-[0.95rem] font-bold text-stone-800 uppercase tracking-wider"
+              style={{ fontSize: '0.95rem' }}
+            >
               Family Background
             </h2>
             <button
@@ -704,6 +758,28 @@ export const MyProfilePage: React.FC = () => {
               <span className="text-stone-400 text-[11px] block mb-0.5">Mother's Profession</span>
               <span className="font-semibold text-stone-800 text-xs">{profile.mother_occupation}</span>
             </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Brothers</span>
+              <span className="font-semibold text-stone-800 text-xs">
+                {profile.brothers_count > 0 ? `${profile.brothers_count} (${profile.brothers_married} married)` : 'None'}
+              </span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Sisters</span>
+              <span className="font-semibold text-stone-800 text-xs">
+                {profile.sisters_count > 0 ? `${profile.sisters_count} (${profile.sisters_married} married)` : 'None'}
+              </span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Living with Parents</span>
+              <span className="font-semibold text-stone-800 text-xs">
+                {profile.living_with_parents === true ? 'Yes' : profile.living_with_parents === false ? 'No' : 'Not Specified'}
+              </span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Family Location</span>
+              <span className="font-semibold text-stone-800 text-xs">{profile.family_location}</span>
+            </div>
           </div>
 
           {profile.family_information && (
@@ -717,7 +793,10 @@ export const MyProfilePage: React.FC = () => {
         {/* ── 7. PARTNER PREFERENCES ── */}
         <div className="p-6 sm:p-8 space-y-4">
           <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
-            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+            <h2
+              className="text-[0.95rem] font-bold text-stone-800 uppercase tracking-wider"
+              style={{ fontSize: '0.95rem' }}
+            >
               Partner Preferences
             </h2>
             <button
@@ -771,6 +850,22 @@ export const MyProfilePage: React.FC = () => {
               </span>
             </div>
             <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Preferred Income</span>
+              <span className="font-semibold text-stone-800 text-xs">
+                {partnerPrefs?.minimum_income
+                  ? `₹ ${(partnerPrefs.minimum_income / 100000).toFixed(0)} Lakhs${partnerPrefs.maximum_income ? ` - ₹ ${(partnerPrefs.maximum_income / 100000).toFixed(0)} Lakhs` : '+'}`
+                  : (partnerPrefs as any)?.formatted_annual_income || 'Not Specified'}
+              </span>
+            </div>
+            <div>
+              <span className="text-stone-400 text-[11px] block mb-0.5">Marital Status</span>
+              <span className="font-semibold text-stone-800 text-xs">
+                {(Array.isArray(partnerPrefs?.preferred_marital_statuses) && partnerPrefs.preferred_marital_statuses.length > 0)
+                  ? partnerPrefs.preferred_marital_statuses.join(', ')
+                  : partnerPrefs?.marital_status || 'Any'}
+              </span>
+            </div>
+            <div>
               <span className="text-stone-400 text-[11px] block mb-0.5">Diet</span>
               <span className="font-semibold text-stone-800 text-xs">
                 {(Array.isArray(partnerPrefs?.preferred_diets) && partnerPrefs.preferred_diets[0]) || partnerPrefs?.diet || 'Not Specified'}
@@ -782,7 +877,10 @@ export const MyProfilePage: React.FC = () => {
         {/* ── 8. PHOTOS & MEDIA ── */}
         <div className="p-6 sm:p-8 space-y-4">
           <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
-            <h2 className="text-[11px] font-bold text-stone-800 uppercase tracking-wider">
+            <h2
+              className="text-[0.95rem] font-bold text-stone-800 uppercase tracking-wider"
+              style={{ fontSize: '0.95rem' }}
+            >
               Photos ({ (profile.avatar ? 1 : 0) + realGalleryImages.length })
             </h2>
             <button

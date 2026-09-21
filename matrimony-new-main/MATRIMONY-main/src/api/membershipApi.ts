@@ -29,11 +29,11 @@ export const membershipApi = {
   },
 
   /**
-   * POST /membership/plans/all
+   * POST /membership/plans/
    * Create a new membership plan (Admin / Super Admin)
    */
   createPlan: async (payload: CreatePlanPayload): Promise<ApiMembershipPlan> => {
-    const response = await axiosClient.post<any>('/membership/plans/all', payload);
+    const response = await axiosClient.post<any>('/membership/plans/', payload);
     if (response.status >= 200 && response.status < 300) {
       const data = response.data;
       return data?.data || data;
@@ -184,10 +184,10 @@ export const membershipApi = {
    */
   getMyMembership: async (): Promise<import('../types/membershipTypes').MyMembershipOut> => {
     const candidateUrls = [
-      '/membership/my-membership',
       '/membership/my-membership/',
-      '/membership/me',
-      '/membership/me/'
+      '/membership/my-membership',
+      '/membership/me/',
+      '/membership/me'
     ];
 
     for (const url of candidateUrls) {
@@ -200,7 +200,9 @@ export const membershipApi = {
             price: Number(data.price || data.plan?.price || 0),
             profile_credits: Number(data.profile_credits ?? data.plan?.profile_credits ?? 4),
             used_credits: Number(data.used_credits ?? 0),
-            remaining_credits: Number(data.remaining_credits ?? 3)
+            remaining_credits: Number(data.remaining_credits ?? 3),
+            validity_days: data.validity_days ?? data.plan?.validity_days ?? null,
+            expires_at: data.expires_at ?? null
           };
         }
       } catch {
@@ -213,7 +215,9 @@ export const membershipApi = {
       price: 0.00,
       profile_credits: 4,
       used_credits: 1,
-      remaining_credits: 3
+      remaining_credits: 3,
+      validity_days: null,
+      expires_at: null
     };
   }
 };

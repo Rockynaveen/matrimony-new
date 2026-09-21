@@ -153,6 +153,7 @@ function sanitizeProfilePayload(payload: any): ProfileCreateRequest {
     company_name: str(payload.company_name, ''),
     work_location: str(payload.work_location, ''),
     annual_income: parseIncomeValue(payload.annual_income),
+    annual_income_id: toNullableNum(payload.annual_income_id),
     religion: str(payload.religion, ''),
     religion_id: toNullableNum(payload.religion_id),
     caste: str(payload.caste, ''),
@@ -162,7 +163,23 @@ function sanitizeProfilePayload(payload: any): ProfileCreateRequest {
     rashi: str(payload.rashi, ''),
     nakshatra: str(payload.nakshatra, ''),
     dosha: str(payload.dosha, ''),
-    family_information: str(payload.family_information, ''),
+    birth_place: str(payload.birth_place || payload.birthPlace || payload.place_of_birth, ''),
+    birth_time: str(payload.birth_time || payload.birthTime || payload.time_of_birth, '') || null,
+
+    // Family Details
+    family_type: str(payload.family_type || payload.familyType, ''),
+    family_status: str(payload.family_status || payload.familyStatus, ''),
+    family_values: str(payload.family_values || payload.familyValues, ''),
+    father_occupation: str(payload.father_occupation || payload.fatherOccupation || payload.father_profession, ''),
+    mother_occupation: str(payload.mother_occupation || payload.motherOccupation || payload.mother_profession, ''),
+    brothers_count: toNullableNum(payload.brothers_count ?? payload.brothersCount) ?? 0,
+    brothers_married_count: toNullableNum(payload.brothers_married_count ?? payload.brothersMarriedCount) ?? 0,
+    sisters_count: toNullableNum(payload.sisters_count ?? payload.sistersCount) ?? 0,
+    sisters_married_count: toNullableNum(payload.sisters_married_count ?? payload.sistersMarriedCount) ?? 0,
+    living_with_parents: payload.living_with_parents !== undefined ? Boolean(payload.living_with_parents) : true,
+    family_location: str(payload.family_location || payload.familyLocation, ''),
+    family_information: str(payload.family_information || payload.familyInformation || payload.family_info, ''),
+
     diet: sanitizeChoice(payload.diet, ['Vegetarian', 'Non-Vegetarian', 'Eggetarian'], 'Vegetarian'),
     smoking: sanitizeChoice(payload.smoking, ['No', 'Occasionally', 'Yes'], 'No'),
     drinking: sanitizeChoice(payload.drinking, ['No', 'Occasionally', 'Yes'], 'No'),
@@ -171,7 +188,18 @@ function sanitizeProfilePayload(payload: any): ProfileCreateRequest {
     hobbies_interests: Array.isArray(payload.hobbies_interests) ? payload.hobbies_interests.join(', ') : str(payload.hobbies_interests, ''),
     hobby_ids: Array.isArray(payload.hobby_ids) ? payload.hobby_ids.map(Number).filter(n => !isNaN(n)) : undefined,
     marital_status: sanitizeChoice(payload.marital_status, ['Never Married', 'Divorced', 'Widowed', 'Awaiting Divorce'], 'Never Married'),
-    disability_information: str(payload.disability_information, ''),
+
+    // Children & Disability
+    children_count: toNullableNum(payload.children_count ?? payload.childrenCount) ?? 0,
+    children_living_status: str(payload.children_living_status || payload.childrenLivingStatus || payload.living_status, ''),
+    physical_status: str(payload.physical_status || payload.physicalStatus, 'Normal'),
+    physical_disability: str(
+      payload.physical_disability || payload.physicalDisability,
+      (payload.physical_status === 'Physically Challenged' || payload.physical_status === 'Yes') ? 'YES' : 'NO'
+    ),
+    disability_information: str(payload.disability_information || payload.disabilityInformation || payload.disability_info, ''),
+    disability_info: str(payload.disability_information || payload.disabilityInformation || payload.disability_info, ''),
+
     country: str(payload.country, ''),
     country_id: toNullableNum(payload.country_id),
     state: str(payload.state, ''),
@@ -189,6 +217,12 @@ function sanitizeProfilePayload(payload: any): ProfileCreateRequest {
   }
   if (payload.video_introduction) {
     clean.video_introduction = payload.video_introduction;
+  }
+  if (payload.video_url) {
+    clean.video_url = payload.video_url;
+  }
+  if (payload.video_type) {
+    clean.video_type = payload.video_type;
   }
 
   return clean;

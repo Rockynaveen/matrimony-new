@@ -36,12 +36,14 @@ export const CheckoutPage: React.FC = () => {
     price: number;
     period: string;
     contactUnlocks: string;
+    validity_days: number;
   }>({
     id: 1,
     name: 'Gold Premier',
     price: 20000,
     period: '30 Days',
-    contactUnlocks: '5 Contact Unlocks'
+    contactUnlocks: '5 Contact Unlocks',
+    validity_days: 30
   });
 
   const [loadingPlan, setLoadingPlan] = useState<boolean>(true);
@@ -59,8 +61,9 @@ export const CheckoutPage: React.FC = () => {
         id: Math.trunc(Number(passedApiPlan.id) || 1),
         name: passedApiPlan.name.charAt(0).toUpperCase() + passedApiPlan.name.slice(1),
         price: isNaN(parsedPrice) ? 20000 : parsedPrice,
-        period: `${passedApiPlan.validity_days} Days`,
-        contactUnlocks: `${passedApiPlan.profile_credits} Contact Unlocks`
+        period: passedApiPlan.validity_days ? `${passedApiPlan.validity_days} Days` : 'Lifetime',
+        contactUnlocks: `${passedApiPlan.profile_credits} Contact Unlocks`,
+        validity_days: passedApiPlan.validity_days || 30
       });
       setLoadingPlan(false);
       return;
@@ -81,8 +84,9 @@ export const CheckoutPage: React.FC = () => {
             id: Math.trunc(Number(matched.id) || 1),
             name: matched.name.charAt(0).toUpperCase() + matched.name.slice(1),
             price: isNaN(parsedPrice) ? 20000 : parsedPrice,
-            period: `${matched.validity_days} Days`,
-            contactUnlocks: `${matched.profile_credits} Contact Unlocks`
+            period: matched.validity_days ? `${matched.validity_days} Days` : 'Lifetime',
+            contactUnlocks: `${matched.profile_credits} Contact Unlocks`,
+            validity_days: matched.validity_days || 30
           });
         }
       })

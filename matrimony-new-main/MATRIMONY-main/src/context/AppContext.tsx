@@ -298,7 +298,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deviceToken = `web_device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         localStorage.setItem('device_token', deviceToken);
       }
-      notificationApi.registerDeviceToken(deviceToken, 'web').catch(() => {});
+      if (import.meta.env.VITE_ENABLE_DEVICE_TOKEN === 'true') {
+        notificationApi.registerDeviceToken(deviceToken, 'web').catch(() => {});
+      }
 
       const intervalId = setInterval(() => {
         fetchNotificationsStore();

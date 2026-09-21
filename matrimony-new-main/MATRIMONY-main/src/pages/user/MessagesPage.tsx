@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useApp, extractNameFromEmail, isGenericName } from '../../context/AppContext';
+import { useWebSocket } from '../../context/WebSocketContext';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { DotsLoader } from '../../components/ui/LoadingScreen';
@@ -207,6 +209,8 @@ export const MessagesPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { currentUser, showToast } = useApp();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { isConnected: isWsConnected, sendChatMessage, lastEvent } = useWebSocket();
   const currentUserIdNum = Number(currentUser?.id || localStorage.getItem('user_id') || 0);
 
   // Conversations List & Interests
@@ -494,6 +498,19 @@ export const MessagesPage: React.FC = () => {
     'Shall we connect over coffee this weekend?'
   ];
 
+  // Instant real-time update when chat message arrives via Django Channels WebSocket
+  useEffect(() => {
+    if (!lastEvent) return;
+    const eventType = String(lastEvent.type || lastEvent.action || '').toLowerCase();
+    if (eventType.includes('chat') || eventType.includes('message')) {
+      const targetRoom = Number(lastEvent.room_id || lastEvent.roomId || lastEvent.conversation_id || 0);
+      if (targetRoom && targetRoom === numericRoomId) {
+        queryClient.invalidateQueries({ queryKey: chatKeys.messages(numericRoomId) });
+      }
+      queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
+    }
+  }, [lastEvent, numericRoomId, queryClient]);
+
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const textToSend = inputText.trim();
@@ -505,6 +522,10 @@ export const MessagesPage: React.FC = () => {
 
     try {
       setInputText('');
+      // Emit via Django Channels WebSocket if connected
+      if (isWsConnected && numericRoomId) {
+        sendChatMessage(numericRoomId, textToSend, { receiver_id: recipientUserId });
+      }
       await sendTextMessageMutation.mutateAsync({
         room_id: numericRoomId,
         receiver_id: recipientUserId,

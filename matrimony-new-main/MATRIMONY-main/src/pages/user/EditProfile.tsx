@@ -33,7 +33,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  ChevronDown
+  ChevronDown,
+  Users,
+  Clock
 } from 'lucide-react';
 
 interface FormState {
@@ -46,6 +48,13 @@ interface FormState {
   marital_status: string;
   about_me: string;
 
+  // Children & Disability
+  children_count: number;
+  children_living_status: string;
+  physical_status: string;
+  physical_disability: string;
+  disability_information: string;
+
   // Education & Career
   education_id: number | null;
   highest_education: string;
@@ -54,14 +63,34 @@ interface FormState {
   occupation: string;
   job_title: string;
   annual_income: string;
+  annual_income_id: number | null;
 
-  // Religion & Community
+  // Religion, Community & Horoscope
   religion_id: number | null;
   religion: string;
   caste_id: number | null;
   caste: string;
   sub_caste: string;
   gothram: string;
+  rashi: string;
+  nakshatra: string;
+  dosha: string;
+  birth_place: string;
+  birth_time: string;
+
+  // Family Background
+  family_type: string;
+  family_status: string;
+  family_values: string;
+  father_occupation: string;
+  mother_occupation: string;
+  brothers_count: number;
+  brothers_married_count: number;
+  sisters_count: number;
+  sisters_married_count: number;
+  living_with_parents: boolean;
+  family_location: string;
+  family_information: string;
 
   // Languages & Interests
   languages_known: string;
@@ -96,6 +125,12 @@ const initialFormState: FormState = {
   marital_status: 'Never Married',
   about_me: '',
 
+  children_count: 0,
+  children_living_status: '',
+  physical_status: 'Normal',
+  physical_disability: 'NO',
+  disability_information: '',
+
   education_id: null,
   highest_education: '',
   education_detail: '',
@@ -103,6 +138,7 @@ const initialFormState: FormState = {
   occupation: '',
   job_title: '',
   annual_income: '',
+  annual_income_id: null,
 
   religion_id: null,
   religion: '',
@@ -110,6 +146,24 @@ const initialFormState: FormState = {
   caste: '',
   sub_caste: '',
   gothram: '',
+  rashi: '',
+  nakshatra: '',
+  dosha: '',
+  birth_place: '',
+  birth_time: '',
+
+  family_type: '',
+  family_status: '',
+  family_values: '',
+  father_occupation: '',
+  mother_occupation: '',
+  brothers_count: 0,
+  brothers_married_count: 0,
+  sisters_count: 0,
+  sisters_married_count: 0,
+  living_with_parents: true,
+  family_location: '',
+  family_information: '',
 
   languages_known: '',
   language_ids: [],
@@ -239,6 +293,13 @@ export const EditProfile: React.FC = () => {
         marital_status: source.marital_status || prev.marital_status,
         about_me: source.about_me || source.about || prev.about_me,
 
+        // Children & Disability
+        children_count: source.children_count !== undefined ? Number(source.children_count) : prev.children_count,
+        children_living_status: source.children_living_status || prev.children_living_status,
+        physical_status: source.physical_status === 'Physically Challenged' || source.physical_disability === 'YES' ? 'Yes' : (source.physical_status || prev.physical_status),
+        physical_disability: source.physical_disability || (source.physical_status === 'Physically Challenged' ? 'YES' : 'NO'),
+        disability_information: source.disability_information || (source as any).disability_info || prev.disability_information,
+
         education_id: eduId ?? prev.education_id,
         highest_education: source.highest_education || source.education || prev.highest_education,
         education_detail: source.education_detail || prev.education_detail,
@@ -246,6 +307,7 @@ export const EditProfile: React.FC = () => {
         occupation: source.occupation || source.profession || prev.occupation,
         job_title: source.job_title || prev.job_title,
         annual_income: source.annual_income ? String(source.annual_income) : (source.formatted_annual_income || prev.annual_income),
+        annual_income_id: source.annual_income_id ?? prev.annual_income_id,
 
         religion_id: relId ?? prev.religion_id,
         religion: source.religion || source.religion_rel?.name || prev.religion,
@@ -253,6 +315,25 @@ export const EditProfile: React.FC = () => {
         caste: source.caste || source.caste_rel?.name || prev.caste,
         sub_caste: source.sub_caste || prev.sub_caste,
         gothram: source.gothram || prev.gothram,
+        rashi: source.rashi || prev.rashi,
+        nakshatra: source.nakshatra || prev.nakshatra,
+        dosha: source.dosha || prev.dosha,
+        birth_place: source.birth_place || prev.birth_place,
+        birth_time: source.birth_time || prev.birth_time,
+
+        // Family Background
+        family_type: source.family_type || prev.family_type,
+        family_status: source.family_status || prev.family_status,
+        family_values: source.family_values || prev.family_values,
+        father_occupation: source.father_occupation || prev.father_occupation,
+        mother_occupation: source.mother_occupation || prev.mother_occupation,
+        brothers_count: source.brothers_count !== undefined ? Number(source.brothers_count) : prev.brothers_count,
+        brothers_married_count: source.brothers_married_count !== undefined ? Number(source.brothers_married_count) : prev.brothers_married_count,
+        sisters_count: source.sisters_count !== undefined ? Number(source.sisters_count) : prev.sisters_count,
+        sisters_married_count: source.sisters_married_count !== undefined ? Number(source.sisters_married_count) : prev.sisters_married_count,
+        living_with_parents: source.living_with_parents !== undefined ? Boolean(source.living_with_parents) : prev.living_with_parents,
+        family_location: source.family_location || prev.family_location,
+        family_information: source.family_information || prev.family_information,
 
         languages_known: Array.isArray(source.languages_known) ? source.languages_known.join(', ') : (source.languages_known || prev.languages_known),
         language_ids: langIds.length > 0 ? langIds : prev.language_ids,
@@ -343,9 +424,11 @@ export const EditProfile: React.FC = () => {
 
   // Income Range change
   const handleIncomeChange = (val: string) => {
+    const matched = incomeRanges.find(i => i.label === val);
     setFormData(prev => ({
       ...prev,
-      annual_income: val
+      annual_income: val,
+      annual_income_id: matched ? matched.id : prev.annual_income_id
     }));
   };
 
@@ -471,52 +554,45 @@ export const EditProfile: React.FC = () => {
     return Math.min(100, Math.round((filledCount / checks.length) * 100));
   }, [formData]);
 
-  // Form Validation
+  // Validation before save
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (!formData.highest_education && !formData.education_id) {
-      errors.highest_education = 'Education is required';
-    }
-    if (!formData.occupation && !formData.profession_id) {
-      errors.occupation = 'Profession is required';
-    }
-    if (!formData.religion && !formData.religion_id) {
-      errors.religion = 'Please select your religion';
+    if (!formData.profile_name.trim()) {
+      errors.profile_name = 'Profile name is required';
     }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // Parse height helper
-  const parseHeight = (h: string | undefined): number => {
-    if (!h) return 5.8;
-    const feetMatch = String(h).match(/(\d+)'\s*(\d+)/);
-    if (feetMatch) {
-      return parseFloat(`${feetMatch[1]}.${feetMatch[2]}`);
+  // Height parse helper
+  const parseHeight = (val: string): number => {
+    if (!val) return 5.8;
+    const n = parseFloat(val);
+    if (isNaN(n)) return 5.8;
+    if (n > 30) {
+      return parseFloat((n / 30.48).toFixed(1));
     }
-    const num = parseFloat(String(h));
-    if (num > 10) {
-      return parseFloat((num / 30.48).toFixed(1));
-    }
-    return isNaN(num) ? 5.8 : num;
+    return n;
   };
 
-  // Parse income helper
-  const parseIncome = (inc: string | undefined): number | null => {
-    if (!inc) return null;
-    const numMatch = String(inc).replace(/,/g, '').match(/\d+/g);
-    if (!numMatch || numMatch.length === 0) return null;
-    const val = parseInt(numMatch[numMatch.length - 1], 10);
-    if (String(inc).toLowerCase().includes('lakh')) {
-      return val * 100000;
+  // Income parse helper
+  const parseIncome = (val: any): number | null => {
+    if (!val) return null;
+    if (typeof val === 'number') return isNaN(val) ? null : val;
+    const str = String(val);
+    const nums = str.match(/(\d+(\.\d+)?)/g);
+    if (!nums || nums.length === 0) return null;
+    const valFloat = parseFloat(nums[0]);
+    if (str.toLowerCase().includes('lakh')) {
+      return Math.round(valFloat * 100000);
     }
-    if (String(inc).toLowerCase().includes('crore')) {
-      return val * 10000000;
+    if (str.toLowerCase().includes('crore')) {
+      return Math.round(valFloat * 10000000);
     }
-    if (val > 1000) return val;
-    return val * 100000;
+    if (valFloat > 1000) return Math.round(valFloat);
+    return Math.round(valFloat * 100000);
   };
 
   // Save changes handler (PUT /api/profile/update/ or POST /api/profile/create/)
@@ -531,6 +607,10 @@ export const EditProfile: React.FC = () => {
     try {
       setIsSubmitting(true);
 
+      const matchedIncome = incomeRanges.find(i => i.label === formData.annual_income || String(i.id) === String(formData.annual_income_id));
+      const incomeId = matchedIncome ? matchedIncome.id : (formData.annual_income_id ? Number(formData.annual_income_id) : null);
+      const parsedIncomeVal = matchedIncome && matchedIncome.min_value ? parseInt(matchedIncome.min_value, 10) : parseIncome(formData.annual_income);
+
       const payload: ProfileUpdateRequest = {
         profile_name: formData.profile_name.trim() || undefined,
         about_me: formData.about_me.trim() || '',
@@ -538,6 +618,11 @@ export const EditProfile: React.FC = () => {
         weight: formData.weight ? parseFloat(formData.weight) || null : null,
         complexion: formData.complexion || 'Fair',
         marital_status: formData.marital_status || 'Never Married',
+        children_count: Number(formData.children_count) || 0,
+        children_living_status: formData.children_living_status || '',
+        physical_status: formData.physical_status === 'Yes' || formData.physical_status === 'Physically Challenged' ? 'Physically Challenged' : (formData.physical_status || 'Normal'),
+        physical_disability: formData.physical_status === 'Yes' || formData.physical_status === 'Physically Challenged' ? 'YES' : 'NO',
+        disability_information: formData.disability_information || '',
 
         // Education & Career
         education_id: formData.education_id,
@@ -546,15 +631,35 @@ export const EditProfile: React.FC = () => {
         profession_id: formData.profession_id,
         occupation: formData.occupation || '',
         job_title: formData.job_title || '',
-        annual_income: parseIncome(formData.annual_income),
+        annual_income: parsedIncomeVal,
+        annual_income_id: incomeId,
 
-        // Religion
+        // Religion & Horoscope
         religion_id: formData.religion_id,
         religion: formData.religion || '',
         caste_id: formData.caste_id,
         caste: formData.caste || '',
         sub_caste: formData.sub_caste || '',
         gothram: formData.gothram || '',
+        rashi: formData.rashi || '',
+        nakshatra: formData.nakshatra || '',
+        dosha: formData.dosha || '',
+        birth_place: formData.birth_place || '',
+        birth_time: formData.birth_time || null,
+
+        // Family Background
+        family_type: formData.family_type || '',
+        family_status: formData.family_status || '',
+        family_values: formData.family_values || '',
+        father_occupation: formData.father_occupation || '',
+        mother_occupation: formData.mother_occupation || '',
+        brothers_count: Number(formData.brothers_count) || 0,
+        brothers_married_count: Number(formData.brothers_married_count) || 0,
+        sisters_count: Number(formData.sisters_count) || 0,
+        sisters_married_count: Number(formData.sisters_married_count) || 0,
+        living_with_parents: Boolean(formData.living_with_parents),
+        family_location: formData.family_location || '',
+        family_information: formData.family_information || '',
 
         // Languages & Hobbies
         languages_known: formData.languages_known || '',
@@ -676,7 +781,7 @@ export const EditProfile: React.FC = () => {
 
         {/* ─── SECTION 1: BASIC INFORMATION ─── */}
         <Card className="p-5 sm:p-7 bg-white border border-stone-200 rounded-2xl shadow-xs space-y-5">
-          <h2 className="text-base font-bold text-stone-900 flex items-center gap-2 pb-3 border-b border-stone-100">
+          <h2 className="text-[0.95rem] font-bold text-stone-900 flex items-center gap-2 pb-3 border-b border-stone-100">
             <User className="h-4 w-4 text-[#8B1E3F]" /> Basic Information
           </h2>
 
@@ -788,6 +893,69 @@ export const EditProfile: React.FC = () => {
                 <option value="Dark">Dark</option>
               </select>
             </div>
+
+            {/* Children Count */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Children Count
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                value={formData.children_count}
+                onChange={e => handleFieldChange('children_count', Number(e.target.value))}
+                placeholder="0"
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              />
+            </div>
+
+            {/* Children Living Status */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Children Living Status
+              </label>
+              <select
+                value={formData.children_living_status}
+                onChange={e => handleFieldChange('children_living_status', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              >
+                <option value="">Select Living Status</option>
+                <option value="Living with me">Living with me</option>
+                <option value="Not living with me">Not living with me</option>
+                <option value="Shared custody">Shared custody</option>
+                <option value="None">None</option>
+              </select>
+            </div>
+
+            {/* Physical Disability */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Physical Disability
+              </label>
+              <select
+                value={formData.physical_status}
+                onChange={e => handleFieldChange('physical_status', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              >
+                <option value="No">No (Normal)</option>
+                <option value="Yes">Yes (Physically Challenged)</option>
+              </select>
+            </div>
+
+            {/* Disability Information */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Disability Information (If applicable)
+              </label>
+              <input
+                type="text"
+                placeholder="Provide details if any..."
+                value={formData.disability_information}
+                onChange={e => handleFieldChange('disability_information', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              />
+            </div>
           </div>
 
           {/* About Me */}
@@ -807,7 +975,7 @@ export const EditProfile: React.FC = () => {
 
         {/* ─── SECTION 2: EDUCATION & CAREER ─── */}
         <Card className="p-5 sm:p-7 bg-white border border-stone-200 rounded-2xl shadow-xs space-y-5">
-          <h2 className="text-base font-bold text-stone-900 flex items-center gap-2 pb-3 border-b border-stone-100">
+          <h2 className="text-[0.95rem] font-bold text-stone-900 flex items-center gap-2 pb-3 border-b border-stone-100">
             <GraduationCap className="h-4 w-4 text-[#8B1E3F]" /> Education & Career
           </h2>
 
@@ -838,6 +1006,20 @@ export const EditProfile: React.FC = () => {
               {formErrors.highest_education && (
                 <p className="text-[11px] text-rose-600 font-semibold mt-1">{formErrors.highest_education}</p>
               )}
+            </div>
+
+            {/* Education Detail / Degree */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Education Detail / Specialization
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. B.Tech in Computer Science"
+                value={formData.education_detail}
+                onChange={e => handleFieldChange('education_detail', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              />
             </div>
 
             {/* Profession (API Driven) */}
@@ -911,10 +1093,10 @@ export const EditProfile: React.FC = () => {
           </div>
         </Card>
 
-        {/* ─── SECTION 3: RELIGION & COMMUNITY ─── */}
+        {/* ─── SECTION 3: RELIGION, COMMUNITY & HOROSCOPE ─── */}
         <Card className="p-5 sm:p-7 bg-white border border-stone-200 rounded-2xl shadow-xs space-y-5">
-          <h2 className="text-base font-bold text-stone-900 flex items-center gap-2 pb-3 border-b border-stone-100">
-            <Sparkles className="h-4 w-4 text-[#8B1E3F]" /> Religion & Community
+          <h2 className="text-[0.95rem] font-bold text-stone-900 flex items-center gap-2 pb-3 border-b border-stone-100">
+            <Sparkles className="h-4 w-4 text-[#8B1E3F]" /> Religion, Community & Horoscope
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1004,12 +1186,256 @@ export const EditProfile: React.FC = () => {
                 className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
               />
             </div>
+
+            {/* Birth Place */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Birth Place
+              </label>
+              <input
+                type="text"
+                placeholder="City, State"
+                value={formData.birth_place}
+                onChange={e => handleFieldChange('birth_place', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              />
+            </div>
+
+            {/* Birth Time */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Birth Time
+              </label>
+              <div className="relative">
+                <input
+                  type="time"
+                  value={formData.birth_time}
+                  onChange={e => handleFieldChange('birth_time', e.target.value)}
+                  className="w-full bg-stone-50 border border-stone-300 rounded-xl pl-3.5 pr-9 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+                />
+                <Clock className="h-4 w-4 text-stone-400 absolute right-3 top-3 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Moon Sign (Rashi) */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Moon Sign (Rashi)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Mesha, Vrishabha, Mithuna"
+                value={formData.rashi}
+                onChange={e => handleFieldChange('rashi', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              />
+            </div>
+
+            {/* Star (Nakshatra) */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Star (Nakshatra)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Rohini, Ashwini"
+                value={formData.nakshatra}
+                onChange={e => handleFieldChange('nakshatra', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              />
+            </div>
+
+            {/* Dosha / Manglik */}
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Dosha / Manglik
+              </label>
+              <select
+                value={formData.dosha}
+                onChange={e => handleFieldChange('dosha', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              >
+                <option value="">Select Dosha</option>
+                <option value="No Dosha">No Dosha</option>
+                <option value="Manglik">Manglik</option>
+                <option value="Sarpa Dosha">Sarpa Dosha</option>
+                <option value="Kala Sarpa Dosha">Kala Sarpa Dosha</option>
+                <option value="Rahu Dosha">Rahu Dosha</option>
+                <option value="Ketu Dosha">Ketu Dosha</option>
+                <option value="Don't Know">Don't Know</option>
+              </select>
+            </div>
           </div>
         </Card>
 
-        {/* ─── SECTION 4: LANGUAGES & INTERESTS ─── */}
+        {/* ─── SECTION 4: FAMILY BACKGROUND ─── */}
+        <Card className="p-5 sm:p-7 bg-white border border-stone-200 rounded-2xl shadow-xs space-y-5">
+          <h2 className="text-[0.95rem] font-bold text-stone-900 flex items-center gap-2 pb-3 border-b border-stone-100">
+            <Users className="h-4 w-4 text-[#8B1E3F]" /> Family Background
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Family Type */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Family Type
+              </label>
+              <select
+                value={formData.family_type}
+                onChange={e => handleFieldChange('family_type', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              >
+                <option value="">Select Family Type</option>
+                <option value="Nuclear">Nuclear</option>
+                <option value="Joint">Joint</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            {/* Family Status */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Family Status
+              </label>
+              <select
+                value={formData.family_status}
+                onChange={e => handleFieldChange('family_status', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              >
+                <option value="">Select Family Status</option>
+                <option value="Middle Class">Middle Class</option>
+                <option value="Upper Middle Class">Upper Middle Class</option>
+                <option value="Rich">Rich</option>
+                <option value="Affluent">Affluent</option>
+                <option value="Modest">Modest</option>
+              </select>
+            </div>
+
+            {/* Family Values */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Family Values
+              </label>
+              <select
+                value={formData.family_values}
+                onChange={e => handleFieldChange('family_values', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              >
+                <option value="">Select Family Values</option>
+                <option value="Traditional">Traditional</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Liberal">Liberal</option>
+              </select>
+            </div>
+
+            {/* Father's Profession */}
+            <div className="sm:col-span-1">
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Father's Profession
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Business, Government Service, Retired"
+                value={formData.father_occupation}
+                onChange={e => handleFieldChange('father_occupation', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              />
+            </div>
+
+            {/* Mother's Profession */}
+            <div className="sm:col-span-1">
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Mother's Profession
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Homemaker, Teacher, Doctor"
+                value={formData.mother_occupation}
+                onChange={e => handleFieldChange('mother_occupation', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              />
+            </div>
+
+            {/* Living with Parents */}
+            <div className="sm:col-span-1">
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Living with Parents
+              </label>
+              <select
+                value={formData.living_with_parents ? 'Yes' : 'No'}
+                onChange={e => handleFieldChange('living_with_parents', e.target.value === 'Yes')}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              >
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+
+            {/* Brothers Count */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Brothers Count
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                value={formData.brothers_count}
+                onChange={e => handleFieldChange('brothers_count', Number(e.target.value))}
+                placeholder="0"
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              />
+            </div>
+
+            {/* Sisters Count */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Sisters Count
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                value={formData.sisters_count}
+                onChange={e => handleFieldChange('sisters_count', Number(e.target.value))}
+                placeholder="0"
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              />
+            </div>
+
+            {/* Family Location / Native */}
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                Family Native Location
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Hyderabad, Telangana"
+                value={formData.family_location}
+                onChange={e => handleFieldChange('family_location', e.target.value)}
+                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+              />
+            </div>
+          </div>
+
+          {/* Family Information */}
+          <div>
+            <label className="block text-xs font-bold text-stone-700 mb-1.5">
+              About Family / Background Details
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Additional information about family traditions, values, or background..."
+              value={formData.family_information}
+              onChange={e => handleFieldChange('family_information', e.target.value)}
+              className="w-full bg-stone-50 border border-stone-300 rounded-xl p-3.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
+            />
+          </div>
+        </Card>
+
+        {/* ─── SECTION 5: LANGUAGES & INTERESTS ─── */}
         <Card className="p-5 sm:p-7 bg-white border border-stone-200 rounded-2xl shadow-xs space-y-6">
-          <h2 className="text-base font-bold text-stone-900 flex items-center gap-2 pb-3 border-b border-stone-100">
+          <h2 className="text-[0.95rem] font-bold text-stone-900 flex items-center gap-2 pb-3 border-b border-stone-100">
             <Heart className="h-4 w-4 text-[#8B1E3F]" /> Languages & Interests
           </h2>
 
@@ -1077,7 +1503,7 @@ export const EditProfile: React.FC = () => {
         {/* ─── SECTION 5: LOCATION HIERARCHY ─── */}
         <Card className="p-5 sm:p-7 bg-white border border-stone-200 rounded-2xl shadow-xs space-y-5">
           <div>
-            <h2 className="text-base font-bold text-stone-900 flex items-center gap-2 pb-1 border-b border-stone-100">
+            <h2 className="text-[0.95rem] font-bold text-stone-900 flex items-center gap-2 pb-1 border-b border-stone-100">
               <MapPin className="h-4 w-4 text-[#8B1E3F]" /> Location
             </h2>
             <p className="text-xs text-stone-500 mt-1">
@@ -1227,7 +1653,7 @@ export const EditProfile: React.FC = () => {
 
         {/* ─── SECTION 6: PHOTOS & MEDIA ─── */}
         <Card className="p-5 sm:p-7 bg-white border border-stone-200 rounded-2xl shadow-xs space-y-5">
-          <h2 className="text-base font-bold text-stone-900 flex items-center gap-2 pb-3 border-b border-stone-100">
+          <h2 className="text-[0.95rem] font-bold text-stone-900 flex items-center gap-2 pb-3 border-b border-stone-100">
             <Camera className="h-4 w-4 text-[#8B1E3F]" /> Photos & Media
           </h2>
 

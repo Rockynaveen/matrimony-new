@@ -41,6 +41,12 @@ export const AdminDashboard: React.FC = () => {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <a
+            href="/admin/memberships"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md transition-colors"
+          >
+            Memberships & Plans
+          </a>
+          <a
             href="/admin/verifications"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#8B1E3F] hover:bg-[#721733] text-white text-xs font-bold shadow-md transition-colors"
           >

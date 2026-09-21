@@ -1,12 +1,16 @@
 export interface ApiMembershipPlan {
   id: number;
+  uuid?: string;
+  slug?: string;
   name: string;
   price: string | number;
   profile_credits: number;
-  validity_days: number;
+  interest_credits?: number;
+  validity_days: number | null;
   profile_boost_count: number;
   is_featured_profile: boolean;
   unlimited_messaging: boolean;
+  is_free_trial?: boolean;
   is_active: boolean;
 }
 
@@ -14,15 +18,19 @@ export interface CreatePlanPayload {
   name: string;
   price: number;
   profile_credits: number;
-  validity_days: number;
-  profile_boost_count: number;
-  is_featured_profile: boolean;
-  unlimited_messaging: boolean;
-  is_active: boolean;
+  validity_days?: number | null;
+  profile_boost_count?: number;
+  is_featured_profile?: boolean;
+  unlimited_messaging?: boolean;
+  is_active?: boolean;
+  interest_credits?: number;
+  is_free_trial?: boolean;
 }
 
 export interface UserBasicInfo {
   id: number;
+  uuid?: string;
+  slug?: string;
   first_name: string;
   last_name: string;
   phone: string | null;
@@ -31,9 +39,11 @@ export interface UserBasicInfo {
 
 export interface ApiUserMembership {
   id: number;
+  uuid?: string;
   user: UserBasicInfo;
   plan: ApiMembershipPlan;
   remaining_credits: number;
+  remaining_interest_credits?: number;
   remaining_boosts: number;
   purchased_at: string;
   expires_at: string | null;
@@ -42,6 +52,7 @@ export interface ApiUserMembership {
 
 export interface ApiTransaction {
   id: number;
+  uuid?: string;
   customer_name: string;
   customer_email: string;
   customer_phone: string;
@@ -55,12 +66,12 @@ export interface ApiTransaction {
 }
 
 export interface CreateOfflineTransactionPayload {
-  user_id?: number;
+  user_id: number;
   plan_id: number;
-  customer_name: string;
-  customer_email: string;
-  customer_phone?: string;
   amount: number | string;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
   notes?: string;
   [key: string]: any;
 }
@@ -90,4 +101,6 @@ export interface MyMembershipOut {
   profile_credits: number;
   used_credits: number;
   remaining_credits: number;
+  validity_days?: number | null;
+  expires_at?: string | null;
 }

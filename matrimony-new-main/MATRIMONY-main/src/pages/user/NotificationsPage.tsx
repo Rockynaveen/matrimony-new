@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { notificationApi, type NotificationPreferencesSchema } from '../../api/notificationApi';
+import { resolveNotificationLink } from '../../utils/notificationUtils';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -205,7 +206,8 @@ export const NotificationsPage: React.FC = () => {
                 <Card
                   onClick={() => {
                     markNotificationRead(n.id);
-                    if (n.link) navigate(n.link);
+                    const destination = resolveNotificationLink(n);
+                    if (destination) navigate(destination);
                   }}
                   className={`p-5 flex items-start gap-4 cursor-pointer transition-all duration-200 hover:shadow-lg rounded-3xl border ${
                     !n.read

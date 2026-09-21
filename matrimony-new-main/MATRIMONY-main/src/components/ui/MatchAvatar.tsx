@@ -12,20 +12,6 @@ interface MatchAvatarProps {
   alt?: string;
 }
 
-export const formatPhotoUrl = (url?: string | null): string => {
-  if (!url || typeof url !== 'string') return '';
-  const trimmed = url.trim();
-  if (!trimmed) return '';
-  if (trimmed.startsWith('/images/') || trimmed.startsWith('images/')) {
-    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  }
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
-    return trimmed;
-  }
-  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  return `https://matrimony-production-4b00.up.railway.app${cleanPath}`;
-};
-
 export const isDummyImage = (url?: string | null): boolean => {
   if (!url || typeof url !== 'string') return true;
   const lower = url.toLowerCase().trim();
@@ -33,8 +19,29 @@ export const isDummyImage = (url?: string | null): boolean => {
   return (
     lower.includes('placeholder') ||
     lower.includes('dummy') ||
-    lower.includes('ui-avatars.com')
+    lower.includes('ui-avatars.com') ||
+    lower.includes('recommended_bride') ||
+    lower.includes('recommended_groom') ||
+    lower.includes('images/profiles') ||
+    lower.includes('default_avatar') ||
+    lower.includes('avatar-placeholder') ||
+    lower.includes('ananya_')
   );
+};
+
+export const formatPhotoUrl = (url?: string | null): string => {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (isDummyImage(trimmed)) return '';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('/images/') || trimmed.startsWith('images/')) {
+    return '';
+  }
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `https://matrimony-production-4b00.up.railway.app${cleanPath}`;
 };
 
 export const getFirstLetter = (

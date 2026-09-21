@@ -109,6 +109,9 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
     (match as any).user_member_id ||
     (numericMatchId > 0 ? `KM${String(numericMatchId).padStart(6, '0')}` : 'Member');
 
+  const genderLower = String((match as any).gender || '').toLowerCase();
+  const genderSymbol = genderLower.startsWith('f') ? '♀' : genderLower.startsWith('m') ? '♂' : '';
+
   const formatHeightDisplay = (h?: string | number | null): string => {
     if (!h) return 'Not Specified';
     if (typeof h === 'number') {
@@ -198,8 +201,8 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 
             {/* Gender Symbol, Age, Height */}
             <div className="flex items-center gap-1.5 text-xs text-stone-600 font-medium">
-              <span className="text-stone-500 font-bold">{genderSymbol}</span>
-              <span>{match.age ? `${match.age} yrs` : 'Age N/A'}, {formatHeightDisplay(match.height)}</span>
+              {genderSymbol && <span className="text-stone-500 font-bold">{genderSymbol}</span>}
+              <span>{match.age ? `${match.age} yrs` : 'Age N/A'}, {formatHeightDisplay((match as any).height)}</span>
             </div>
 
             {/* Education & Profession */}

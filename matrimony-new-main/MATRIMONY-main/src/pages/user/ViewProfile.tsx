@@ -7,7 +7,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { LoadingScreen } from '../../components/ui/LoadingScreen';
-import { MatchAvatar } from '../../components/ui/MatchAvatar';
+import { MatchAvatar, isDummyImage } from '../../components/ui/MatchAvatar';
 import {
   Heart,
   ShieldCheck,
@@ -70,12 +70,12 @@ export const toImageUrl = (val: any): string => {
   if (!val) return '';
   if (typeof val === 'string') {
     const trimmed = val.trim();
-    if (!trimmed) return '';
-    if (trimmed.startsWith('/images/') || trimmed.startsWith('images/')) {
-      return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-    }
+    if (!trimmed || isDummyImage(trimmed)) return '';
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
       return trimmed;
+    }
+    if (trimmed.startsWith('/images/') || trimmed.startsWith('images/')) {
+      return '';
     }
     const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
     return `${RAILWAY_BASE_ORIGIN}${cleanPath}`;
@@ -378,6 +378,10 @@ export const ViewProfile: React.FC = () => {
       smoking: toText(activeSource.smoking, 'Not Specified'),
       drinking: toText(activeSource.drinking, 'Not Specified'),
       physicalStatus: toText(activeSource.disability_information || activeSource.physical_status, 'Normal'),
+      physicalDisability: toText(activeSource.physical_disability || activeSource.physicalDisability, ''),
+      disabilityInformation: toText(activeSource.disability_information || activeSource.disabilityInformation, ''),
+      childrenCount: activeSource.children_count ?? activeSource.childrenCount ?? 0,
+      childrenLivingStatus: toText(activeSource.children_living_status || activeSource.childrenLivingStatus, ''),
       interests: toText(
         Array.isArray(activeSource.hobbies_interests || activeSource.hobbies)
           ? (activeSource.hobbies_interests || activeSource.hobbies).join(', ')
@@ -408,9 +412,16 @@ export const ViewProfile: React.FC = () => {
         activeSource.family?.values || activeSource.family?.family_values || activeSource.family_values,
         'Traditional & Modern'
       ),
+      livingWithParents: activeSource.family?.livingWithParents ?? activeSource.family?.living_with_parents ?? activeSource.living_with_parents ?? activeSource.livingWithParents ?? null,
+      familyLocation: toText(
+        activeSource.family?.familyLocation || activeSource.family?.family_location || activeSource.family_location || activeSource.familyLocation,
+        ''
+      ),
       star: toText(activeSource.nakshatra || activeSource.horoscope?.nakshatra, 'Not Specified'),
       rashi: toText(activeSource.rashi || activeSource.horoscope?.rashi, 'Not Specified'),
       dosha: toText(activeSource.dosha || activeSource.horoscope?.dosha, 'Not Specified'),
+      birthPlace: toText(activeSource.birth_place || activeSource.birthPlace || activeSource.horoscope?.birthPlace || activeSource.horoscope?.birth_place, ''),
+      birthTime: toText(activeSource.birth_time || activeSource.birthTime || activeSource.horoscope?.birthTime || activeSource.horoscope?.birth_time, ''),
       videoIntro: toText(activeSource.video_url || activeSource.video_introduction || activeSource.videoIntro)
     };
   }, [activeSource, numericUserId, kmId, fullDisplayName, resolvedFirstName, resolvedLastName]);
@@ -419,13 +430,10 @@ export const ViewProfile: React.FC = () => {
   const [isJustSent, setIsJustSent] = useState(false);
 
   const galleryList = useMemo(() => {
-    if (profile?.gallery && profile.gallery.length > 0) {
-      return profile.gallery;
-    }
-    if (profile?.profileImage) {
-      return [profile.profileImage];
-    }
-    return [];
+    const rawList = profile?.gallery && profile.gallery.length > 0
+      ? profile.gallery
+      : (profile?.profileImage ? [profile.profileImage] : []);
+    return rawList.filter(img => Boolean(img) && !isDummyImage(img));
   }, [profile]);
 
   const activePhoto = galleryList[currentPhotoIndex] || galleryList[0] || null;
@@ -593,10 +601,13 @@ export const ViewProfile: React.FC = () => {
             {/* Left Column: Photo Carousel */}
             <div className="lg:col-span-4 w-full">
               <div className="relative aspect-square sm:aspect-[4/4.2] w-full rounded-2xl overflow-hidden bg-stone-100 shadow-sm group">
-                {activePhoto ? (
+                {activePhoto && !isDummyImage(activePhoto) ? (
                   <img
                     src={activePhoto}
                     alt={profile.name}
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
                     className="w-full h-full object-cover object-center transition-all duration-300"
                   />
                 ) : (
@@ -893,7 +904,7 @@ export const ViewProfile: React.FC = () => {
                 <div className="p-2 rounded-xl bg-rose-50 text-[#9f1239]">
                   <User className="h-4 w-4" />
                 </div>
-                <h3 className="font-bold text-base text-stone-900 tracking-tight">Personal Details</h3>
+                <h3 className="font-bold text-[0.95rem] text-stone-900 tracking-tight">Personal Details</h3>
               </div>
 
               <div className="divide-y divide-stone-100 text-xs sm:text-[13px]">
@@ -913,6 +924,20 @@ export const ViewProfile: React.FC = () => {
                   <span className="col-span-5 text-stone-500 font-medium">Marital Status</span>
                   <span className="col-span-7 text-stone-900 font-semibold">{profile.maritalStatus}</span>
                 </div>
+                {profile.maritalStatus !== 'Never Married' && profile.maritalStatus !== 'Not Specified' && (
+                  <>
+                    <div className="grid grid-cols-12 py-2.5">
+                      <span className="col-span-5 text-stone-500 font-medium">No. of Children</span>
+                      <span className="col-span-7 text-stone-900 font-semibold">{profile.childrenCount}</span>
+                    </div>
+                    {profile.childrenLivingStatus && (
+                      <div className="grid grid-cols-12 py-2.5">
+                        <span className="col-span-5 text-stone-500 font-medium">Children Living Status</span>
+                        <span className="col-span-7 text-stone-900 font-semibold">{profile.childrenLivingStatus}</span>
+                      </div>
+                    )}
+                  </>
+                )}
                 <div className="grid grid-cols-12 py-2.5">
                   <span className="col-span-5 text-stone-500 font-medium">Religion</span>
                   <span className="col-span-7 text-stone-900 font-semibold">{profile.religion}</span>
@@ -940,7 +965,7 @@ export const ViewProfile: React.FC = () => {
                 <div className="p-2 rounded-xl bg-rose-50 text-[#9f1239]">
                   <Briefcase className="h-4 w-4" />
                 </div>
-                <h3 className="font-bold text-base text-stone-900 tracking-tight">Education & Career</h3>
+                <h3 className="font-bold text-[0.95rem] text-stone-900 tracking-tight">Education & Career</h3>
               </div>
 
               <div className="divide-y divide-stone-100 text-xs sm:text-[13px]">
@@ -979,7 +1004,7 @@ export const ViewProfile: React.FC = () => {
                 <div className="p-2 rounded-xl bg-rose-50 text-[#9f1239]">
                   <Users className="h-4 w-4" />
                 </div>
-                <h3 className="font-bold text-base text-stone-900 tracking-tight">Family Background</h3>
+                <h3 className="font-bold text-[0.95rem] text-stone-900 tracking-tight">Family Background</h3>
               </div>
 
               <div className="divide-y divide-stone-100 text-xs sm:text-[13px]">
@@ -1007,6 +1032,20 @@ export const ViewProfile: React.FC = () => {
                   <span className="col-span-5 text-stone-500 font-medium">Family Values</span>
                   <span className="col-span-7 text-stone-900 font-semibold">{profile.familyValues}</span>
                 </div>
+                {profile.livingWithParents !== null && (
+                  <div className="grid grid-cols-12 py-2.5">
+                    <span className="col-span-5 text-stone-500 font-medium">Living with Parents</span>
+                    <span className="col-span-7 text-stone-900 font-semibold">
+                      {profile.livingWithParents ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                )}
+                {profile.familyLocation && (
+                  <div className="grid grid-cols-12 py-2.5">
+                    <span className="col-span-5 text-stone-500 font-medium">Family Location</span>
+                    <span className="col-span-7 text-stone-900 font-semibold">{profile.familyLocation}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1016,7 +1055,7 @@ export const ViewProfile: React.FC = () => {
                 <div className="p-2 rounded-xl bg-rose-50 text-[#9f1239]">
                   <Heart className="h-4 w-4" />
                 </div>
-                <h3 className="font-bold text-base text-stone-900 tracking-tight">Lifestyle</h3>
+                <h3 className="font-bold text-[0.95rem] text-stone-900 tracking-tight">Lifestyle</h3>
               </div>
 
               <div className="divide-y divide-stone-100 text-xs sm:text-[13px]">
@@ -1036,6 +1075,12 @@ export const ViewProfile: React.FC = () => {
                   <span className="col-span-5 text-stone-500 font-medium">Physical Status</span>
                   <span className="col-span-7 text-stone-900 font-semibold">{profile.physicalStatus}</span>
                 </div>
+                {profile.physicalDisability && profile.physicalDisability !== 'None' && (
+                  <div className="grid grid-cols-12 py-2.5">
+                    <span className="col-span-5 text-stone-500 font-medium">Disability Details</span>
+                    <span className="col-span-7 text-stone-900 font-semibold">{profile.physicalDisability}</span>
+                  </div>
+                )}
                 <div className="grid grid-cols-12 py-2.5">
                   <span className="col-span-5 text-stone-500 font-medium">Interests</span>
                   <span className="col-span-7 text-stone-900 font-semibold">{profile.interests}</span>
@@ -1049,7 +1094,7 @@ export const ViewProfile: React.FC = () => {
                 <div className="p-2 rounded-xl bg-rose-50 text-[#9f1239]">
                   <Sun className="h-4 w-4" />
                 </div>
-                <h3 className="font-bold text-base text-stone-900 tracking-tight">Horoscope Details</h3>
+                <h3 className="font-bold text-[0.95rem] text-stone-900 tracking-tight">Horoscope Details</h3>
               </div>
 
               <div className="divide-y divide-stone-100 text-xs sm:text-[13px]">
@@ -1069,6 +1114,18 @@ export const ViewProfile: React.FC = () => {
                   <span className="col-span-5 text-stone-500 font-medium">Gothram</span>
                   <span className="col-span-7 text-stone-900 font-semibold">{profile.gothram}</span>
                 </div>
+                {profile.birthPlace && (
+                  <div className="grid grid-cols-12 py-2.5">
+                    <span className="col-span-5 text-stone-500 font-medium">Birth Place</span>
+                    <span className="col-span-7 text-stone-900 font-semibold">{profile.birthPlace}</span>
+                  </div>
+                )}
+                {profile.birthTime && (
+                  <div className="grid grid-cols-12 py-2.5">
+                    <span className="col-span-5 text-stone-500 font-medium">Birth Time</span>
+                    <span className="col-span-7 text-stone-900 font-semibold">{profile.birthTime}</span>
+                  </div>
+                )}
               </div>
             </div>
 

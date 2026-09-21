@@ -26,6 +26,22 @@ interface ProfileCardProps {
   profile: Profile;
 }
 
+const toSafeString = (val: any, fallback = ''): string => {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'string') return val.trim() || fallback;
+  if (typeof val === 'number') return String(val);
+  if (typeof val === 'object') {
+    if (val.city || val.state || val.country) {
+      return [val.city, val.state, val.country].filter(Boolean).join(', ') || fallback;
+    }
+    if (val.name || val.title || val.label || val.value) {
+      return String(val.name || val.title || val.label || val.value || fallback);
+    }
+    return fallback;
+  }
+  return String(val);
+};
+
 export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) => {
   const { interests, sendInterest, isAuthenticated } = useApp();
   const isShortlisted = useShortlistStore((state) => state.shortlistedIds.includes(profile.id));
@@ -37,6 +53,29 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) 
 
   const profileIdentifier = (profile as any).uuid || (profile as any).member_id || (profile as any).user_uuid || profile.id;
   const hasSentInterest = isJustSent || profile.interestSent || interests.some(i => String(i.receiverId) === String(profile.id) || String(i.user_id) === String(profile.id) || String(i.to_user) === String(profile.id));
+
+  const resolvedLocation = React.useMemo(() => {
+    if (typeof profile.city === 'string' && profile.city.trim()) return profile.city.trim();
+    if (typeof profile.location === 'string' && profile.location.trim()) return profile.location.trim();
+    if (profile.location && typeof profile.location === 'object') {
+      return [profile.location.city, profile.location.state, profile.location.country]
+        .filter(Boolean)
+        .join(', ') || 'India';
+    }
+    return toSafeString(profile.city || profile.location, 'India');
+  }, [profile.city, profile.location]);
+
+  const resolvedCommunity = React.useMemo(() => {
+    return toSafeString((profile as any).community || profile.caste || profile.religion, 'Community');
+  }, [profile]);
+
+  const resolvedEducation = React.useMemo(() => {
+    return toSafeString(profile.education, 'Not specified');
+  }, [profile.education]);
+
+  const resolvedProfession = React.useMemo(() => {
+    return toSafeString(profile.profession, 'Not specified');
+  }, [profile.profession]);
 
   const handleSendInterestClick = async () => {
     setIsSending(true);
@@ -136,22 +175,22 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) 
                 {profile.name}, {profile.age}
               </h3>
               <p className="text-xs text-stone-600 font-medium line-clamp-1">
-                {profile.community || profile.caste || profile.religion || 'Community'}
+                {resolvedCommunity}
               </p>
             </div>
 
             <div className="space-y-1 text-xs text-stone-500 font-normal">
               <div className="flex items-center gap-1.5 truncate">
                 <GraduationCap className="h-3.5 w-3.5 text-stone-400 shrink-0" />
-                <span className="truncate">{profile.education || 'Not specified'}</span>
+                <span className="truncate">{resolvedEducation}</span>
               </div>
               <div className="flex items-center gap-1.5 truncate">
                 <Briefcase className="h-3.5 w-3.5 text-stone-400 shrink-0" />
-                <span className="truncate">{profile.profession || 'Not specified'}</span>
+                <span className="truncate">{resolvedProfession}</span>
               </div>
               <div className="flex items-center gap-1.5 truncate">
                 <MapPin className="h-3.5 w-3.5 text-stone-400 shrink-0" />
-                <span className="truncate">{profile.city || profile.location || 'India'}</span>
+                <span className="truncate">{resolvedLocation}</span>
               </div>
             </div>
           </div>

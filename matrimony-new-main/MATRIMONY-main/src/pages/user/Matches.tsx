@@ -8,6 +8,7 @@ import {
   useReceivedInterests,
   useIgnoredProfiles
 } from '../../hooks/useMatching';
+import { useFilterOptions } from '../../hooks/useSearchQueries';
 import { RecommendationCard } from '../../components/matching/RecommendationCard';
 import {
   Filter,
@@ -51,6 +52,55 @@ export const MatchesPage: React.FC = () => {
   const { data: shortlist } = useShortlist();
   const { data: sentInterests } = useSentInterests();
   const { data: ignoredList } = useIgnoredProfiles();
+  const { data: filterOptions } = useFilterOptions();
+
+  const getOptionList = (list?: any[] | Record<string, string[]>, fallback: string[] = []): string[] => {
+    if (!list) return fallback;
+    if (Array.isArray(list)) {
+      return list.map(item => (typeof item === 'string' ? item : item.label || item.value || String(item)));
+    }
+    if (typeof list === 'object') {
+      return Object.keys(list);
+    }
+    return fallback;
+  };
+
+  const dynamicReligions = useMemo(() => {
+    const list = getOptionList(filterOptions?.religions, ['Hindu', 'Muslim', 'Christian', 'Sikh', 'Jain']);
+    return ['Any', ...list.filter(r => r.toLowerCase() !== 'any')];
+  }, [filterOptions]);
+
+  const dynamicCastes = useMemo(() => {
+    const list = getOptionList(
+      Array.isArray(filterOptions?.castes) ? filterOptions.castes : Object.keys(filterOptions?.castes || {}),
+      ['Reddy', 'Brahmin', 'Arya Vysya', 'Kamma', 'Kapu', 'Naidu', 'Yadava', 'Mudaliar']
+    );
+    return ['Any', ...list.filter(c => c.toLowerCase() !== 'any')];
+  }, [filterOptions]);
+
+  const dynamicEducations = useMemo(() => {
+    const list = getOptionList(
+      filterOptions?.educations,
+      ['B.Tech', 'M.Tech', 'MBA', 'MCA', 'BDS', 'Chartered Accountant', 'Ph.D']
+    );
+    return ['Any', ...list.filter(e => e.toLowerCase() !== 'any')];
+  }, [filterOptions]);
+
+  const dynamicMaritalStatuses = useMemo(() => {
+    const list = getOptionList(
+      filterOptions?.marital_statuses,
+      ['Never Married', 'Awaiting Divorce', 'Divorced', 'Widowed']
+    );
+    return ['Any', ...list.filter(m => m.toLowerCase() !== 'any')];
+  }, [filterOptions]);
+
+  const dynamicHeights = useMemo(() => {
+    const list = getOptionList(
+      filterOptions?.heights,
+      ['4.5 ft - 5.0 ft', '5.0 ft - 5.5 ft', '5.5 ft - 6.0 ft', '6.0 ft - 6.5 ft']
+    );
+    return ['Any', ...list.filter(h => h.toLowerCase() !== 'any')];
+  }, [filterOptions]);
 
   const shortlistedIds = useMemo(() => shortlist?.map(s => s.user_id) || [], [shortlist]);
   const sentInterestUserIds = useMemo(() => (sentInterests || []).map(i => Number(i.to_user || (i as any).user_id)), [sentInterests]);
@@ -271,11 +321,9 @@ export const MatchesPage: React.FC = () => {
                   onChange={e => setHeightFilter(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-semibold text-stone-800 appearance-none focus:outline-none focus:border-[#8B1E3F]"
                 >
-                  <option value="Any">Any Height</option>
-                  <option value="4.5 ft - 5.0 ft">4.5 ft - 5.0 ft</option>
-                  <option value="5.0 ft - 5.5 ft">5.0 ft - 5.5 ft</option>
-                  <option value="5.5 ft - 6.0 ft">5.5 ft - 6.0 ft</option>
-                  <option value="6.0 ft - 6.5 ft">6.0 ft - 6.5 ft</option>
+                  {dynamicHeights.map(h => (
+                    <option key={h} value={h}>{h === 'Any' ? 'Any Height' : h}</option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>
@@ -290,11 +338,9 @@ export const MatchesPage: React.FC = () => {
                   onChange={e => setMaritalStatus(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-semibold text-stone-800 appearance-none focus:outline-none focus:border-[#8B1E3F]"
                 >
-                  <option value="Never Married">Never Married</option>
-                  <option value="Awaiting Divorce">Awaiting Divorce</option>
-                  <option value="Divorced">Divorced</option>
-                  <option value="Widowed">Widowed</option>
-                  <option value="Any">Any</option>
+                  {dynamicMaritalStatuses.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>
@@ -309,12 +355,9 @@ export const MatchesPage: React.FC = () => {
                   onChange={e => setReligion(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-semibold text-stone-800 appearance-none focus:outline-none focus:border-[#8B1E3F]"
                 >
-                  <option value="Hindu">Hindu</option>
-                  <option value="Muslim">Muslim</option>
-                  <option value="Christian">Christian</option>
-                  <option value="Sikh">Sikh</option>
-                  <option value="Jain">Jain</option>
-                  <option value="Any">Any</option>
+                  {dynamicReligions.map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>
@@ -329,15 +372,9 @@ export const MatchesPage: React.FC = () => {
                   onChange={e => setCaste(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-semibold text-stone-800 appearance-none focus:outline-none focus:border-[#8B1E3F]"
                 >
-                  <option value="Any">Any</option>
-                  <option value="Reddy">Reddy</option>
-                  <option value="Brahmin">Brahmin</option>
-                  <option value="Arya Vysya">Arya Vysya</option>
-                  <option value="Kamma">Kamma</option>
-                  <option value="Kapu">Kapu</option>
-                  <option value="Naidu">Naidu</option>
-                  <option value="Yadava">Yadava</option>
-                  <option value="Mudaliar">Mudaliar</option>
+                  {dynamicCastes.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>
@@ -352,14 +389,9 @@ export const MatchesPage: React.FC = () => {
                   onChange={e => setEducation(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-semibold text-stone-800 appearance-none focus:outline-none focus:border-[#8B1E3F]"
                 >
-                  <option value="Any">Any</option>
-                  <option value="B.Tech">B.Tech / B.E</option>
-                  <option value="M.Tech">M.Tech / M.E</option>
-                  <option value="MBA">MBA / PGDM</option>
-                  <option value="MCA">MCA / M.Sc IT</option>
-                  <option value="BDS">BDS / MBBS / MD</option>
-                  <option value="Chartered Accountant">Chartered Accountant</option>
-                  <option value="Ph.D">Ph.D / Doctorate</option>
+                  {dynamicEducations.map(ed => (
+                    <option key={ed} value={ed}>{ed}</option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>

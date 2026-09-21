@@ -92,10 +92,15 @@ export const partnerPreferencesService = {
         res.status
       );
     } catch (err: any) {
+      const status = err?.response?.status || err?.status;
+      const errorMsg = extractErrorMessage(err?.response?.data || err, '');
+      if (status === 400 || status === 409 || status === 405 || errorMsg.toLowerCase().includes('exist') || errorMsg.toLowerCase().includes('already')) {
+        return this.updatePreferences(payload);
+      }
       if (err instanceof PartnerPreferenceServiceError) throw err;
       throw new PartnerPreferenceServiceError(
         extractErrorMessage(err?.response?.data || err, 'Failed to save preferences'),
-        err?.status || 500
+        status || 500
       );
     }
   },
@@ -122,11 +127,27 @@ export const partnerPreferencesService = {
         res.status
       );
     } catch (err: any) {
+      const status = err?.response?.status || err?.status;
+      if (status === 404) {
+        return this.createPreferences(payload);
+      }
       if (err instanceof PartnerPreferenceServiceError) throw err;
       throw new PartnerPreferenceServiceError(
         extractErrorMessage(err?.response?.data || err, 'Failed to update preferences'),
-        err?.status || 500
+        status || 500
       );
+    }
+  },
+
+  /**
+   * Universal save handler for partner preferences.
+   * Tries update first; falls back to create if not yet existing.
+   */
+  async savePreferences(payload: PartnerPreferenceUpdateRequest): Promise<PartnerPreferenceAPI> {
+    try {
+      return await this.updatePreferences(payload);
+    } catch (err) {
+      return await this.createPreferences(payload);
     }
   },
 

@@ -13,23 +13,61 @@ export interface ProfileOutAPI {
   complexion: string | null;
   highest_education: string;         // required, max 255
   occupation: string;                // required, max 255
-  annual_income: string | null;      // numeric string
+  annual_income: string | number | null;      // numeric string
+  annual_income_id?: number | null;
+  formatted_annual_income?: string | null;
   religion: string;                  // required, max 100
+  religion_id?: number | null;
   caste: string | null;
+  caste_id?: number | null;
+  sub_caste?: string | null;
+  gothram?: string | null;
+  has_horoscope?: boolean;
   rashi: string | null;
   nakshatra: string | null;
   dosha: string | null;
+  birth_place?: string | null;
+  birth_time?: string | null;
+  family_type?: string | null;
+  family_status?: string | null;
+  family_values?: string | null;
+  father_occupation?: string | null;
+  mother_occupation?: string | null;
+  living_with_parents?: boolean;
+  brothers_count?: number;
+  brothers_married_count?: number;
+  sisters_count?: number;
+  sisters_married_count?: number;
+  family_location?: string | null;
   family_information: string | null;
   diet: string;                      // required, max 20
   smoking: string;                   // required, max 20
   drinking: string;                  // required, max 20
   languages_known: string;           // required, comma-separated, max 255
+  language_ids?: number[];
+  languages?: any[];
   hobbies_interests: string | null;
+  hobby_ids?: number[];
+  hobbies?: any[];
   marital_status: string;            // required, max 20
+  children_count?: number;
+  children_living_status?: string | null;
+  physical_status?: string | null;
+  physical_disability?: string | null;
   disability_information: string | null;
   country: string | null;
+  country_id?: number | null;
   state: string | null;
+  state_id?: number | null;
+  district_id?: number | null;
+  district?: string | null;
   city: string | null;
+  mandal_id?: number | null;
+  mandal?: string | null;
+  village_id?: number | null;
+  village?: string | null;
+  pincode?: string | null;
+  address_line?: string | null;
   video_type?: 'UPLOAD' | 'YOUTUBE' | 'EXTERNAL' | null;
   video_url?: string | null;
   hide_photos?: boolean;
@@ -59,11 +97,26 @@ export interface ProfileCreateRequest {
   highest_education: string;         // required
   occupation: string;                // required
   annual_income?: number | null;
+  annual_income_id?: number | null;
+  income_range?: number | string | null;
   religion: string;                  // required
   caste?: string;
   rashi?: string;
   nakshatra?: string;
   dosha?: string;
+  birth_place?: string | null;
+  birth_time?: string | null;
+  family_type?: string | null;
+  family_status?: string | null;
+  family_values?: string | null;
+  father_occupation?: string | null;
+  mother_occupation?: string | null;
+  brothers_count?: number | null;
+  brothers_married_count?: number | null;
+  sisters_count?: number | null;
+  sisters_married_count?: number | null;
+  living_with_parents?: boolean | null;
+  family_location?: string | null;
   family_information?: string;
   diet: string;                      // required
   smoking: string;                   // required
@@ -71,7 +124,12 @@ export interface ProfileCreateRequest {
   languages_known: string;           // required
   hobbies_interests?: string;
   marital_status: string;            // required
+  children_count?: number | null;
+  children_living_status?: string | null;
+  physical_status?: string | null;
+  physical_disability?: string | null;
   disability_information?: string;
+  disability_info?: string | null;
   country?: string;
   state?: string;
   city?: string;
@@ -96,6 +154,8 @@ export interface ProfileCreateRequest {
   hobby_ids?: number[] | null;
   pincode?: string | null;
   address_line?: string | null;
+  video_type?: string | null;
+  video_url?: string | null;
 }
 
 /** PUT /api/profile/ → ProfileUpdate  (all fields optional, numbers nullable) */
@@ -109,11 +169,26 @@ export interface ProfileUpdateRequest {
   highest_education?: string | null;
   occupation?: string | null;
   annual_income?: number | null;
+  annual_income_id?: number | null;
+  income_range?: number | string | null;
   religion?: string | null;
   caste?: string | null;
   rashi?: string | null;
   nakshatra?: string | null;
   dosha?: string | null;
+  birth_place?: string | null;
+  birth_time?: string | null;
+  family_type?: string | null;
+  family_status?: string | null;
+  family_values?: string | null;
+  father_occupation?: string | null;
+  mother_occupation?: string | null;
+  brothers_count?: number | null;
+  brothers_married_count?: number | null;
+  sisters_count?: number | null;
+  sisters_married_count?: number | null;
+  living_with_parents?: boolean | null;
+  family_location?: string | null;
   family_information?: string | null;
   diet?: string | null;
   smoking?: string | null;
@@ -121,7 +196,12 @@ export interface ProfileUpdateRequest {
   languages_known?: string | null;
   hobbies_interests?: string | null;
   marital_status?: string | null;
+  children_count?: number | null;
+  children_living_status?: string | null;
+  physical_status?: string | null;
+  physical_disability?: string | null;
   disability_information?: string | null;
+  disability_info?: string | null;
   country?: string | null;
   state?: string | null;
   city?: string | null;
@@ -147,6 +227,8 @@ export interface ProfileUpdateRequest {
   hobby_ids?: number[] | null;
   pincode?: string | null;
   address_line?: string | null;
+  video_type?: string | null;
+  video_url?: string | null;
 }
 
 /** PATCH /api/profile/basic → BasicProfileUpdateSchema */

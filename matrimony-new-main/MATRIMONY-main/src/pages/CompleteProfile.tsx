@@ -87,6 +87,7 @@ export const CompleteProfile: React.FC = () => {
     company_name: '',
     work_location: '',
     annual_income: '',
+    annual_income_id: null as number | null,
 
     // Section 3: Religion, Community & Horoscope
     religion: '',
@@ -117,6 +118,7 @@ export const CompleteProfile: React.FC = () => {
     hobby_ids: [] as number[],
     marital_status: '',
     children_count: 0,
+    children_living_status: '',
 
     // Section 5: Family Information
     family_type: '',
@@ -128,6 +130,8 @@ export const CompleteProfile: React.FC = () => {
     brothers_married_count: 0,
     sisters_count: 0,
     sisters_married_count: 0,
+    living_with_parents: true,
+    family_location: '',
     family_information: '',
 
     // Section 6: Profile Location Details (Dependent Hierarchy)
@@ -226,7 +230,8 @@ export const CompleteProfile: React.FC = () => {
             employment_type: (profile as any).employment_type || prev.employment_type,
             company_name: (profile as any).company_name || prev.company_name,
             work_location: (profile as any).work_location || prev.work_location,
-            annual_income: profile.annual_income || prev.annual_income,
+            annual_income: profile.annual_income || (profile as any).formatted_annual_income || prev.annual_income,
+            annual_income_id: (profile as any).annual_income_id || prev.annual_income_id,
             religion: profile.religion || prev.religion,
             religion_id: (profile as any).religion_id || prev.religion_id,
             caste: profile.caste || prev.caste,
@@ -236,9 +241,13 @@ export const CompleteProfile: React.FC = () => {
             rashi: profile.rashi || prev.rashi,
             nakshatra: profile.nakshatra || prev.nakshatra,
             dosha: profile.dosha || prev.dosha,
+            birth_place: (profile as any).birth_place || prev.birth_place,
+            birth_time: (profile as any).birth_time || prev.birth_time,
             height: profile.height ? Number(profile.height) : prev.height,
             weight: profile.weight ? Number(profile.weight) : prev.weight,
             complexion: profile.complexion || prev.complexion,
+            physical_status: (profile as any).physical_status === 'Physically Challenged' || (profile as any).physical_disability === 'YES' ? 'Yes' : ((profile as any).physical_status || prev.physical_status),
+            disability_information: (profile as any).disability_information || (profile as any).disability_info || prev.disability_information,
             diet: profile.diet || prev.diet,
             smoking: profile.smoking || prev.smoking,
             drinking: profile.drinking || prev.drinking,
@@ -247,6 +256,20 @@ export const CompleteProfile: React.FC = () => {
             hobbies_interests: profile.hobbies_interests || prev.hobbies_interests,
             hobby_ids: (profile as any).hobby_ids || prev.hobby_ids,
             marital_status: profile.marital_status || prev.marital_status,
+            children_count: (profile as any).children_count !== undefined ? Number((profile as any).children_count) : prev.children_count,
+            children_living_status: (profile as any).children_living_status || prev.children_living_status,
+            family_type: (profile as any).family_type || prev.family_type,
+            family_status: (profile as any).family_status || prev.family_status,
+            family_values: (profile as any).family_values || prev.family_values,
+            father_occupation: (profile as any).father_occupation || prev.father_occupation,
+            mother_occupation: (profile as any).mother_occupation || prev.mother_occupation,
+            brothers_count: (profile as any).brothers_count !== undefined ? Number((profile as any).brothers_count) : prev.brothers_count,
+            brothers_married_count: (profile as any).brothers_married_count !== undefined ? Number((profile as any).brothers_married_count) : prev.brothers_married_count,
+            sisters_count: (profile as any).sisters_count !== undefined ? Number((profile as any).sisters_count) : prev.sisters_count,
+            sisters_married_count: (profile as any).sisters_married_count !== undefined ? Number((profile as any).sisters_married_count) : prev.sisters_married_count,
+            living_with_parents: (profile as any).living_with_parents !== undefined ? Boolean((profile as any).living_with_parents) : prev.living_with_parents,
+            family_location: (profile as any).family_location || prev.family_location,
+            family_information: (profile as any).family_information || prev.family_information,
             country: profile.country || prev.country,
             country_id: (profile as any).country_id || prev.country_id,
             state: profile.state || prev.state,
@@ -444,6 +467,10 @@ export const CompleteProfile: React.FC = () => {
       const selectedLang = languages.find(l => l.name === formData.languages_known);
       const selectedHobby = hobbies.find(h => h.name === formData.hobbies_interests);
 
+      const matchedIncome = incomeRanges.find(i => i.label === formData.annual_income || String(i.id) === String(formData.annual_income_id));
+      const incomeId = matchedIncome ? matchedIncome.id : (formData.annual_income_id ? Number(formData.annual_income_id) : null);
+      const parsedIncomeVal = matchedIncome && matchedIncome.min_value ? parseInt(matchedIncome.min_value, 10) : parseIncome(formData.annual_income);
+
       const apiPayload: ProfileCreateRequest = {
         profile_name: formData.profile_name || '',
         about_me: formData.about_me || '',
@@ -451,6 +478,10 @@ export const CompleteProfile: React.FC = () => {
         weight: formData.weight > 0 ? formData.weight : null,
         complexion: formData.complexion || 'Fair',
         marital_status: formData.marital_status || 'Never Married',
+        children_count: Number(formData.children_count) || 0,
+        children_living_status: formData.children_living_status || '',
+        physical_status: formData.physical_status === 'Yes' ? 'Physically Challenged' : (formData.physical_status || 'Normal'),
+        physical_disability: formData.physical_status === 'Yes' ? 'YES' : 'NO',
         disability_information: formData.disability_information || '',
 
         // Education & Profession
@@ -463,7 +494,8 @@ export const CompleteProfile: React.FC = () => {
         employment_type: formData.employment_type || 'Full Time',
         company_name: formData.company_name || '',
         work_location: formData.work_location || '',
-        annual_income: parseIncome(formData.annual_income),
+        annual_income: parsedIncomeVal,
+        annual_income_id: incomeId,
 
         // Religion & Community
         religion_id: formData.religion_id,
@@ -475,8 +507,21 @@ export const CompleteProfile: React.FC = () => {
         rashi: formData.rashi || '',
         nakshatra: formData.nakshatra || '',
         dosha: formData.dosha || '',
+        birth_place: formData.birth_place || '',
+        birth_time: formData.birth_time || null,
 
         // Family
+        family_type: formData.family_type || '',
+        family_status: formData.family_status || '',
+        family_values: formData.family_values || '',
+        father_occupation: formData.father_occupation || '',
+        mother_occupation: formData.mother_occupation || '',
+        brothers_count: Number(formData.brothers_count) || 0,
+        brothers_married_count: Number(formData.brothers_married_count) || 0,
+        sisters_count: Number(formData.sisters_count) || 0,
+        sisters_married_count: Number(formData.sisters_married_count) || 0,
+        living_with_parents: Boolean(formData.living_with_parents),
+        family_location: formData.family_location || '',
         family_information: formData.family_information || '',
 
         // Lifestyle & Marital
@@ -607,7 +652,7 @@ export const CompleteProfile: React.FC = () => {
           <div id="section-media" className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
             <div className="flex items-center gap-2">
               <User className="h-3.5 w-3.5 text-blue-600" />
-              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+              <h2 className="text-[0.95rem] font-bold text-slate-900">
                 1. Profile Display & Media
               </h2>
             </div>
@@ -756,7 +801,7 @@ export const CompleteProfile: React.FC = () => {
           <div id="section-education" className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
             <div className="flex items-center gap-2">
               <GraduationCap className="h-3.5 w-3.5 text-blue-600" />
-              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+              <h2 className="text-[0.95rem] font-bold text-slate-900">
                 2. Education & Profession
               </h2>
             </div>
@@ -900,7 +945,15 @@ export const CompleteProfile: React.FC = () => {
                 </label>
                 <select
                   value={formData.annual_income}
-                  onChange={e => handleChange('annual_income', e.target.value)}
+                  onChange={e => {
+                    const label = e.target.value;
+                    const matched = incomeRanges.find(i => i.label === label);
+                    setFormData(prev => ({
+                      ...prev,
+                      annual_income: label,
+                      annual_income_id: matched ? matched.id : prev.annual_income_id
+                    }));
+                  }}
                   disabled={isLoadingIncomes}
                   className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:opacity-60 text-slate-900"
                 >
@@ -924,7 +977,7 @@ export const CompleteProfile: React.FC = () => {
           <div id="section-religion" className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
             <div className="flex items-center gap-2">
               <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+              <h2 className="text-[0.95rem] font-bold text-slate-900">
                 3. Religion, Community & Horoscope
               </h2>
             </div>
@@ -1108,7 +1161,7 @@ export const CompleteProfile: React.FC = () => {
           <div id="section-physical" className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
             <div className="flex items-center gap-2">
               <Heart className="h-3.5 w-3.5 text-blue-600" />
-              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+              <h2 className="text-[0.95rem] font-bold text-slate-900">
                 4. Physical Attributes & Lifestyle
               </h2>
             </div>
@@ -1311,8 +1364,8 @@ export const CompleteProfile: React.FC = () => {
 
             <Separator className="bg-slate-100" />
 
-            {/* Marital Status & Children Count */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Marital Status, Children Count & Children Living Status */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <label className="block text-xs sm:text-sm font-bold text-slate-800">
                   Marital Status <span className="text-rose-600 font-bold">*</span>
@@ -1345,6 +1398,23 @@ export const CompleteProfile: React.FC = () => {
                   className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Children Living Status
+                </label>
+                <select
+                  value={formData.children_living_status}
+                  onChange={e => handleChange('children_living_status', e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
+                >
+                  <option value="">Select Living Status</option>
+                  <option value="Living with me">Living with me</option>
+                  <option value="Not living with me">Not living with me</option>
+                  <option value="Shared custody">Shared custody</option>
+                  <option value="None">None</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -1354,7 +1424,7 @@ export const CompleteProfile: React.FC = () => {
           <div id="section-family" className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
             <div className="flex items-center gap-2">
               <Users className="h-3.5 w-3.5 text-blue-600" />
-              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+              <h2 className="text-[0.95rem] font-bold text-slate-900">
                 5. Family Information
               </h2>
             </div>
@@ -1506,6 +1576,36 @@ export const CompleteProfile: React.FC = () => {
               </div>
             </div>
 
+            {/* Living with Parents & Family Location */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Living with Parents
+                </label>
+                <select
+                  value={formData.living_with_parents ? 'Yes' : 'No'}
+                  onChange={e => handleChange('living_with_parents', e.target.value === 'Yes')}
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-900"
+                >
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                  Family Location / Native
+                </label>
+                <input
+                  type="text"
+                  value={formData.family_location}
+                  onChange={e => handleChange('family_location', e.target.value)}
+                  placeholder="e.g. Hyderabad, Telangana"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+                />
+              </div>
+            </div>
+
             {/* Family Information Notes */}
             <div className="space-y-1.5">
               <label className="block text-xs sm:text-sm font-bold text-slate-800">
@@ -1527,7 +1627,7 @@ export const CompleteProfile: React.FC = () => {
           <div id="section-location" className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
             <div className="flex items-center gap-2">
               <MapPin className="h-3.5 w-3.5 text-blue-600" />
-              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+              <h2 className="text-[0.95rem] font-bold text-slate-900">
                 6. Profile Location Details (Dependent Hierarchy)
               </h2>
             </div>

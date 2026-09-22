@@ -707,12 +707,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const photoUrl = (res as any).profile_photo || (res as any).profile_image || (res as any).photo || (res as any).avatar || res.detailed_profile?.profile_photo || '';
-      const finalAvatar = (photoUrl && typeof photoUrl === 'string' && photoUrl.trim() && !isDummyImage(photoUrl)) ? photoUrl.trim() : '';
+      let candidateAvatar = (photoUrl && typeof photoUrl === 'string' && photoUrl.trim() && !isDummyImage(photoUrl)) ? photoUrl.trim() : '';
 
+      const storedAvatar = localStorage.getItem('logged_in_avatar') || currentUser.avatar || '';
+      const draftAvatar = (() => {
+        try {
+          const draft = localStorage.getItem('user_profile_draft');
+          return draft ? JSON.parse(draft)?.profile_photo : '';
+        } catch {
+          return '';
+        }
+      })();
+
+      if (!candidateAvatar && storedAvatar && !isDummyImage(storedAvatar)) {
+        candidateAvatar = storedAvatar;
+      } else if (!candidateAvatar && draftAvatar && !isDummyImage(draftAvatar)) {
+        candidateAvatar = draftAvatar;
+      }
+
+      const finalAvatar = candidateAvatar;
       if (finalAvatar) {
         localStorage.setItem('logged_in_avatar', finalAvatar);
-      } else {
-        localStorage.removeItem('logged_in_avatar');
       }
       localStorage.removeItem('google_avatar');
 

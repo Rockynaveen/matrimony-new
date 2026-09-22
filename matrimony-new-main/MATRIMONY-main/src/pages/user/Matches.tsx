@@ -9,6 +9,7 @@ import {
   useIgnoredProfiles
 } from '../../hooks/useMatching';
 import { useFilterOptions } from '../../hooks/useSearchQueries';
+import { useReligions, useCastes, useEducations } from '../../hooks/useProfileOptions';
 import { RecommendationCard } from '../../components/matching/RecommendationCard';
 import { AskAIAssistant } from '../../components/matching/WhatsAppAIAssistant';
 import {
@@ -57,38 +58,115 @@ export const MatchesPage: React.FC = () => {
   const { data: sentInterests } = useSentInterests();
   const { data: ignoredList } = useIgnoredProfiles();
   const { data: filterOptions } = useFilterOptions();
+  const { data: masterReligions } = useReligions();
+  const { data: masterCastes } = useCastes();
+  const { data: masterEducations } = useEducations();
 
-  const getOptionList = (list?: any[] | Record<string, string[]>, fallback: string[] = []): string[] => {
+  const extractOptionString = (item: any): string => {
+    if (item === null || item === undefined) return '';
+    if (typeof item === 'string') {
+      const trimmed = item.trim();
+      return trimmed === '[object Object]' ? '' : trimmed;
+    }
+    if (typeof item === 'number' || typeof item === 'boolean') {
+      return String(item);
+    }
+    if (typeof item === 'object') {
+      const candidate =
+        item.name ||
+        item.label ||
+        item.title ||
+        item.value ||
+        item.text ||
+        item.religion_name ||
+        item.religion ||
+        item.caste_name ||
+        item.caste ||
+        item.education_level ||
+        item.education ||
+        item.degree_name ||
+        item.degree ||
+        item.status ||
+        item.marital_status ||
+        item.height ||
+        '';
+      if (typeof candidate === 'string' && candidate.trim() && candidate.trim() !== '[object Object]') {
+        return candidate.trim();
+      }
+      for (const val of Object.values(item)) {
+        if (typeof val === 'string' && val.trim() && val.trim() !== '[object Object]' && val.length < 60) {
+          return val.trim();
+        }
+      }
+      return '';
+    }
+    return '';
+  };
+
+  const getOptionList = (list?: any, fallback: string[] = []): string[] => {
     if (!list) return fallback;
+
+    const results: string[] = [];
+
     if (Array.isArray(list)) {
-      return list.map(item => (typeof item === 'string' ? item : item.label || item.value || String(item)));
+      for (const item of list) {
+        const extracted = extractOptionString(item);
+        if (extracted && extracted !== '[object Object]') {
+          results.push(extracted);
+        }
+      }
+    } else if (typeof list === 'object') {
+      for (const [key, val] of Object.entries(list)) {
+        if (Array.isArray(val)) {
+          for (const subItem of val) {
+            const extracted = extractOptionString(subItem);
+            if (extracted && extracted !== '[object Object]') {
+              results.push(extracted);
+            }
+          }
+        } else if (typeof val === 'object' && val !== null) {
+          const extracted = extractOptionString(val);
+          if (extracted && extracted !== '[object Object]') {
+            results.push(extracted);
+          }
+        } else if (typeof val === 'string') {
+          const extracted = extractOptionString(val);
+          if (extracted && extracted !== '[object Object]') {
+            results.push(extracted);
+          }
+        } else {
+          const extracted = extractOptionString(key);
+          if (extracted && extracted !== '[object Object]') {
+            results.push(extracted);
+          }
+        }
+      }
     }
-    if (typeof list === 'object') {
-      return Object.keys(list);
-    }
-    return fallback;
+
+    const unique = Array.from(new Set(results.map(s => s.trim()).filter(Boolean)));
+    return unique.length > 0 ? unique : fallback;
   };
 
   const dynamicReligions = useMemo(() => {
-    const list = getOptionList(filterOptions?.religions, ['Hindu', 'Muslim', 'Christian', 'Sikh', 'Jain']);
+    const list = getOptionList(filterOptions?.religions || masterReligions, ['Hindu', 'Muslim', 'Christian', 'Sikh', 'Jain']);
     return ['Any', ...list.filter(r => r.toLowerCase() !== 'any')];
-  }, [filterOptions]);
+  }, [filterOptions, masterReligions]);
 
   const dynamicCastes = useMemo(() => {
     const list = getOptionList(
-      Array.isArray(filterOptions?.castes) ? filterOptions.castes : Object.keys(filterOptions?.castes || {}),
+      filterOptions?.castes || masterCastes,
       ['Reddy', 'Brahmin', 'Arya Vysya', 'Kamma', 'Kapu', 'Naidu', 'Yadava', 'Mudaliar']
     );
     return ['Any', ...list.filter(c => c.toLowerCase() !== 'any')];
-  }, [filterOptions]);
+  }, [filterOptions, masterCastes]);
 
   const dynamicEducations = useMemo(() => {
     const list = getOptionList(
-      filterOptions?.educations,
+      filterOptions?.educations || masterEducations,
       ['B.Tech', 'M.Tech', 'MBA', 'MCA', 'BDS', 'Chartered Accountant', 'Ph.D']
     );
     return ['Any', ...list.filter(e => e.toLowerCase() !== 'any')];
-  }, [filterOptions]);
+  }, [filterOptions, masterEducations]);
 
   const dynamicMaritalStatuses = useMemo(() => {
     const list = getOptionList(

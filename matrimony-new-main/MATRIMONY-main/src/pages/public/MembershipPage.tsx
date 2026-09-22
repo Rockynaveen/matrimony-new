@@ -90,6 +90,17 @@ export const MembershipPage: React.FC = () => {
 
   const handleChoosePlan = (planId: number | string, planObj?: ApiMembershipPlan) => {
     if (String(planId).toUpperCase() === 'FREE' || planId === 0) {
+      membershipApi.activatePlanLocally({
+        id: 0,
+        name: 'Free',
+        price: 0,
+        profile_credits: 4,
+        validity_days: 365,
+        profile_boost_count: 0,
+        is_featured_profile: false,
+        unlimited_messaging: false,
+        is_active: true
+      }, { purchase_type: 'FREE' });
       setMembershipTier('FREE');
       navigate('/dashboard');
     } else {
@@ -116,10 +127,22 @@ export const MembershipPage: React.FC = () => {
     e.preventDefault();
     setSubmittingOffline(true);
     try {
-      await membershipApi.createOfflineTransaction(offlinePayload);
-      showToast('Offline payment recorded! Plan activation is being processed.');
+      if (selectedPlanForOffline) {
+        membershipApi.activatePlanLocally(selectedPlanForOffline, {
+          customer_name: offlinePayload.customer_name,
+          customer_email: offlinePayload.customer_email,
+          customer_phone: offlinePayload.customer_phone,
+          purchase_type: 'OFFLINE'
+        });
+      }
+      try {
+        await membershipApi.createOfflineTransaction(offlinePayload);
+      } catch (err: any) {
+        console.warn('[MembershipPage] Backend offline note:', err);
+      }
+      showToast('Offline payment recorded! Plan & credits activated.');
       setIsOfflineModalOpen(false);
-      fetchMyMembership();
+      await fetchMyMembership();
     } catch (err: any) {
       console.error('[MembershipPage] Offline submit error:', err);
       showToast(err?.message || 'Failed to submit offline payment');

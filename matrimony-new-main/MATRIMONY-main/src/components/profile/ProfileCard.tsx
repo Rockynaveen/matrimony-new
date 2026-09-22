@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-import { MatchAvatar } from '../ui/MatchAvatar';
+import { MatchAvatar, isDummyImage } from '../ui/MatchAvatar';
 
 import { useShortlistStore } from '../../store/useShortlistStore';
 
@@ -43,10 +43,30 @@ const toSafeString = (val: any, fallback = ''): string => {
 };
 
 export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) => {
-  const { interests, sendInterest, isAuthenticated } = useApp();
+  const { interests, sendInterest, isAuthenticated, currentUser } = useApp();
   const isShortlisted = useShortlistStore((state) => state.shortlistedIds.includes(profile.id));
   const toggleShortlist = useShortlistStore((state) => state.toggleShortlist);
   const navigate = useNavigate();
+
+  const loggedInId = currentUser?.id ? String(currentUser.id) : (localStorage.getItem('user_id') || '');
+  const isCurrentUser = Boolean(
+    (loggedInId && (String(profile.id) === loggedInId || String((profile as any).user_id) === loggedInId)) ||
+    (currentUser?.name && profile.name && profile.name.toLowerCase() === currentUser.name.toLowerCase())
+  );
+
+  const currentUserAvatar = currentUser?.avatar || localStorage.getItem('logged_in_avatar') || '';
+
+  const rawProfilePhoto =
+    profile.profileImage ||
+    (profile as any).avatar ||
+    (profile as any).profile_photo ||
+    (profile as any).photo ||
+    (profile as any).photo_url ||
+    (profile as any).image;
+
+  const resolvedPhoto = isCurrentUser
+    ? ((currentUserAvatar && !isDummyImage(currentUserAvatar)) ? currentUserAvatar : (rawProfilePhoto || currentUserAvatar))
+    : (rawProfilePhoto || ((String(profile.id) === loggedInId && currentUserAvatar) ? currentUserAvatar : ''));
 
   const [isSending, setIsSending] = React.useState(false);
   const [isJustSent, setIsJustSent] = React.useState(false);
@@ -112,7 +132,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) 
           {/* Card Media Header */}
           <div className="relative aspect-[4/4.2] w-full overflow-hidden bg-white border-b border-stone-100">
             <MatchAvatar
-              photo={profile.profileImage}
+              photo={resolvedPhoto}
               name={profile.name}
               variant="card"
               imgClassName="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500"

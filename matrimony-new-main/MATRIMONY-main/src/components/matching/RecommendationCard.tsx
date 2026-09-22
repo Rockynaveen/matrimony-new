@@ -18,9 +18,9 @@ import {
   useRemoveFromShortlist,
   useSendInterest
 } from '../../hooks/useMatching';
-import { useApp } from '../../context/AppContext';
+import { useApp, isGenericName } from '../../context/AppContext';
 import { useUIStore } from '../../store/useUIStore';
-import { MatchAvatar } from '../ui/MatchAvatar';
+import { MatchAvatar, isDummyImage } from '../ui/MatchAvatar';
 import { Card, CardContent, CardFooter } from '../ui/Card';
 
 interface RecommendationCardProps {
@@ -41,7 +41,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   onViewProfile
 }) => {
   const navigate = useNavigate();
-  const { showToast } = useApp();
+  const { showToast, currentUser } = useApp();
 
   const addShortlistMutation = useAddToShortlist();
   const removeShortlistMutation = useRemoveFromShortlist();
@@ -160,7 +160,32 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
     return str;
   };
 
-  const resolvedCandidatePhoto =
+  const fullName = `${match.first_name || ''} ${match.last_name || ''}`.trim() || 'Candidate Profile';
+
+  const loggedInId = currentUser?.id ? String(currentUser.id) : (localStorage.getItem('user_id') || '');
+  const loggedInMemberId = (currentUser as any)?.member_id || localStorage.getItem('member_id') || '';
+  const loggedInEmail = currentUser?.email || localStorage.getItem('logged_in_email') || '';
+  const loggedInName = currentUser?.name || localStorage.getItem('logged_in_name') || '';
+
+  const isCurrentUser = Boolean(
+    (loggedInId && (String(match.user_id) === loggedInId || String((match as any).id) === loggedInId)) ||
+    (loggedInMemberId && (match as any).member_id && String((match as any).member_id) === loggedInMemberId) ||
+    (loggedInEmail && (match as any).email && String((match as any).email).toLowerCase() === loggedInEmail.toLowerCase()) ||
+    (loggedInName && !isGenericName(loggedInName) && fullName.toLowerCase() === loggedInName.toLowerCase())
+  );
+
+  const draftAvatar = (() => {
+    try {
+      const draft = localStorage.getItem('user_profile_draft');
+      return draft ? JSON.parse(draft)?.profile_photo : '';
+    } catch {
+      return '';
+    }
+  })();
+
+  const currentUserPhoto = currentUser?.avatar || localStorage.getItem('logged_in_avatar') || draftAvatar || '';
+
+  const rawCandidatePhoto =
     match.profile_photo ||
     (match as any).profile_image ||
     (match as any).profileImage ||
@@ -175,6 +200,12 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
     (match as any).photos?.[0] ||
     (match as any).gallery?.[0] ||
     (match as any).images?.[0];
+
+  const resolvedCandidatePhoto = isCurrentUser
+    ? ((currentUserPhoto && !isDummyImage(currentUserPhoto)) ? currentUserPhoto : (rawCandidatePhoto || currentUserPhoto))
+    : (rawCandidatePhoto || (
+        (match.user_id && String(match.user_id) === loggedInId && currentUserPhoto) ? currentUserPhoto : ''
+      ));
 
   return (
     <motion.div
@@ -242,13 +273,16 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         {/* Lower Info Details */}
         <CardContent className="p-3.5 flex-1 flex flex-col justify-between space-y-3 bg-white">
           <div className="space-y-1">
-            {/* Profile ID & Name */}
-            <div className="flex items-center justify-between gap-1">
-              <span className="font-bold text-sm text-stone-900 group-hover:text-[#8B1E3F] transition-colors tracking-tight truncate">
-                {displayId}
+            {/* Candidate Name (Highlighted) & ID (Subtle Badge) */}
+            <div className="flex items-center justify-between gap-1.5">
+              <span
+                className="font-bold text-sm sm:text-base text-stone-900 group-hover:text-[#8B1E3F] transition-colors tracking-tight truncate"
+                title={fullName}
+              >
+                {fullName}
               </span>
-              <span className="text-[11px] font-semibold text-stone-500 truncate max-w-[140px]">
-                {match.first_name} {match.last_name}
+              <span className="text-[11px] font-medium text-stone-500 bg-stone-100 border border-stone-200/60 px-1.5 py-0.5 rounded shrink-0">
+                {displayId}
               </span>
             </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface MatchAvatarProps {
   photo?: string | null;
@@ -42,6 +42,14 @@ export const formatPhotoUrl = (url?: string | null): string => {
   ) {
     return trimmed;
   }
+  if (
+    trimmed.startsWith('/images/') ||
+    trimmed.startsWith('images/') ||
+    trimmed.startsWith('/assets/') ||
+    trimmed.startsWith('assets/')
+  ) {
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  }
   const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   return `https://matrimony-production-4b00.up.railway.app${cleanPath}`;
 };
@@ -80,6 +88,10 @@ export const MatchAvatar: React.FC<MatchAvatarProps> = ({
   showName = false
 }) => {
   const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [photo]);
 
   const resolvedPhoto = formatPhotoUrl(photo);
   const isPhotoValid = !isDummyImage(resolvedPhoto) && !hasError;

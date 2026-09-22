@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useApp, isGenericName } from '../context/AppContext';
 import { profileService } from '../services/profile.service';
+import { matchingKeys } from '../hooks/useMatching';
 import type { ProfileCreateRequest } from '../types/profile.types';
 import {
   useIncomeRanges,
@@ -48,6 +50,7 @@ import { formatPhotoUrl } from '../components/ui/MatchAvatar';
 
 export const CompleteProfile: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
   const { showToast, checkProfileStatus, currentUser, updateCurrentUserAvatar, markProfileCompleted, patchBasicProfile, logout } = useApp();
@@ -596,9 +599,21 @@ export const CompleteProfile: React.FC = () => {
         }
       }
 
+      if (formData.profile_photo) {
+        updateCurrentUserAvatar(formData.profile_photo);
+        localStorage.setItem('logged_in_avatar', formData.profile_photo);
+      }
+
       localStorage.setItem('user_profile_draft', JSON.stringify(formData));
       markProfileCompleted();
       await checkProfileStatus();
+
+      try {
+        queryClient.invalidateQueries({ queryKey: matchingKeys.all });
+        queryClient.invalidateQueries({ queryKey: matchingKeys.recommendations() });
+        queryClient.refetchQueries({ queryKey: matchingKeys.recommendations() });
+      } catch {}
+
       showToast('✓ Profile successfully saved! ✨');
 
       if (redirectUrl) {

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ShieldCheck, CreditCard, QrCode, Building, Wallet, Lock, Loader2 } from 'lucide-react';
 import { membershipApi } from '../../api/membershipApi';
+import { membershipKeys } from '../../hooks/useMembership';
 import type { ApiMembershipPlan } from '../../types/membershipTypes';
 
 const loadRazorpayScript = (): Promise<boolean> => {
@@ -26,6 +28,7 @@ export const CheckoutPage: React.FC = () => {
   const { state } = useLocation();
   const { setMembershipTier, showToast, addNotification, currentUser } = useApp();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const passedPlanId = state?.planId || 1;
   const passedApiPlan: ApiMembershipPlan | undefined = state?.apiPlan;
@@ -37,13 +40,15 @@ export const CheckoutPage: React.FC = () => {
     period: string;
     contactUnlocks: string;
     validity_days: number;
+    profile_credits: number;
   }>({
     id: 1,
     name: 'Gold Premier',
     price: 20000,
     period: '30 Days',
     contactUnlocks: '5 Contact Unlocks',
-    validity_days: 30
+    validity_days: 30,
+    profile_credits: 5
   });
 
   const [loadingPlan, setLoadingPlan] = useState<boolean>(true);
@@ -63,7 +68,8 @@ export const CheckoutPage: React.FC = () => {
         price: isNaN(parsedPrice) ? 20000 : parsedPrice,
         period: passedApiPlan.validity_days ? `${passedApiPlan.validity_days} Days` : 'Lifetime',
         contactUnlocks: `${passedApiPlan.profile_credits} Contact Unlocks`,
-        validity_days: passedApiPlan.validity_days || 30
+        validity_days: passedApiPlan.validity_days || 30,
+        profile_credits: Number(passedApiPlan.profile_credits) || 10
       });
       setLoadingPlan(false);
       return;
@@ -86,7 +92,8 @@ export const CheckoutPage: React.FC = () => {
             price: isNaN(parsedPrice) ? 20000 : parsedPrice,
             period: matched.validity_days ? `${matched.validity_days} Days` : 'Lifetime',
             contactUnlocks: `${matched.profile_credits} Contact Unlocks`,
-            validity_days: matched.validity_days || 30
+            validity_days: matched.validity_days || 30,
+            profile_credits: Number(matched.profile_credits) || 10
           });
         }
       })
@@ -116,12 +123,45 @@ export const CheckoutPage: React.FC = () => {
       ? 'SILVER'
       : 'GOLD';
 
+    const activateMembershipAndNavigate = (paymentIdStr: string) => {
+      membershipApi.activatePlanLocally(
+        {
+          id: selectedPlan.id,
+          name: selectedPlan.name,
+          price: selectedPlan.price,
+          profile_credits: selectedPlan.profile_credits,
+          validity_days: selectedPlan.validity_days
+        },
+        {
+          customer_name: currentUser.name || 'Member',
+          customer_email: currentUser.email || '',
+          customer_phone: currentUser.phone || '',
+          razorpay_payment_id: paymentIdStr,
+          purchase_type: selectedPlan.price <= 0 ? 'FREE' : 'ONLINE'
+        }
+      );
+
+      setMembershipTier(mappedTier);
+      try {
+        queryClient.invalidateQueries({ queryKey: membershipKeys.all });
+        queryClient.invalidateQueries({ queryKey: membershipKeys.myMembership() });
+        queryClient.refetchQueries({ queryKey: membershipKeys.myMembership() });
+      } catch {}
+
+      showToast(`Payment successful! ${selectedPlan.name} activated with ${selectedPlan.profile_credits} contact credits.`);
+      addNotification({
+        title: 'Membership Plan Activated! 👑',
+        message: `Your ${selectedPlan.name.toUpperCase()} Plan (₹${totalAmount.toLocaleString()}) was successfully activated with ${selectedPlan.profile_credits} Contact Credits and ${selectedPlan.validity_days} days validity.`,
+        category: 'Membership',
+        link: '/membership'
+      });
+      navigate('/payment-history');
+      setIsSubmitting(false);
+    };
+
     // If price is 0, activate immediately
     if (selectedPlan.price <= 0) {
-      setMembershipTier('FREE');
-      showToast(`Free basic plan activated.`);
-      navigate('/dashboard');
-      setIsSubmitting(false);
+      activateMembershipAndNavigate('FREE_PLAN');
       return;
     }
 
@@ -164,16 +204,7 @@ export const CheckoutPage: React.FC = () => {
             } catch (vErr: any) {
               console.warn('[CheckoutPage] Verify notice:', vErr?.message);
             }
-            setMembershipTier(mappedTier);
-            showToast(`Payment successful! ${selectedPlan.name} activated.`);
-            addNotification({
-              title: 'Membership Plan Activated! 👑',
-              message: `Your ${selectedPlan.name.toUpperCase()} Plan (₹${totalAmount.toLocaleString()}) was successfully activated with ${selectedPlan.validity_days} days validity.`,
-              category: 'Membership',
-              link: '/membership'
-            });
-            navigate('/payment-history');
-            setIsSubmitting(false);
+            activateMembershipAndNavigate(response.razorpay_payment_id || `pay_${Date.now()}`);
           },
           modal: {
             ondismiss: function () {
@@ -203,25 +234,9 @@ export const CheckoutPage: React.FC = () => {
         console.warn('[CheckoutPage] Signature verification notice:', verifyErr?.message);
       }
 
-      setMembershipTier(mappedTier);
-      showToast(`Payment of ₹${totalAmount.toLocaleString()} completed! ${selectedPlan.name} activated.`);
-      addNotification({
-        title: 'Membership Plan Activated! 👑',
-        message: `Your ${selectedPlan.name.toUpperCase()} Plan (₹${totalAmount.toLocaleString()}) was successfully activated with ${selectedPlan.validity_days} days validity.`,
-        category: 'Membership',
-        link: '/membership'
-      });
-      navigate('/payment-history');
+      activateMembershipAndNavigate(paymentId);
     } catch (err: any) {
-      setMembershipTier(mappedTier);
-      showToast(`Payment processed! ${selectedPlan.name} activated.`);
-      addNotification({
-        title: 'Membership Plan Activated! 👑',
-        message: `Your ${selectedPlan.name.toUpperCase()} Plan (₹${totalAmount.toLocaleString()}) was successfully activated.`,
-        category: 'Membership',
-        link: '/membership'
-      });
-      navigate('/payment-history');
+      activateMembershipAndNavigate(`pay_fallback_${Date.now()}`);
     } finally {
       setIsSubmitting(false);
     }

@@ -91,7 +91,7 @@ const DEFAULT_PLANS: ApiMembershipPlan[] = [
 ];
 
 export const Home: React.FC = () => {
-  const { isAuthenticated } = useApp();
+  const { isAuthenticated, currentUser } = useApp();
   const navigate = useNavigate();
   const { data: recommendations } = useRecommendations();
   const [plans, setPlans] = React.useState<ApiMembershipPlan[]>(DEFAULT_PLANS);
@@ -107,6 +107,14 @@ export const Home: React.FC = () => {
   const realProfiles = (recommendations && recommendations.length > 0)
     ? recommendations.slice(0, 4).map((rec: any) => {
         const matchName = rec.full_name || rec.name || `${rec.first_name || ''} ${rec.last_name || ''}`.trim() || 'Verified Candidate';
+        const isSelf = Boolean(
+          (currentUser?.id && String(rec.user_id || rec.id) === String(currentUser.id)) ||
+          (currentUser?.name && matchName.toLowerCase() === currentUser.name.toLowerCase())
+        );
+        const photoCandidate = isSelf
+          ? (currentUser?.avatar || localStorage.getItem('logged_in_avatar') || rec.profile_photo || rec.avatar)
+          : (rec.profile_photo || rec.avatar || rec.profileImage || rec.photo);
+
         return {
           id: String(rec.user_id || rec.id || '1'),
           name: matchName,
@@ -117,7 +125,9 @@ export const Home: React.FC = () => {
           location: rec.location || rec.city || 'India',
           profession: rec.profession || rec.occupation || 'Professional',
           education: rec.education || rec.highest_education || 'Graduate',
-          avatar: rec.profile_photo || rec.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(matchName)}&background=8B1E3F&color=ffffff&bold=true`,
+          profileImage: photoCandidate,
+          avatar: photoCandidate,
+          profile_photo: photoCandidate,
           verified: Boolean(rec.is_verified ?? true),
           compatibility: rec.compatibility_score || 92
         };

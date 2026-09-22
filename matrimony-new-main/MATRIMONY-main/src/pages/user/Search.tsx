@@ -56,11 +56,22 @@ import type { AdvancedSearchParams } from '../../types/searchTypes';
 
 export const SearchPage: React.FC = () => {
   const navigate = useNavigate();
-  const { showToast, isAuthenticated } = useApp();
+  const { showToast, isAuthenticated, currentUser } = useApp();
   const resetSearchFilter = useSearchStore((state) => state.resetSearchFilter);
 
   const shortlistedIds = useShortlistStore((state) => state.shortlistedIds);
   const toggleShortlist = useShortlistStore((state) => state.toggleShortlist);
+
+  const getSearchPhoto = (profile: any) => {
+    const isSelf = Boolean(
+      (currentUser?.id && String(profile.id || profile.user_id) === String(currentUser.id)) ||
+      (currentUser?.name && profile.name && profile.name.toLowerCase() === currentUser.name.toLowerCase())
+    );
+    if (isSelf) {
+      return currentUser?.avatar || localStorage.getItem('logged_in_avatar') || profile.profileImage || (profile as any).profile_photo || (profile as any).avatar || (profile as any).photo;
+    }
+    return profile.profileImage || (profile as any).profile_photo || (profile as any).avatar || (profile as any).photo;
+  };
 
   const { data: ignoredList } = useIgnoredProfiles();
   const ignoredUserIds = ignoredList?.map(i => i.user_id) || [];
@@ -1282,7 +1293,7 @@ export const SearchPage: React.FC = () => {
                       {/* Left: Profile Image with Heart & Exact Match Pill */}
                       <div className="relative shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-white border border-stone-100 shadow-2xs">
                         <MatchAvatar
-                          photo={profile.profileImage || (profile as any).profile_photo || (profile as any).photo}
+                          photo={getSearchPhoto(profile)}
                           name={profile.name}
                           variant="card"
                           imgClassName="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
@@ -1468,7 +1479,7 @@ export const SearchPage: React.FC = () => {
                         className="relative aspect-[4/3.8] w-full overflow-hidden bg-white border-b border-stone-100 cursor-pointer select-none"
                       >
                         <MatchAvatar
-                          photo={profile.profileImage || (profile as any).profile_photo || (profile as any).photo}
+                          photo={getSearchPhoto(profile)}
                           name={profile.name}
                           variant="card"
                           imgClassName="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"

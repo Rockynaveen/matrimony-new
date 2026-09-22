@@ -23,7 +23,9 @@ import {
   Loader2,
   Send,
   Check,
-  CheckCircle2
+  CheckCircle2,
+  Zap,
+  Crown
 } from 'lucide-react';
 import { MatchAvatar } from '../../components/ui/MatchAvatar';
 
@@ -143,7 +145,7 @@ export const Dashboard: React.FC = () => {
             )}
           </div>
           <p className="text-xs sm:text-sm text-stone-500 font-medium">
-            ID: <span className="font-mono text-stone-700 font-semibold">{kmId}</span> • {planName} • {profileMatchesCount} matching profiles found
+            ID: <span className="font-mono text-stone-700 font-semibold">{kmId}</span> • <span className="font-semibold text-[#8B1E3F]">{planName}</span> ({remainingCredits} Contact Credits) • {profileMatchesCount} matching profiles found
           </p>
         </div>
 
@@ -168,7 +170,7 @@ export const Dashboard: React.FC = () => {
       {/* ─────────────────────────────────────────────────────────────
           2. SIMPLE STATS STRIP (CLEAN FLAT DESIGN, NO BULKY CARDS)
          ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 sm:p-5 bg-stone-50/70 border border-stone-200 rounded-xl">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 p-4 sm:p-5 bg-stone-50/70 border border-stone-200 rounded-xl">
         
         <div
           onClick={() => navigate('/profile')}
@@ -222,6 +224,21 @@ export const Dashboard: React.FC = () => {
             {profileMatchesCount}
           </p>
           <span className="text-[11px] text-stone-400">Recommended for you</span>
+        </div>
+
+        <div
+          onClick={() => navigate('/membership')}
+          className="cursor-pointer hover:opacity-80 transition-opacity bg-amber-50/70 p-2.5 rounded-lg border border-amber-200/70"
+        >
+          <span className="text-xs text-[#8B1E3F] font-bold flex items-center gap-1.5">
+            <Zap className="h-3.5 w-3.5 text-amber-500 fill-amber-500" /> Contact Credits
+          </span>
+          <p className="text-xl font-extrabold text-[#8B1E3F] mt-1">
+            {remainingCredits}
+          </p>
+          <span className="text-[11px] font-semibold text-stone-600 truncate block">
+            {planName} • Upgrade
+          </span>
         </div>
 
       </div>

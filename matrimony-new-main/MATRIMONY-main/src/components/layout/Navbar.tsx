@@ -44,17 +44,7 @@ export const Navbar: React.FC = () => {
       navigate('/dashboard');
       return;
     }
-    const hasRegistered = localStorage.getItem('has_registered') === 'true'
-      || !!localStorage.getItem('last_registered_phone')
-      || !!localStorage.getItem('last_registered_email');
-
-    if (hasRegistered) {
-      showToast('You are already registered! Please log in.');
-      const lastPhone = localStorage.getItem('last_registered_phone');
-      navigate(lastPhone ? `/login?phone=${lastPhone}` : '/login');
-    } else {
-      navigate('/register');
-    }
+    navigate('/register');
   };
   
   // Continuous global online status heartbeat for logged-in user

@@ -32,23 +32,13 @@ export const Register: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const maxAllowedDob = getMaxDobDateString();
 
-  // Redirect if already logged in or previously registered
+  // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated || localStorage.getItem('access_token')) {
       navigate(redirectUrl || '/dashboard', { replace: true });
       return;
     }
-    const force = searchParams.get('force') === 'true';
-    const hasRegistered = localStorage.getItem('has_registered') === 'true'
-      || !!localStorage.getItem('last_registered_phone')
-      || !!localStorage.getItem('last_registered_email');
-
-    if (hasRegistered && !force) {
-      showToast('You are already registered! Please log in to your account.');
-      const lastPhone = localStorage.getItem('last_registered_phone');
-      navigate(lastPhone ? `/login?phone=${lastPhone}` : '/login', { replace: true });
-    }
-  }, [isAuthenticated, redirectUrl, navigate, searchParams, showToast]);
+  }, [isAuthenticated, redirectUrl, navigate]);
 
   // OTP State
   const [otpSent, setOtpSent] = useState(false);
@@ -94,8 +84,6 @@ export const Register: React.FC = () => {
       const lower = msg.toLowerCase();
       if (lower.includes('already') || lower.includes('registered') || lower.includes('please login') || lower.includes('exists')) {
         setAlreadyRegisteredPhone(cleanPhone);
-        localStorage.setItem('has_registered', 'true');
-        localStorage.setItem('last_registered_phone', cleanPhone);
         showToast('This mobile number is already registered. Please log in.');
         setTimeout(() => {
           navigate(`/login?phone=${cleanPhone}`);

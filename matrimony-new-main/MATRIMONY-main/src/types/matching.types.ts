@@ -2,6 +2,8 @@
 
 export interface MatchResponseSchema {
   user_id: number;
+  user_uuid?: string | null;
+  member_id?: string | null;
   first_name: string;
   last_name: string;
   profile_photo: string | null;
@@ -14,7 +16,16 @@ export interface MatchResponseSchema {
   religion: string;
   caste: string;
   match_percentage: number;
-  matched_fields: string[];
+  match_details?: {
+    matched: number;
+    mismatched: number;
+    unavailable: number;
+    total_configured: number;
+  } | null;
+  mutual_match_percentage?: number | null;
+  matched_fields?: string[];
+  unmatched_fields?: string[];
+  unavailable_fields?: string[];
   is_mutual: boolean;
   is_unlocked?: boolean;
   lock_reason?: string | null;

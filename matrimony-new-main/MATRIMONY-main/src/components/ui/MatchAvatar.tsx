@@ -110,7 +110,7 @@ export const MatchAvatar: React.FC<MatchAvatarProps> = ({
   if (variant === 'circle') {
     return (
       <div
-        className={`rounded-full bg-gradient-to-br from-[#8B1E3F] via-[#721733] to-stone-900 text-[#D4AF37] font-extrabold flex items-center justify-center border border-amber-400/40 shadow-inner select-none ${className}`}
+        className={`rounded-full bg-gradient-to-b from-white via-[#FFF5F8] to-[#FCE7F0] text-[#B48128] font-extrabold flex items-center justify-center border border-amber-300/60 shadow-inner select-none ${className}`}
         title={fullNameStr}
       >
         <span className="leading-none drop-shadow-xs">{initialLetter}</span>
@@ -120,22 +120,22 @@ export const MatchAvatar: React.FC<MatchAvatarProps> = ({
 
   return (
     <div
-      className={`relative w-full h-full bg-gradient-to-br from-[#8B1E3F] via-[#6d1832] to-[#2A0813] flex flex-col items-center justify-center overflow-hidden select-none ${className}`}
+      className={`relative w-full h-full bg-gradient-to-b from-white via-[#FFF5F8] to-[#FCE7F0] flex flex-col items-center justify-center overflow-hidden select-none ${className}`}
       title={fullNameStr}
     >
       {/* Decorative ambient background accents */}
-      <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
-      <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#8B1E3F]/40 rounded-full blur-xl pointer-events-none" />
+      <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-300/25 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-300/25 rounded-full blur-xl pointer-events-none" />
 
       {/* Initial Letter Badge */}
-      <div className="relative z-10 flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-stone-950/40 border-2 border-[#D4AF37]/50 shadow-xl backdrop-blur-xs">
-        <span className="font-serif text-3xl sm:text-4xl font-extrabold text-[#D4AF37] drop-shadow-md">
+      <div className="relative z-10 flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/95 border-2 border-amber-300/80 shadow-[0_4px_20px_rgba(212,175,55,0.18)] backdrop-blur-xs">
+        <span className="font-serif text-3xl sm:text-4xl font-extrabold bg-gradient-to-br from-[#8B1E3F] via-[#B48128] to-[#D4AF37] bg-clip-text text-transparent drop-shadow-xs">
           {initialLetter}
         </span>
       </div>
 
       {showName && (
-        <span className="relative z-10 mt-2 text-[11px] font-bold text-amber-200/90 tracking-wide uppercase max-w-[85%] truncate text-center px-2">
+        <span className="relative z-10 mt-2 text-[11px] font-bold text-stone-700 tracking-wide uppercase max-w-[85%] truncate text-center px-2">
           {firstName || name || 'Member'}
         </span>
       )}

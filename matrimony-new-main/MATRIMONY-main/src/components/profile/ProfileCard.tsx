@@ -4,7 +4,7 @@ import type { Profile } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { Card } from '../ui/Card';
+import { Card, CardContent, CardFooter } from '../ui/Card';
 import {
   Heart,
   ShieldCheck,
@@ -107,10 +107,10 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) 
       transition={{ duration: 0.2 }}
       className="h-full"
     >
-      <Card className="h-full flex flex-col justify-between border-border/70 hover:border-[#8B1E3F]/40 shadow-none hover:shadow-none transition-all duration-300 group bg-white">
+      <Card className="h-full flex flex-col justify-between rounded-2xl border border-amber-300/80 hover:border-amber-400 shadow-[0_4px_16px_rgba(212,175,55,0.08)] hover:shadow-[0_12px_32px_rgba(212,175,55,0.18)] transition-all duration-300 group bg-gradient-to-b from-white via-[#FFF8FA] to-[#FDF0F5] overflow-hidden">
         <div>
           {/* Card Media Header */}
-          <div className="relative aspect-[4/4.2] w-full overflow-hidden bg-stone-100">
+          <div className="relative aspect-[4/4.2] w-full overflow-hidden bg-gradient-to-b from-white via-[#FFF5F8] to-[#FCE7F0] border-b border-rose-100/60">
             <MatchAvatar
               photo={profile.profileImage}
               name={profile.name}
@@ -118,34 +118,34 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) 
               imgClassName="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
             />
             
-            {/* Dark Overlay Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
+            {/* Soft White Sheen & Contrast Overlay Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/35 pointer-events-none" />
 
-            {/* Top Badges */}
+            {/* Top Badges with Gold Accents */}
             <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
               <div className="flex items-center gap-1.5">
                 {profile.verified && (
-                  <Badge variant="verified" className="bg-white/90 text-emerald-800 backdrop-blur-xs font-semibold">
-                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 fill-emerald-100" /> Verified
+                  <Badge variant="verified" className="bg-gradient-to-r from-[#7B5313] via-[#9E6E1F] to-[#C99738] text-amber-100 border border-amber-200/50 backdrop-blur-xs font-semibold">
+                    <ShieldCheck className="h-3.5 w-3.5 text-amber-200 fill-amber-300/20" /> Verified
                   </Badge>
                 )}
                 {profile.online && (
-                  <span className="inline-flex items-center gap-1 bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-xs">
+                  <span className="inline-flex items-center gap-1 bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-xs shadow-xs">
                     <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" /> Online
                   </span>
                 )}
               </div>
 
-              {/* Shortlist Heart Button */}
+              {/* Shortlist Heart Button with Gold Border */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleProtectedAction(`/profile/${profileIdentifier}`, () => toggleShortlist(profile.id));
                 }}
-                className={`p-2 rounded-full backdrop-blur-md transition-all ${
+                className={`p-2 rounded-full backdrop-blur-md transition-all border border-amber-300/60 ${
                   isShortlisted
                     ? 'bg-rose-500 text-white shadow-md'
-                    : 'bg-white/70 text-gray-700 hover:bg-white hover:text-rose-500'
+                    : 'bg-white/80 text-gray-700 hover:bg-white hover:text-rose-500'
                 }`}
                 title={isShortlisted ? 'Remove from shortlist' : 'Shortlist profile'}
               >
@@ -157,21 +157,21 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) 
               </button>
             </div>
 
-            {/* AI Match Compatibility Badge */}
-            {profile.matchScore !== undefined && (
+            {/* AI Match Compatibility Badge (Only if authentic percentage exists) */}
+            {typeof profile.matchScore === 'number' && profile.matchScore > 0 && (
               <div className="absolute bottom-3 right-3 z-10">
-                <div className="bg-stone-900/80 backdrop-blur-md text-amber-400 border border-amber-400/40 text-xs px-2.5 py-1 rounded-full flex items-center gap-1 font-bold shadow-sm">
-                  <Sparkles className="h-3 w-3 text-amber-400 fill-amber-400/30" />
-                  <span>{profile.matchScore}% Match</span>
+                <div className="bg-black/70 backdrop-blur-md text-amber-300 border border-amber-300/50 text-xs px-2.5 py-1 rounded-full flex items-center gap-1 font-bold shadow-sm">
+                  <Sparkles className="h-3 w-3 text-yellow-200 fill-yellow-200/40" />
+                  <span>{Math.round(profile.matchScore)}% Match</span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Profile Details Body */}
-          <div className="p-4 space-y-2.5">
+          {/* Profile Details in Pink & White Gradient */}
+          <CardContent className="p-4 space-y-2.5 bg-gradient-to-b from-white via-[#FFF8FA] to-[#FDF0F5]">
             <div>
-              <h3 className="font-bold text-base text-gray-900 line-clamp-1 group-hover:text-[#8B1E3F] transition-colors">
+              <h3 className="font-bold text-base text-gray-900 line-clamp-1 group-hover:text-[#B48128] transition-colors">
                 {profile.name}, {profile.age}
               </h3>
               <p className="text-xs text-stone-600 font-medium line-clamp-1">
@@ -181,28 +181,28 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) 
 
             <div className="space-y-1 text-xs text-stone-500 font-normal">
               <div className="flex items-center gap-1.5 truncate">
-                <GraduationCap className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                <GraduationCap className="h-3.5 w-3.5 text-[#B48128] shrink-0" />
                 <span className="truncate">{resolvedEducation}</span>
               </div>
               <div className="flex items-center gap-1.5 truncate">
-                <Briefcase className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                <Briefcase className="h-3.5 w-3.5 text-[#B48128] shrink-0" />
                 <span className="truncate">{resolvedProfession}</span>
               </div>
               <div className="flex items-center gap-1.5 truncate">
-                <MapPin className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                <MapPin className="h-3.5 w-3.5 text-[#B48128] shrink-0" />
                 <span className="truncate">{resolvedLocation}</span>
               </div>
             </div>
-          </div>
+          </CardContent>
         </div>
 
-        {/* Action Buttons Footer */}
-        <div className="p-3 pt-0 grid grid-cols-2 gap-2 mt-auto">
+        {/* Action Buttons in shadcn CardFooter */}
+        <CardFooter className="p-3 pt-0 grid grid-cols-2 gap-2 mt-auto">
           <Button
             size="sm"
             variant="outline"
             onClick={() => handleProtectedAction(`/profile/${profileIdentifier}`)}
-            className="w-full text-xs border-2 border-[#8B1E3F] text-[#8B1E3F] bg-white hover:bg-[#8B1E3F] hover:text-white transition-all font-bold shadow-2xs"
+            className="w-full text-xs border-2 border-amber-600/70 text-amber-900 bg-rose-50/50 hover:bg-gradient-to-r hover:from-[#8B1E3F] hover:to-[#B83358] hover:text-white transition-all font-bold shadow-2xs cursor-pointer"
           >
             <Eye className="h-3.5 w-3.5 mr-1" /> View Profile
           </Button>
@@ -230,12 +230,12 @@ export const ProfileCard: React.FC<ProfileCardProps> = React.memo(({ profile }) 
               size="sm"
               variant="primary"
               onClick={() => handleProtectedAction(`/profile/${profileIdentifier}`, handleSendInterestClick)}
-              className="w-full text-xs"
+              className="w-full text-xs bg-gradient-to-r from-[#8B1E3F] via-[#B83358] via-[#B48128] to-[#C99738] hover:from-[#761734] hover:to-[#B68428] text-white border-none shadow-xs cursor-pointer font-bold"
             >
               <Heart className="h-3.5 w-3.5 mr-1 fill-white/20" /> Send Interest
             </Button>
           )}
-        </div>
+        </CardFooter>
       </Card>
     </motion.div>
   );

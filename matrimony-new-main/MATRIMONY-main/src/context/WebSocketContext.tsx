@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useApp } from './AppContext';
+import { useAuthStore } from '../store/useAuthStore';
+import { useUIStore } from '../store/useUIStore';
 
 export interface WebSocketContextType {
   isConnected: boolean;
@@ -29,7 +30,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const endpointIndexRef = useRef(0);
 
   const queryClient = useQueryClient();
-  const { showToast, isAuthenticated } = useApp();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const showToast = useUIStore((state) => state.showToast);
 
   const retryCount = useRef(0);
 

@@ -19,10 +19,13 @@ import {
   List,
   Sparkles,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  ShieldCheck,
+  Users
 } from 'lucide-react';
 import { LoadingScreen } from '../../components/ui/LoadingScreen';
 import { Button } from '../../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import type { MatchResponseSchema } from '../../types/matching.types';
 
 export const MatchesPage: React.FC = () => {
@@ -204,37 +207,71 @@ export const MatchesPage: React.FC = () => {
     <div className="min-h-screen bg-[#FAF7F5] text-stone-900 pb-20 font-sans antialiased">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        {/* ── 1. Romantic Hero Header Banner ── */}
-        <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border border-rose-100/80 shadow-xs bg-[#FDF2F4]">
-          <div className="flex flex-col md:flex-row items-center justify-between min-h-[140px] sm:min-h-[160px] md:min-h-[185px] relative">
-            
-            {/* Background Image: Wedding Rings & Petals */}
-            <div className="absolute inset-0 w-full h-full pointer-events-none select-none">
-              <img
-                src="/images/matches_romantic_banner.jpg"
-                alt=""
-                className="w-full h-full object-cover object-right md:object-[center_right]"
-              />
-            </div>
+        {/* ── 1. Royal Gold Luxury Matches Hero Card ── */}
+        <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-amber-300/50 bg-gradient-to-br from-[#4A3008] via-[#7B5313] via-[#A67520] to-[#C99738] text-white shadow-[0_14px_45px_rgba(180,120,20,0.35)]">
+          
+          {/* Radiant Gold Ambient Glow Orbs */}
+          <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-yellow-300/30 blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 left-1/3 w-80 h-80 rounded-full bg-amber-400/30 blur-3xl pointer-events-none -translate-y-1/2" />
+          <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-yellow-500/25 blur-3xl pointer-events-none" />
 
-            {/* Left Header Copy */}
-            <div className="relative z-10 p-6 sm:p-8 md:p-10 max-w-xl space-y-1.5">
-              <p className="text-[11px] sm:text-xs font-extrabold uppercase tracking-widest text-[#8B1E3F]">
-                YOUR PERFECT MATCH AWAITS
-              </p>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-extrabold tracking-tight text-[#8B1E3F]">
-                Matches <span className="font-serif italic font-bold text-[#E5A910] drop-shadow-[0_1px_2px_rgba(139,30,63,0.15)]">for You</span>
+          {/* Background Romantic Visual with Crisp Visibility */}
+          <div className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-hidden">
+            <img
+              src="/images/matches_romantic_banner.jpg"
+              alt=""
+              className="w-full h-full object-cover object-right md:object-[center_right] opacity-65 md:opacity-80"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+          </div>
+
+          {/* Transparent Glass & Gold Tinted Overlays */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/35 backdrop-blur-[1px] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#7B5313]/60 via-[#A67520]/40 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-white/15 pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col justify-center min-h-[165px] sm:min-h-[185px]">
+            
+            {/* Header Copy & Trust Badges */}
+            <div className="p-6 sm:p-8 lg:p-10 max-w-3xl space-y-3.5">
+              
+              {/* Shimmering Gold Pill Eyebrow */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-300/25 to-yellow-400/25 border border-amber-200/60 text-amber-100 backdrop-blur-md shadow-xs">
+                <Sparkles className="w-3.5 h-3.5 text-yellow-300 fill-yellow-300/30 shrink-0" />
+                <span className="text-[11px] font-black uppercase tracking-widest text-amber-100 drop-shadow-xs">
+                  YOUR PERFECT MATCH AWAITS
+                </span>
+              </div>
+
+              {/* Main Headline with Shimmering Gold Accent */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-extrabold tracking-tight text-white leading-[1.15] drop-shadow-[0_2px_10px_rgba(0,0,0,0.4)]">
+                Matches{' '}
+                <span className="font-serif italic font-extrabold bg-gradient-to-r from-[#FFFBEB] via-[#FDE047] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent drop-shadow-[0_2px_14px_rgba(253,224,71,0.55)]">
+                  for You
+                </span>
               </h1>
-              <p className="text-xs sm:text-sm text-stone-600 font-medium pt-0.5">
+
+              {/* Subtitle */}
+              <p className="text-xs sm:text-sm md:text-base text-amber-100/95 font-medium leading-relaxed max-w-xl drop-shadow-xs">
                 Discover meaningful connections, one profile at a time.
               </p>
-            </div>
 
-            {/* Center Romantic Cursive Tagline */}
-            <div className="hidden lg:flex relative z-10 pr-24 items-center justify-center pointer-events-none -rotate-3">
-              <div className="font-['Caveat',_cursive] text-2xl lg:text-3xl text-[#8B1E3F] leading-tight text-center select-none font-semibold">
-                <span>Good People</span><br />
-                <span>Great Journeys ♡</span>
+              {/* Gold Frosted Quality & Trust Badges */}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/35 border border-amber-300/40 text-xs font-semibold text-amber-100 shadow-sm backdrop-blur-md">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  <span>100% Verified Profiles</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/35 border border-amber-300/40 text-xs font-semibold text-amber-100 shadow-sm backdrop-blur-md">
+                  <Sparkles className="h-3.5 w-3.5 text-yellow-300 shrink-0" />
+                  <span>AI Compatibility Scored</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/35 border border-amber-300/40 text-xs font-semibold text-amber-100 shadow-sm backdrop-blur-md">
+                  <Users className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+                  <span>{sortedMatches.length} Curated Matches</span>
+                </div>
               </div>
             </div>
 
@@ -245,7 +282,7 @@ export const MatchesPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
           {/* ── Left Column: Filter Matches Sidebar Card ── */}
-          <div className="lg:col-span-3 bg-white rounded-2xl border border-stone-200/90 shadow-2xs p-5 space-y-4">
+          <Card className="lg:col-span-3 bg-white rounded-2xl border border-stone-200/90 shadow-2xs p-5 space-y-4">
             {/* Header: Title & Reset */}
             <div className="flex items-center justify-between pb-3 border-b border-stone-100">
               <div className="flex items-center gap-2">
@@ -420,13 +457,13 @@ export const MatchesPage: React.FC = () => {
               <Search className="h-3.5 w-3.5" />
               <span>Show Matches</span>
             </button>
-          </div>
+          </Card>
 
           {/* ── Right Column: Matches Listing ── */}
           <div className="lg:col-span-9 space-y-4">
             
             {/* Top Bar: Count & Sorting Controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200/90 shadow-2xs">
+            <Card className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200/90 shadow-2xs">
               {/* Title Count */}
               <div>
                 <h2 className="text-xl sm:text-2xl font-serif font-bold text-stone-900">
@@ -485,7 +522,7 @@ export const MatchesPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Profile Cards Content */}
             {isLoading ? (

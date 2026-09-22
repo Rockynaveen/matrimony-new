@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
-import { Card } from '../../components/ui/Card';
+import { Card, CardContent, CardFooter } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import {
@@ -498,221 +498,235 @@ export const SearchPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#FAF8F5] min-h-screen text-stone-900 pb-16">
-      
-      {/* ─────────────────────────────────────────────────────────────
-          1. Hero Header Banner
-      ────────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-[#FDF6F3] via-[#FAF0EA] to-[#FCEEEA] border-b border-rose-100/60 pt-8 pb-14 sm:pb-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div className="max-w-xl space-y-2">
-              <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#B81D4F] block">
-                FIND YOUR PERFECT MATCH
-              </span>
-              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-stone-900 tracking-tight">
-                Search Bride or Groom
-              </h1>
-              <p className="text-xs sm:text-sm text-stone-600 font-medium leading-relaxed">
-                Use dynamic filters aligned with your matrimonial preferences.
-              </p>
-            </div>
+    <div className="min-h-screen bg-[#FAF7F5] text-stone-900 pb-20 font-sans antialiased">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        
+        {/* ── 1. Royal Gold Luxury Search Hero Card ── */}
+        <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-amber-300/50 bg-gradient-to-br from-[#4A3008] via-[#7B5313] via-[#A67520] to-[#C99738] text-white shadow-[0_14px_45px_rgba(180,120,20,0.35)]">
+          {/* Radiant Gold Ambient Glow Orbs */}
+          <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-yellow-300/30 blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 left-1/3 w-80 h-80 rounded-full bg-amber-400/30 blur-3xl pointer-events-none -translate-y-1/2" />
+          <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-yellow-500/25 blur-3xl pointer-events-none" />
 
-            {/* Right side decorative visual */}
-            <div className="hidden md:block absolute right-0 top-0 bottom-0 w-2/5 lg:w-1/3 overflow-hidden pointer-events-none">
-              <img
-                src="/images/matches_header_banner.jpg"
-                alt="Wedding Visual"
-                className="w-full h-full object-cover object-right opacity-90"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#FAF0EA] via-[#FAF0EA]/60 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#FAF0EA]/40 via-transparent to-transparent" />
-              <div className="absolute right-8 top-10 transform rotate-[-6deg]">
-                <span className="font-serif italic text-2xl lg:text-3xl font-bold text-[#B81D4F]/90 drop-shadow-xs block leading-tight">
-                  Better
-                </span>
-                <span className="font-serif italic text-2xl lg:text-3xl font-bold text-[#B81D4F]/90 drop-shadow-xs block leading-tight ml-2">
-                  Together ♡
-                </span>
-              </div>
-            </div>
+          {/* Background Romantic Visual with Crisp Visibility */}
+          <div className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-hidden">
+            <img
+              src="/images/matches_romantic_banner.jpg"
+              alt=""
+              className="w-full h-full object-cover object-right md:object-[center_right] opacity-65 md:opacity-80"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
           </div>
 
-          {/* ─────────────────────────────────────────────────────────────
-              2. Floating Quick Search Bar (Synchronized with Backend Fields)
-          ────────────────────────────────────────────────────────────── */}
-          <div className="mt-8 bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-lg p-2.5 sm:p-3 max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 items-center gap-2 divide-y lg:divide-y-0 lg:divide-x divide-stone-200/80">
-              
-              {/* Segment 1: Looking for (gender) */}
-              <div className="flex items-center gap-3 px-3 py-2">
-                <div className="h-9 w-9 rounded-full bg-rose-50 text-[#B81D4F] flex items-center justify-center shrink-0 border border-rose-100">
-                  <User className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-[10px] font-bold text-stone-500 block uppercase tracking-wider">
-                    Looking for
-                  </span>
-                  <div className="relative">
-                    <select
-                      value={lookingFor}
-                      onChange={(e) => {
-                        const newLookingFor = e.target.value as 'Bride' | 'Groom';
-                        setLookingFor(newLookingFor);
-                      }}
-                      className="w-full bg-transparent text-xs font-bold text-stone-900 appearance-none pr-5 py-0.5 focus:outline-none cursor-pointer"
-                    >
-                      <option value="Bride">Bride (Female)</option>
-                      <option value="Groom">Groom (Male)</option>
-                    </select>
-                    <ChevronDown className="absolute right-0 top-1 h-3 w-3 text-stone-400 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
+          {/* Transparent Glass & Gold Tinted Overlays */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/35 backdrop-blur-[1px] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#7B5313]/60 via-[#A67520]/40 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-white/15 pointer-events-none" />
 
-              {/* Segment 2: Age Range (age_min, age_max) */}
-              <div className="flex items-center gap-3 px-3 py-2">
-                <div className="h-9 w-9 rounded-full bg-rose-50 text-[#B81D4F] flex items-center justify-center shrink-0 border border-rose-100">
-                  <Calendar className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-[10px] font-bold text-stone-500 block uppercase tracking-wider">
-                    Age Range
-                  </span>
-                  <div className="relative">
-                    <select
-                      value={quickAgeRange}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setQuickAgeRange(val);
-                        if (val === '18 - 25') { setSidebarAgeMin(18); setSidebarAgeMax(25); }
-                        else if (val === '21 - 30') { setSidebarAgeMin(21); setSidebarAgeMax(30); }
-                        else if (val === '25 - 35') { setSidebarAgeMin(25); setSidebarAgeMax(35); }
-                        else if (val === '30 - 45') { setSidebarAgeMin(30); setSidebarAgeMax(45); }
-                        else if (val === 'Any') { setSidebarAgeMin(18); setSidebarAgeMax(55); }
-                      }}
-                      className="w-full bg-transparent text-xs font-bold text-stone-900 appearance-none pr-5 py-0.5 focus:outline-none cursor-pointer"
-                    >
-                      <option value="Any">Any Age</option>
-                      <option value="18 - 25">18 - 25 Years</option>
-                      <option value="21 - 30">21 - 30 Years</option>
-                      <option value="25 - 35">25 - 35 Years</option>
-                      <option value="30 - 45">30 - 45 Years</option>
-                    </select>
-                    <ChevronDown className="absolute right-0 top-1 h-3 w-3 text-stone-400 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
+          <div className="relative z-10 flex flex-col justify-center min-h-[165px] sm:min-h-[185px] p-6 sm:p-8 lg:p-10 max-w-3xl space-y-3.5">
+            {/* Shimmering Gold Pill Eyebrow */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-300/25 to-yellow-400/25 border border-amber-200/60 text-amber-100 backdrop-blur-md shadow-xs w-fit">
+              <Sparkles className="w-3.5 h-3.5 text-yellow-300 fill-yellow-300/30 shrink-0" />
+              <span className="text-[11px] font-black uppercase tracking-widest text-amber-100 drop-shadow-xs">
+                ADVANCED PROFILE SEARCH
+              </span>
+            </div>
 
-              {/* Segment 3: Religion (dynamic from backend) */}
-              <div className="flex items-center gap-3 px-3 py-2">
-                <div className="h-9 w-9 rounded-full bg-rose-50 text-[#B81D4F] flex items-center justify-center shrink-0 border border-rose-100">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-[10px] font-bold text-stone-500 block uppercase tracking-wider">
-                    Religion
-                  </span>
-                  <div className="relative">
-                    <select
-                      value={religion}
-                      onChange={(e) => handleReligionChange(e.target.value)}
-                      className="w-full bg-transparent text-xs font-bold text-stone-900 appearance-none pr-5 py-0.5 focus:outline-none cursor-pointer"
-                    >
-                      <option value="Any">All Religions</option>
-                      {religionOptions.filter(r => r !== 'Any').map(r => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-0 top-1 h-3 w-3 text-stone-400 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
+            {/* Main Headline with Shimmering Gold Accent */}
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-extrabold tracking-tight text-white leading-[1.15] drop-shadow-[0_2px_10px_rgba(0,0,0,0.4)]">
+              Search{' '}
+              <span className="font-serif italic font-extrabold bg-gradient-to-r from-[#FFFBEB] via-[#FDE047] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent drop-shadow-[0_2px_14px_rgba(253,224,71,0.55)]">
+                Bride or Groom
+              </span>
+            </h1>
 
-              {/* Segment 4: Location (city / state) */}
-              <div className="flex items-center gap-3 px-3 py-2">
-                <div className="h-9 w-9 rounded-full bg-rose-50 text-[#B81D4F] flex items-center justify-center shrink-0 border border-rose-100">
-                  <MapPin className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-[10px] font-bold text-stone-500 block uppercase tracking-wider">
-                    Location
-                  </span>
-                  <div className="relative">
-                    <select
-                      value={locationFilter}
-                      onChange={(e) => setLocationFilter(e.target.value)}
-                      className="w-full bg-transparent text-xs font-bold text-stone-900 appearance-none pr-5 py-0.5 focus:outline-none cursor-pointer"
-                    >
-                      <option value="Any">Any Location</option>
-                      {locationOptions.filter(l => l !== 'Any').map(l => (
-                        <option key={l} value={l}>{l}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-0 top-1 h-3 w-3 text-stone-400 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
+            {/* Subtitle */}
+            <p className="text-xs sm:text-sm md:text-base text-amber-100/95 font-medium leading-relaxed max-w-xl drop-shadow-xs">
+              Explore authentic profiles with live multi-criteria filtering across community, location, education, and profession.
+            </p>
 
-              {/* Segment 5: Search Action Button */}
-              <div className="px-2 pt-2 sm:pt-0">
-                <button
-                  type="button"
-                  onClick={() => handleExecuteSearch(1)}
-                  disabled={isSearching}
-                  className="w-full bg-[#B81D4F] hover:bg-[#9B1842] active:scale-[0.99] text-white font-bold text-xs py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
-                >
-                  {isSearching ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
-                  ) : (
-                    <SearchIcon className="h-4 w-4 text-white" />
-                  )}
-                  <span>Search</span>
-                </button>
+            {/* Gold Frosted Quality & Trust Badges */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/35 border border-amber-300/40 text-xs font-semibold text-amber-100 shadow-sm backdrop-blur-md">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                <span>100% Verified Profiles</span>
               </div>
-
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/35 border border-amber-300/40 text-xs font-semibold text-amber-100 shadow-sm backdrop-blur-md">
+                <Sparkles className="h-3.5 w-3.5 text-yellow-300 shrink-0" />
+                <span>AI Compatibility Scored</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/35 border border-amber-300/40 text-xs font-semibold text-amber-100 shadow-sm backdrop-blur-md">
+                <User className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+                <span>{totalProfiles} Profiles Available</span>
+              </div>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* ─────────────────────────────────────────────────────────────
-          3. Main Content: 2-Column Layout (Sidebar + Results)
-      ────────────────────────────────────────────────────────────── */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-          {/* ─────────────────────────────────────────────────────────
-              Left Column: Dynamic Backend Filters Sidebar
-          ────────────────────────────────────────────────────────── */}
-          <aside className="lg:col-span-4 xl:col-span-3">
-            <div className="bg-white rounded-2xl border border-stone-200/80 shadow-xs p-5 space-y-5">
-              
-              {/* Sidebar Header with Active Count & Reset */}
-              <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-                <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="h-4 w-4 text-[#B81D4F]" />
-                  <h3 className="font-bold text-sm text-stone-900">Filters</h3>
-                  {activeFilterCount > 0 && (
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 bg-rose-50 text-[#B81D4F] rounded-full border border-rose-200">
-                      {activeFilterCount} active
-                    </span>
-                  )}
-                </div>
-                {activeFilterCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleClearAll}
-                    className="text-xs font-bold text-[#B81D4F] hover:underline cursor-pointer flex items-center gap-1"
+        {/* ── 2. Floating Quick Search Bar with Gold Accents ── */}
+        <Card className="bg-white rounded-2xl border border-stone-200/90 shadow-2xs p-3 sm:p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 items-center gap-3 divide-y lg:divide-y-0 lg:divide-x divide-stone-200/70">
+            
+            {/* Segment 1: Looking for (gender) */}
+            <div className="flex items-center gap-3 px-2 py-1">
+              <div className="h-9 w-9 rounded-xl bg-rose-50 text-[#8B1E3F] flex items-center justify-center shrink-0 border border-rose-100 shadow-2xs">
+                <User className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold text-stone-500 block uppercase tracking-wider">
+                  Looking for
+                </span>
+                <div className="relative">
+                  <select
+                    value={lookingFor}
+                    onChange={(e) => {
+                      const newLookingFor = e.target.value as 'Bride' | 'Groom';
+                      setLookingFor(newLookingFor);
+                    }}
+                    className="w-full bg-transparent text-xs font-bold text-stone-900 appearance-none pr-5 py-0.5 focus:outline-none cursor-pointer"
                   >
-                    <RotateCcw className="h-3 w-3" />
-                    <span>Reset</span>
-                  </button>
+                    <option value="Bride">Bride (Female)</option>
+                    <option value="Groom">Groom (Male)</option>
+                  </select>
+                  <ChevronDown className="absolute right-0 top-1 h-3 w-3 text-stone-400 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* Segment 2: Age Range (age_min, age_max) */}
+            <div className="flex items-center gap-3 px-2 py-1 pt-2 sm:pt-1">
+              <div className="h-9 w-9 rounded-xl bg-rose-50 text-[#8B1E3F] flex items-center justify-center shrink-0 border border-rose-100 shadow-2xs">
+                <Calendar className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold text-stone-500 block uppercase tracking-wider">
+                  Age Range
+                </span>
+                <div className="relative">
+                  <select
+                    value={quickAgeRange}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setQuickAgeRange(val);
+                      if (val === '18 - 25') { setSidebarAgeMin(18); setSidebarAgeMax(25); }
+                      else if (val === '21 - 30') { setSidebarAgeMin(21); setSidebarAgeMax(30); }
+                      else if (val === '25 - 35') { setSidebarAgeMin(25); setSidebarAgeMax(35); }
+                      else if (val === '30 - 45') { setSidebarAgeMin(30); setSidebarAgeMax(45); }
+                      else if (val === 'Any') { setSidebarAgeMin(18); setSidebarAgeMax(55); }
+                    }}
+                    className="w-full bg-transparent text-xs font-bold text-stone-900 appearance-none pr-5 py-0.5 focus:outline-none cursor-pointer"
+                  >
+                    <option value="Any">Any Age</option>
+                    <option value="18 - 25">18 - 25 Years</option>
+                    <option value="21 - 30">21 - 30 Years</option>
+                    <option value="25 - 35">25 - 35 Years</option>
+                    <option value="30 - 45">30 - 45 Years</option>
+                  </select>
+                  <ChevronDown className="absolute right-0 top-1 h-3 w-3 text-stone-400 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* Segment 3: Religion (dynamic from backend) */}
+            <div className="flex items-center gap-3 px-2 py-1 pt-2 lg:pt-1">
+              <div className="h-9 w-9 rounded-xl bg-rose-50 text-[#8B1E3F] flex items-center justify-center shrink-0 border border-rose-100 shadow-2xs">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold text-stone-500 block uppercase tracking-wider">
+                  Religion
+                </span>
+                <div className="relative">
+                  <select
+                    value={religion}
+                    onChange={(e) => handleReligionChange(e.target.value)}
+                    className="w-full bg-transparent text-xs font-bold text-stone-900 appearance-none pr-5 py-0.5 focus:outline-none cursor-pointer"
+                  >
+                    <option value="Any">All Religions</option>
+                    {religionOptions.filter(r => r !== 'Any').map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-0 top-1 h-3 w-3 text-stone-400 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* Segment 4: Location (city / state) */}
+            <div className="flex items-center gap-3 px-2 py-1 pt-2 lg:pt-1">
+              <div className="h-9 w-9 rounded-xl bg-rose-50 text-[#8B1E3F] flex items-center justify-center shrink-0 border border-rose-100 shadow-2xs">
+                <MapPin className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold text-stone-500 block uppercase tracking-wider">
+                  Location
+                </span>
+                <div className="relative">
+                  <select
+                    value={locationFilter}
+                    onChange={(e) => setLocationFilter(e.target.value)}
+                    className="w-full bg-transparent text-xs font-bold text-stone-900 appearance-none pr-5 py-0.5 focus:outline-none cursor-pointer"
+                  >
+                    <option value="Any">Any Location</option>
+                    {locationOptions.filter(l => l !== 'Any').map(l => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-0 top-1 h-3 w-3 text-stone-400 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* Segment 5: Search Action Button */}
+            <div className="px-1 pt-2 lg:pt-0">
+              <button
+                type="button"
+                onClick={() => handleExecuteSearch(1)}
+                disabled={isSearching}
+                className="w-full bg-gradient-to-r from-[#8B1E3F] via-[#A82A4D] to-[#B48128] hover:from-[#731834] hover:to-[#9E6E1F] active:scale-[0.99] text-white font-bold text-xs py-2.5 px-5 rounded-xl flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+              >
+                {isSearching ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                ) : (
+                  <SearchIcon className="h-4 w-4 text-white" />
+                )}
+                <span>Search</span>
+              </button>
+            </div>
+
+          </div>
+        </Card>
+
+        {/* ── 3. Main Two-Column Content: Sidebar Filters + Results ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-2">
+
+          {/* ── Left Column: Dynamic Backend Filters Sidebar Card ── */}
+          <Card className="lg:col-span-3 bg-white rounded-2xl border border-stone-200/90 shadow-2xs p-5 space-y-4">
+            
+            {/* Sidebar Header with Active Count & Reset */}
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-[#8B1E3F]" />
+                <h3 className="font-bold text-sm text-stone-900">Filter Profiles</h3>
+                {activeFilterCount > 0 && (
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 bg-amber-100 text-amber-900 rounded-full border border-amber-300/80 shadow-2xs">
+                    {activeFilterCount} active
+                  </span>
                 )}
               </div>
+              {activeFilterCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="text-xs font-bold text-[#8B1E3F] hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>Reset</span>
+                </button>
+              )}
+            </div>
 
               {/* 1. Age Range (age_min, age_max) */}
               <div className="space-y-2.5">
@@ -1130,7 +1144,7 @@ export const SearchPage: React.FC = () => {
                     type="checkbox"
                     checked={verifiedOnly}
                     onChange={(e) => setVerifiedOnly(e.target.checked)}
-                    className="h-4 w-4 rounded text-[#B81D4F] accent-[#B81D4F] cursor-pointer"
+                    className="h-4 w-4 rounded text-[#8B1E3F] accent-[#8B1E3F] cursor-pointer"
                   />
                 </label>
               </div>
@@ -1141,7 +1155,7 @@ export const SearchPage: React.FC = () => {
                   type="button"
                   onClick={() => handleExecuteSearch(1)}
                   disabled={isSearching}
-                  className="w-full bg-[#B81D4F] hover:bg-[#9B1842] active:scale-[0.99] text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                  className="w-full bg-gradient-to-r from-[#8B1E3F] via-[#A82A4D] to-[#B48128] hover:from-[#731834] hover:to-[#9E6E1F] active:scale-[0.99] text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
                 >
                   {isSearching ? (
                     <Loader2 className="h-4 w-4 animate-spin text-white" />
@@ -1152,46 +1166,56 @@ export const SearchPage: React.FC = () => {
                 </button>
               </div>
 
-            </div>
-          </aside>
+          </Card>
 
           {/* ─────────────────────────────────────────────────────────
               Right Column: Results Header + Profile Cards List
           ────────────────────────────────────────────────────────── */}
-          <section className="lg:col-span-8 xl:col-span-9 space-y-4">
+          <div className="lg:col-span-9 space-y-4">
             
-            {/* Results Header Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-transparent pb-1">
-              <span className="text-xs sm:text-sm font-semibold text-stone-600">
-                Showing {displayedProfiles.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} - {Math.min(currentPage * pageSize, totalProfiles)} of {totalProfiles} profiles
-              </span>
+            {/* Top Bar: Count & Sorting Controls */}
+            <Card className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200/90 shadow-2xs">
+              {/* Title Count */}
+              <div>
+                <h2 className="text-xl sm:text-2xl font-serif font-bold text-stone-900">
+                  <span className="text-[#8B1E3F] font-extrabold mr-1.5">
+                    {totalProfiles}
+                  </span>
+                  Profiles Found
+                </h2>
+                <p className="text-xs text-stone-500 font-medium">
+                  Showing {displayedProfiles.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} - {Math.min(currentPage * pageSize, totalProfiles)} based on your criteria
+                </p>
+              </div>
 
-              <div className="flex items-center gap-3 self-end sm:self-auto">
-                {/* Sort By Dropdown */}
-                <div className="flex items-center gap-1.5 text-xs text-stone-600 font-semibold bg-white border border-stone-200 px-3 py-1.5 rounded-xl shadow-2xs">
-                  <span>Sort by:</span>
+              {/* Controls: Sort Dropdown + View Toggle */}
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-1.5 text-xs text-stone-600 font-medium">
+                  <span className="hidden sm:inline">Sort by</span>
                   <div className="relative">
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as any)}
-                      className="bg-transparent font-bold text-stone-900 pr-4 appearance-none focus:outline-none cursor-pointer"
+                      className="bg-stone-50 border border-stone-200 hover:border-stone-300 text-stone-900 text-xs font-semibold py-1.5 pl-3 pr-7 rounded-xl appearance-none focus:outline-none focus:border-[#8B1E3F]"
                     >
                       <option value="Latest Online">Latest Online</option>
                       <option value="Most Relevant">Most Relevant</option>
                       <option value="Age: Low to High">Age: Low to High</option>
                       <option value="Age: High to Low">Age: High to Low</option>
                     </select>
-                    <ChevronDown className="absolute right-0 top-0.5 h-3 w-3 text-stone-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-2.5 top-2.5 h-3 w-3 text-stone-400 pointer-events-none" />
                   </div>
                 </div>
 
-                {/* View Mode Toggle: Grid / List */}
-                <div className="flex items-center bg-white border border-stone-200 rounded-xl p-1 shadow-2xs">
+                {/* Grid / List Mode Switcher */}
+                <div className="flex items-center gap-1 border border-stone-200 p-0.5 rounded-xl bg-stone-50">
                   <button
                     type="button"
                     onClick={() => setViewMode('grid')}
-                    className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                      viewMode === 'grid' ? 'bg-[#B81D4F] text-white shadow-2xs' : 'text-stone-500 hover:text-stone-900'
+                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                      viewMode === 'grid'
+                        ? 'bg-[#8B1E3F] text-white shadow-2xs'
+                        : 'text-stone-500 hover:text-stone-800'
                     }`}
                     title="Grid View"
                   >
@@ -1200,21 +1224,23 @@ export const SearchPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setViewMode('list')}
-                    className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                      viewMode === 'list' ? 'bg-[#B81D4F] text-white shadow-2xs' : 'text-stone-500 hover:text-stone-900'
+                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                      viewMode === 'list'
+                        ? 'bg-[#8B1E3F] text-white shadow-2xs'
+                        : 'text-stone-500 hover:text-stone-800'
                     }`}
-                    title="List View (Default)"
+                    title="List View"
                   >
                     <List className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Loading / Empty / Results States */}
             {isSearching ? (
               <div className="bg-white rounded-2xl border border-stone-200/80 p-12 text-center space-y-3 shadow-2xs">
-                <Loader2 className="h-8 w-8 text-[#B81D4F] animate-spin mx-auto" />
+                <Loader2 className="h-8 w-8 text-[#8B1E3F] animate-spin mx-auto" />
                 <h4 className="font-serif text-base font-bold text-stone-900">Searching Profiles</h4>
                 <p className="text-xs text-stone-500 max-w-sm mx-auto">
                   Fetching live matches from the database...
@@ -1227,18 +1253,16 @@ export const SearchPage: React.FC = () => {
                 <p className="text-xs text-stone-500 max-w-sm mx-auto">
                   There are no profiles matching your search criteria. Try adjusting the filters.
                 </p>
-                <Button
-                  size="sm"
+                <button
+                  type="button"
                   onClick={handleClearAll}
-                  className="bg-[#B81D4F] text-white text-xs font-bold mt-2"
+                  className="bg-gradient-to-r from-[#8B1E3F] via-[#A82A4D] to-[#B48128] hover:from-[#731834] hover:to-[#9E6E1F] text-white text-xs font-bold py-2.5 px-5 rounded-xl shadow-xs mt-2 cursor-pointer"
                 >
                   Reset All Filters
-                </Button>
+                </button>
               </div>
             ) : viewMode === 'list' ? (
-              /* ─────────────────────────────────────────────────────
-                 List View (Horizontal Card Layout)
-              ────────────────────────────────────────────────────── */
+              /* ── List View (Horizontal Card Layout with Matches Aesthetic) ── */
               <div className="space-y-3.5">
                 {displayedProfiles.map((profile) => {
                   const isShortlisted = shortlistedIds.includes(profile.id);
@@ -1248,51 +1272,55 @@ export const SearchPage: React.FC = () => {
                   const complexionText = profile.physicalAttributes?.complexion || (profile as any).complexion || '';
                   const maritalStatusText = profile.maritalStatus || (profile as any).marital_status || '';
                   const bioText = profile.about || (profile as any).aboutMe || (profile as any).bio || '';
+                  const matchScoreVal = profile.compatibilityScore || (profile as any).matchScore;
 
                   return (
-                    <div
+                    <Card
                       key={profile.id}
-                      className="bg-white rounded-2xl border border-stone-200/90 shadow-2xs hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative group"
+                      className="bg-gradient-to-b from-white via-[#FFF8FA] to-[#FDF0F5] rounded-2xl border border-amber-300/80 hover:border-amber-400 shadow-[0_4px_16px_rgba(212,175,55,0.08)] hover:shadow-[0_12px_32px_rgba(212,175,55,0.18)] transition-all duration-300 p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative group overflow-hidden"
                     >
-                      {/* Left: Profile Image with Heart & Online Pill */}
-                      <div className="relative shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-stone-100 border border-stone-100">
+                      {/* Left: Profile Image with Heart & Exact Match Pill */}
+                      <div className="relative shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-gradient-to-b from-white via-[#FFF5F8] to-[#FCE7F0] border border-rose-100/60 shadow-2xs">
                         <MatchAvatar
                           photo={profile.profileImage || (profile as any).profile_photo || (profile as any).photo}
                           name={profile.name}
                           variant="card"
-                          imgClassName="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                          imgClassName="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                         />
 
                         {/* Top-Right Heart Icon inside Photo */}
                         <button
                           type="button"
                           onClick={(e) => handleToggleShortlist(profile, e)}
-                          className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/30 backdrop-blur-xs text-white hover:bg-black/50 flex items-center justify-center transition-all cursor-pointer z-10"
-                          title="Shortlist"
+                          className="absolute top-2 right-2 h-7 w-7 rounded-full bg-white/95 hover:bg-white border border-amber-300/60 shadow-md flex items-center justify-center transition-all cursor-pointer z-10 active:scale-90"
+                          title={isShortlisted ? 'Remove from Shortlist' : 'Add to Shortlist'}
                         >
                           <Heart
                             className={`h-3.5 w-3.5 transition-transform ${
-                              isShortlisted ? 'fill-rose-500 text-rose-500 scale-110' : 'text-white'
+                              isShortlisted ? 'fill-rose-500 text-rose-500 scale-110' : 'text-stone-600 stroke-[1.8]'
                             }`}
                           />
                         </button>
 
-                        {/* Top-Left Online / Offline Pill inside Photo */}
-                        <div className="absolute top-2 left-2 z-10">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md shadow-2xs ${
-                              isOnline
-                                ? 'bg-emerald-600/90 text-white'
-                                : 'bg-black/50 text-stone-200'
-                            }`}
-                          >
+                        {/* Top-Left Exact Match Score Pill (if present) or Online Status */}
+                        <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+                          {typeof matchScoreVal === 'number' && matchScoreVal > 0 ? (
+                            <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#382104]/90 via-[#68430B]/90 to-[#8C5E13]/90 text-amber-200 border border-amber-300/60 text-[9.5px] font-black px-2 py-0.5 rounded-full shadow-md backdrop-blur-xs">
+                              <Sparkles className="h-2.5 w-2.5 text-yellow-300 fill-yellow-300/50 shrink-0" />
+                              <span>{Math.round(matchScoreVal)}%</span>
+                            </span>
+                          ) : (
                             <span
-                              className={`h-1.5 w-1.5 rounded-full ${
-                                isOnline ? 'bg-white animate-pulse' : 'bg-stone-300'
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold backdrop-blur-md shadow-2xs ${
+                                isOnline
+                                  ? 'bg-emerald-600/90 text-white'
+                                  : 'bg-black/50 text-stone-200'
                               }`}
-                            />
-                            <span>{isOnline ? 'Online' : 'Offline'}</span>
-                          </span>
+                            >
+                              <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-white animate-pulse' : 'bg-stone-300'}`} />
+                              <span>{isOnline ? 'Online' : 'Offline'}</span>
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -1303,29 +1331,29 @@ export const SearchPage: React.FC = () => {
                           <div className="flex items-center gap-2 min-w-0">
                             <h3
                               onClick={() => handleViewProfile(profile)}
-                              className="font-bold text-base sm:text-lg text-stone-900 hover:text-[#B81D4F] transition-colors cursor-pointer truncate"
+                              className="font-bold text-base sm:text-lg text-stone-900 hover:text-[#B48128] transition-colors cursor-pointer truncate"
                               title={profile.name}
                             >
                               {profile.name}
                             </h3>
                             {profile.verified && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[10px] font-bold shrink-0">
-                                <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                              <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#7B5313] via-[#9E6E1F] to-[#C99738] text-amber-100 border border-amber-200/50 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-2xs">
+                                <ShieldCheck className="h-3 w-3 text-amber-200" />
                                 <span>Verified</span>
                               </span>
                             )}
                           </div>
 
-                          {/* Neat Online / Offline Status Badge */}
+                          {/* Online / Offline Status Badge */}
                           <div
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border shrink-0 transition-all ${
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border shrink-0 transition-all ${
                               isOnline
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-2xs'
                                 : 'bg-stone-50 text-stone-500 border-stone-200'
                             }`}
                           >
                             <span
-                              className={`h-2 w-2 rounded-full shrink-0 ${
+                              className={`h-1.5 w-1.5 rounded-full shrink-0 ${
                                 isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'
                               }`}
                             />
@@ -1333,73 +1361,63 @@ export const SearchPage: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Sub-row 1: Age | Height | Religion | Caste | Education */}
+                        {/* Sub-row 1: Age | Height | Religion | Caste */}
                         <div className="text-xs text-stone-600 font-medium flex items-center gap-2 flex-wrap">
                           {profile.age ? (
-                            <span className="flex items-center gap-1.5">
-                              <User className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                            <span className="flex items-center gap-1">
                               <span>{profile.age} Years</span>
                             </span>
                           ) : null}
                           {profile.height && (
                             <>
-                              <span className="text-stone-300">|</span>
+                              <span className="text-stone-300">•</span>
                               <span>{profile.height}</span>
                             </>
                           )}
                           {profile.religion && (
                             <>
-                              <span className="text-stone-300">|</span>
+                              <span className="text-stone-300">•</span>
                               <span>{profile.religion}{profile.caste ? `, ${profile.caste}` : ''}</span>
-                            </>
-                          )}
-                          {profile.education && (
-                            <>
-                              <span className="text-stone-300">|</span>
-                              <span>{profile.education}</span>
                             </>
                           )}
                         </div>
 
-                        {/* Sub-row 2: Profession | Location */}
-                        {(profile.profession || locationText) && (
-                          <div className="text-xs text-stone-600 font-medium flex items-center gap-2 flex-wrap">
-                            {profile.profession && (
-                              <span className="flex items-center gap-1.5">
-                                <Briefcase className="h-3.5 w-3.5 text-stone-400 shrink-0" />
-                                <span>{profile.profession}</span>
-                              </span>
-                            )}
-                            {profile.profession && locationText && <span className="text-stone-300">|</span>}
-                            {locationText && (
-                              <span className="flex items-center gap-1.5">
-                                <MapPin className="h-3.5 w-3.5 text-stone-400 shrink-0" />
-                                <span>{locationText}</span>
-                              </span>
-                            )}
+                        {/* Sub-row 2: Education & Profession & Location with Gold Icons */}
+                        <div className="space-y-1 pt-0.5 text-xs text-stone-600">
+                          {profile.education && (
+                            <div className="flex items-center gap-1.5 truncate">
+                              <GraduationCap className="h-3.5 w-3.5 text-[#B48128] shrink-0" />
+                              <span className="truncate">{profile.education}</span>
+                            </div>
+                          )}
+                          {profile.profession && (
+                            <div className="flex items-center gap-1.5 truncate">
+                              <Briefcase className="h-3.5 w-3.5 text-[#B48128] shrink-0" />
+                              <span className="truncate">{profile.profession}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5 truncate">
+                            <MapPin className="h-3.5 w-3.5 text-[#B48128] shrink-0" />
+                            <span className="truncate">{locationText}</span>
                           </div>
-                        )}
+                        </div>
 
                         {/* Sub-row 3: Tags / Pills */}
                         {(complexionText || maritalStatusText || incomeText) && (
                           <div className="flex items-center gap-2 flex-wrap pt-0.5">
                             {complexionText && (
-                              <span className="px-3 py-1 bg-stone-100/90 rounded-full text-xs font-semibold text-stone-700 flex items-center gap-1.5 border border-stone-200/50">
-                                <User className="h-3.5 w-3.5 text-stone-400" />
+                              <span className="px-2.5 py-0.5 bg-amber-50/80 rounded-full text-[11px] font-semibold text-stone-700 flex items-center gap-1 border border-amber-200/60">
                                 <span>{complexionText}</span>
                               </span>
                             )}
                             {maritalStatusText && (
-                              <span className="px-3 py-1 bg-stone-100/90 rounded-full text-xs font-semibold text-stone-700 flex items-center gap-1.5 border border-stone-200/50">
-                                <Heart className="h-3.5 w-3.5 text-rose-400" />
+                              <span className="px-2.5 py-0.5 bg-rose-50/80 rounded-full text-[11px] font-semibold text-stone-700 flex items-center gap-1 border border-rose-200/60">
                                 <span>{maritalStatusText}</span>
                               </span>
                             )}
                             {incomeText && (
-                              <span className="px-3 py-1 bg-stone-100/90 rounded-full text-xs font-semibold text-stone-700 flex items-center gap-1.5 border border-stone-200/50">
-                                <span className="h-4 w-4 rounded-full bg-rose-50 text-[#B81D4F] border border-rose-200 flex items-center justify-center text-[10px] font-bold">
-                                  ₹
-                                </span>
+                              <span className="px-2.5 py-0.5 bg-amber-50/80 rounded-full text-[11px] font-semibold text-stone-700 flex items-center gap-1 border border-amber-200/60">
+                                <span className="text-[#8B1E3F] font-bold">₹</span>
                                 <span>{incomeText}</span>
                               </span>
                             )}
@@ -1415,44 +1433,24 @@ export const SearchPage: React.FC = () => {
                       </div>
 
                       {/* Right Action Column */}
-                      <div className="flex flex-col items-end justify-between gap-4 shrink-0 w-full md:w-auto self-stretch md:self-center pt-2 md:pt-0 border-t md:border-t-0 border-stone-100">
-                        {/* Bookmark Ribbon Icon */}
+                      <div className="flex flex-row md:flex-col items-center justify-end gap-2.5 w-full md:w-auto shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-stone-100">
+                        <button
+                          type="button"
+                          onClick={() => handleViewProfile(profile)}
+                          className="flex-1 md:flex-none w-full md:w-36 py-2 px-4 bg-gradient-to-r from-[#8B1E3F] via-[#B83358] via-[#B48128] to-[#C99738] hover:from-[#761734] hover:to-[#B68428] text-white text-xs font-bold rounded-xl transition-all shadow-xs text-center cursor-pointer active:scale-[0.99]"
+                        >
+                          View Profile
+                        </button>
                         <button
                           type="button"
                           onClick={(e) => handleToggleShortlist(profile, e)}
-                          className="hidden md:block text-stone-400 hover:text-[#B81D4F] p-1 rounded-lg transition-colors cursor-pointer"
-                          title="Bookmark"
+                          className="flex-1 md:flex-none w-full md:w-36 py-2 px-4 border border-amber-300/80 hover:border-amber-400 bg-white/90 hover:bg-white text-stone-800 text-xs font-bold rounded-xl transition-all shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
                         >
-                          <Bookmark className={`h-4 w-4 ${isShortlisted ? 'fill-[#B81D4F] text-[#B81D4F]' : ''}`} />
+                          <Heart className={`h-3.5 w-3.5 ${isShortlisted ? 'fill-rose-500 text-rose-500' : 'text-stone-500'}`} />
+                          <span>{isShortlisted ? 'Shortlisted' : 'Shortlist'}</span>
                         </button>
-
-                        {/* Stacked Action Buttons */}
-                        <div className="flex flex-row md:flex-col items-center gap-2 w-full md:w-36">
-                          <button
-                            type="button"
-                            onClick={() => handleViewProfile(profile)}
-                            className="flex-1 md:w-full bg-[#B81D4F] hover:bg-[#9B1842] text-white text-xs font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                            <span>View Profile</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={(e) => handleToggleShortlist(profile, e)}
-                            className={`flex-1 md:w-full border text-xs font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                              isShortlisted
-                                ? 'border-[#B81D4F] bg-rose-50 text-[#B81D4F]'
-                                : 'border-rose-200 text-[#B81D4F] hover:bg-rose-50/70'
-                            }`}
-                          >
-                            <Heart className={`h-3.5 w-3.5 ${isShortlisted ? 'fill-current' : ''}`} />
-                            <span>{isShortlisted ? 'Shortlisted' : 'Shortlist'}</span>
-                          </button>
-                        </div>
                       </div>
-
-                    </div>
+                    </Card>
                   );
                 })}
               </div>
@@ -1465,30 +1463,74 @@ export const SearchPage: React.FC = () => {
                   const isShortlisted = shortlistedIds.includes(profile.id);
                   const isOnline = profile.online === true || profile.lastActive === 'Online';
                   const locationText = resolveLocationString(profile);
+                  const exactMatchPercentage = (() => {
+                    const rawVal =
+                      profile.compatibilityScore ??
+                      (profile as any).matchScore ??
+                      (profile as any).match_percentage;
+                    if (rawVal === undefined || rawVal === null || rawVal === '') return null;
+                    const num = typeof rawVal === 'number' ? rawVal : parseFloat(String(rawVal));
+                    if (isNaN(num) || num <= 0) return null;
+                    if (num > 0 && num <= 1) return Math.round(num * 100);
+                    return Math.round(num);
+                  })();
 
                   return (
-                    <div
+                    <Card
                       key={profile.id}
-                      className="bg-white rounded-2xl border border-stone-200/80 shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col"
+                      className="h-full flex flex-col justify-between bg-gradient-to-b from-white via-[#FFF8FA] to-[#FDF0F5] rounded-2xl border border-amber-300/80 hover:border-amber-400 shadow-[0_4px_16px_rgba(212,175,55,0.08)] hover:shadow-[0_12px_32px_rgba(212,175,55,0.18)] transition-all duration-300 overflow-hidden group p-0 gap-0"
                     >
-                      <div className="relative aspect-4/3 bg-stone-100">
+                      {/* Upper Visual Container: Photo with Badges & Action */}
+                      <div
+                        onClick={() => handleViewProfile(profile)}
+                        className="relative aspect-[4/3.8] w-full overflow-hidden bg-gradient-to-b from-white via-[#FFF5F8] to-[#FCE7F0] border-b border-rose-100/60 cursor-pointer select-none"
+                      >
                         <MatchAvatar
                           photo={profile.profileImage || (profile as any).profile_photo || (profile as any).photo}
                           name={profile.name}
                           variant="card"
-                          imgClassName="w-full h-full object-cover object-top"
+                          imgClassName="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
                         />
+
+                        {/* Sheen & Subtle Shade */}
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/25 pointer-events-none" />
+
+                        {/* Top-Left: Exact AI Match Percentage (Only if authentic percentage from backend exists) */}
+                        {exactMatchPercentage !== null && (
+                          <div className="absolute top-2.5 left-2.5 z-10">
+                            <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#382104]/90 via-[#68430B]/90 to-[#8C5E13]/90 text-amber-200 border border-amber-300/60 text-[10.5px] font-black px-2.5 py-0.5 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.35)] backdrop-blur-xs">
+                              <Sparkles className="h-3 w-3 text-yellow-300 fill-yellow-300/50 shrink-0" />
+                              <span>{exactMatchPercentage}% Match</span>
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Top-Right: Circular White Shortlist Heart Button with Gold Border */}
                         <button
                           type="button"
                           onClick={(e) => handleToggleShortlist(profile, e)}
-                          className="absolute top-2.5 right-2.5 h-8 w-8 rounded-full bg-black/40 backdrop-blur-xs text-white flex items-center justify-center cursor-pointer z-10"
+                          className="absolute top-2.5 right-2.5 z-10 h-8 w-8 rounded-full bg-white/95 hover:bg-white shadow-md flex items-center justify-center text-stone-600 hover:text-rose-500 border border-amber-300/60 transition-all active:scale-90 cursor-pointer"
+                          title={isShortlisted ? 'Remove from Shortlist' : 'Add to Shortlist'}
                         >
-                          <Heart className={`h-4 w-4 ${isShortlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
+                          <Heart
+                            className={`h-4 w-4 transition-colors ${
+                              isShortlisted
+                                ? 'fill-rose-500 text-rose-500 scale-110'
+                                : 'text-stone-600 stroke-[1.8]'
+                            }`}
+                          />
                         </button>
-                        {/* Top-Left Online Presence Pill */}
-                        <div className="absolute top-2.5 left-2.5 z-10">
+
+                        {/* Bottom-Left: Verified + Online Badge */}
+                        <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap">
+                          {profile.verified && (
+                            <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#7B5313] via-[#9E6E1F] to-[#C99738] text-amber-100 border border-amber-200/50 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs backdrop-blur-xs">
+                              <ShieldCheck className="h-3 w-3 text-amber-200" />
+                              <span>Verified</span>
+                            </span>
+                          )}
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md shadow-2xs ${
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md shadow-2xs ${
                               isOnline
                                 ? 'bg-emerald-600/90 text-white'
                                 : 'bg-black/50 text-stone-200'
@@ -1504,70 +1546,65 @@ export const SearchPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                        <div>
-                          {/* Name + Verified + Online Status Badge Header */}
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <h4
-                                onClick={() => handleViewProfile(profile)}
-                                className="font-bold text-base text-stone-900 hover:text-[#B81D4F] transition-colors cursor-pointer truncate"
-                                title={profile.name}
-                              >
-                                {profile.name}
-                              </h4>
-                              {profile.verified && (
-                                <div className="h-4 w-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0" title="Verified Member">
-                                  <Check className="h-2.5 w-2.5 stroke-[3]" />
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Online Badge */}
-                            <span
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${
-                                isOnline
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : 'bg-stone-50 text-stone-500 border-stone-200'
-                              }`}
+                      {/* Lower Info Details in Pink & White Gradient */}
+                      <CardContent className="p-3.5 flex-1 flex flex-col justify-between space-y-2.5 bg-gradient-to-b from-white via-[#FFF8FA] to-[#FDF0F5]">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between gap-1">
+                            <h4
+                              onClick={() => handleViewProfile(profile)}
+                              className="font-bold text-sm text-stone-900 group-hover:text-[#8B1E3F] transition-colors cursor-pointer truncate"
+                              title={profile.name}
                             >
-                              <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'}`} />
-                              <span>{isOnline ? 'Online' : 'Offline'}</span>
-                            </span>
+                              {profile.name}
+                            </h4>
+                            {exactMatchPercentage !== null && (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-amber-900 bg-amber-100/90 border border-amber-300/80 px-1.5 py-0.2 rounded-md shadow-2xs shrink-0">
+                                {exactMatchPercentage}%
+                              </span>
+                            )}
                           </div>
-                          <p className="text-xs text-stone-600 mt-1">
+
+                          <div className="text-xs text-stone-600 font-medium truncate">
                             {[
                               profile.age ? `${profile.age} Yrs` : null,
                               profile.height,
                               profile.religion
                             ].filter(Boolean).join(' • ')}
-                          </p>
-                          <p className="text-xs text-stone-600 font-medium truncate mt-0.5">
-                            {[
-                              profile.profession,
-                              locationText
-                            ].filter(Boolean).join(' • ')}
-                          </p>
-                        </div>
+                          </div>
 
-                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-stone-100">
-                          <button
-                            type="button"
-                            onClick={() => handleViewProfile(profile)}
-                            className="bg-[#B81D4F] text-white text-xs font-bold py-2 rounded-xl"
-                          >
-                            View Profile
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => handleToggleShortlist(profile, e)}
-                            className="border border-rose-200 text-[#B81D4F] text-xs font-bold py-2 rounded-xl"
-                          >
-                            Shortlist
-                          </button>
+                          {profile.profession && (
+                            <div className="flex items-center gap-1.5 text-xs text-stone-700 font-medium truncate">
+                              <Briefcase className="h-3.5 w-3.5 text-[#B48128] shrink-0" />
+                              <span className="truncate">{profile.profession}</span>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-1.5 text-xs text-stone-600 font-medium truncate">
+                            <MapPin className="h-3.5 w-3.5 text-[#B48128] shrink-0" />
+                            <span className="truncate">{locationText}</span>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      </CardContent>
+
+                      {/* Action Buttons: View Profile & Shortlist */}
+                      <CardFooter className="p-3.5 pt-0 grid grid-cols-2 gap-2 bg-gradient-to-b from-[#FDF0F5] to-[#FCEDF3]">
+                        <button
+                          type="button"
+                          onClick={() => handleViewProfile(profile)}
+                          className="py-2 bg-gradient-to-r from-[#8B1E3F] via-[#B83358] via-[#B48128] to-[#C99738] hover:from-[#761734] hover:to-[#B68428] text-white text-xs font-bold rounded-xl transition-all shadow-xs text-center cursor-pointer active:scale-[0.99]"
+                        >
+                          View Profile
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleShortlist(profile, e)}
+                          className="py-2 border border-amber-300/80 hover:border-amber-400 bg-white/90 hover:bg-white text-stone-800 text-xs font-bold rounded-xl transition-all shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <Heart className={`h-3.5 w-3.5 ${isShortlisted ? 'fill-rose-500 text-rose-500' : 'text-stone-500'}`} />
+                          <span>{isShortlisted ? 'Saved' : 'Shortlist'}</span>
+                        </button>
+                      </CardFooter>
+                    </Card>
                   );
                 })}
               </div>
@@ -1586,7 +1623,7 @@ export const SearchPage: React.FC = () => {
                     handleExecuteSearch(next);
                   }}
                   disabled={currentPage === 1}
-                  className="h-8 w-8 rounded-lg border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 disabled:opacity-40 flex items-center justify-center transition-all cursor-pointer"
+                  className="h-8 w-8 rounded-lg border border-stone-200 bg-white text-stone-600 hover:border-amber-300 hover:text-stone-900 disabled:opacity-40 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -1601,8 +1638,8 @@ export const SearchPage: React.FC = () => {
                     }}
                     className={`h-8 w-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       currentPage === page
-                        ? 'bg-[#B81D4F] text-white shadow-xs'
-                        : 'bg-white border border-stone-200 text-stone-700 hover:bg-stone-50'
+                        ? 'bg-gradient-to-r from-[#8B1E3F] to-[#B83358] text-white shadow-xs border border-[#8B1E3F]'
+                        : 'bg-white border border-stone-200 text-stone-700 hover:border-amber-300 hover:bg-amber-50/30'
                     }`}
                   >
                     {page}
@@ -1617,17 +1654,17 @@ export const SearchPage: React.FC = () => {
                     handleExecuteSearch(next);
                   }}
                   disabled={currentPage === totalPages}
-                  className="h-8 w-8 rounded-lg border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 disabled:opacity-40 flex items-center justify-center transition-all cursor-pointer"
+                  className="h-8 w-8 rounded-lg border border-stone-200 bg-white text-stone-600 hover:border-amber-300 hover:text-stone-900 disabled:opacity-40 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
             )}
 
-          </section>
+          </div>
 
         </div>
-      </main>
+      </div>
 
     </div>
   );

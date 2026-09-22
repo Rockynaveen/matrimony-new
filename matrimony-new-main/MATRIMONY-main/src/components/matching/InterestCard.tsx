@@ -114,7 +114,22 @@ export const InterestCard: React.FC<InterestCardProps> = ({ interest, type }) =>
     <Card className="p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-stone-200/80 bg-white hover:shadow-md transition-all duration-300 rounded-3xl">
       <div className="flex items-start sm:items-center gap-4 w-full">
         <MatchAvatar
-          photo={interest.profile_photo}
+          photo={
+            interest.profile_photo ||
+            (interest as any).profile_image ||
+            (interest as any).profileImage ||
+            (interest as any).photo ||
+            (interest as any).photo_url ||
+            (interest as any).avatar ||
+            (interest as any).image ||
+            (interest as any).image_url ||
+            (interest as any).user?.profile_photo ||
+            (interest as any).user?.photo ||
+            (interest as any).user?.avatar ||
+            (interest as any).photos?.[0] ||
+            (interest as any).gallery?.[0] ||
+            (interest as any).images?.[0]
+          }
           firstName={interest.first_name}
           lastName={interest.last_name}
           variant="circle"

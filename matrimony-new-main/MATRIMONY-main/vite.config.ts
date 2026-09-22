@@ -42,6 +42,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      '/media': {
+        target: 'https://matrimony-production-4b00.up.railway.app',
+        changeOrigin: true,
+        secure: true,
+      },
     },
   },
 })

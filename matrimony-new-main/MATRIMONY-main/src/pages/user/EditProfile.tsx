@@ -88,7 +88,7 @@ interface FormState {
   brothers_married_count: number;
   sisters_count: number;
   sisters_married_count: number;
-  living_with_parents: boolean;
+  living_with_parents: boolean | null;
   family_location: string;
   family_information: string;
 
@@ -121,14 +121,14 @@ const initialFormState: FormState = {
   gender: '',
   height: '',
   weight: '',
-  complexion: 'Fair',
-  marital_status: 'Never Married',
+  complexion: '',
+  marital_status: '',
   about_me: '',
 
   children_count: 0,
   children_living_status: '',
-  physical_status: 'Normal',
-  physical_disability: 'NO',
+  physical_status: '',
+  physical_disability: '',
   disability_information: '',
 
   education_id: null,
@@ -161,7 +161,7 @@ const initialFormState: FormState = {
   brothers_married_count: 0,
   sisters_count: 0,
   sisters_married_count: 0,
-  living_with_parents: true,
+  living_with_parents: null,
   family_location: '',
   family_information: '',
 
@@ -171,7 +171,7 @@ const initialFormState: FormState = {
   hobby_ids: [],
 
   country_id: null,
-  country: 'India',
+  country: '',
   state_id: null,
   state: '',
   district_id: null,
@@ -215,20 +215,6 @@ export const EditProfile: React.FC = () => {
   const { data: districts = [], isLoading: isLoadingDistricts } = useDistricts(formData.state_id);
   const { data: mandals = [], isLoading: isLoadingMandals } = useMandals(formData.district_id);
   const { data: villages = [], isLoading: isLoadingVillages } = useVillages(formData.mandal_id);
-
-  // Auto-select India as default country if not set once countries are loaded
-  useEffect(() => {
-    if (!formData.country_id && countries.length > 0) {
-      const india = countries.find(c => c.name.toLowerCase() === 'india') || countries[0];
-      if (india) {
-        setFormData(prev => ({
-          ...prev,
-          country_id: prev.country_id || india.id,
-          country: prev.country || india.name
-        }));
-      }
-    }
-  }, [countries]);
 
   // Populate form with existing profile data when available
   useEffect(() => {
@@ -285,7 +271,7 @@ export const EditProfile: React.FC = () => {
       setFormData(prev => ({
         ...prev,
         profile_name: sourceName || prev.profile_name,
-        date_of_birth: source.date_of_birth || currentUser.joinedDate || prev.date_of_birth,
+        date_of_birth: source.date_of_birth || (currentUser as any)?.dob || (currentUser as any)?.date_of_birth || prev.date_of_birth || '',
         gender: source.gender || prev.gender,
         height: source.height ? String(source.height) : prev.height,
         weight: source.weight ? String(source.weight) : prev.weight,
@@ -294,10 +280,12 @@ export const EditProfile: React.FC = () => {
         about_me: source.about_me || source.about || prev.about_me,
 
         // Children & Disability
-        children_count: source.children_count !== undefined ? Number(source.children_count) : prev.children_count,
+        children_count: source.children_count !== undefined && source.children_count !== null ? Number(source.children_count) : prev.children_count,
         children_living_status: source.children_living_status || prev.children_living_status,
-        physical_status: source.physical_status === 'Physically Challenged' || source.physical_disability === 'YES' ? 'Yes' : (source.physical_status || prev.physical_status),
-        physical_disability: source.physical_disability || (source.physical_status === 'Physically Challenged' ? 'YES' : 'NO'),
+        physical_status: source.physical_status === 'Physically Challenged' || source.physical_disability === 'YES'
+          ? 'Yes'
+          : (source.physical_status === 'Normal' || source.physical_disability === 'NO' ? 'No' : (source.physical_status || prev.physical_status || '')),
+        physical_disability: source.physical_disability || (source.physical_status === 'Physically Challenged' ? 'YES' : (source.physical_status === 'Normal' ? 'NO' : (prev.physical_disability || ''))),
         disability_information: source.disability_information || (source as any).disability_info || prev.disability_information,
 
         education_id: eduId ?? prev.education_id,
@@ -567,10 +555,10 @@ export const EditProfile: React.FC = () => {
   };
 
   // Height parse helper
-  const parseHeight = (val: string): number => {
-    if (!val) return 5.8;
+  const parseHeight = (val: string): number | null => {
+    if (!val) return null;
     const n = parseFloat(val);
-    if (isNaN(n)) return 5.8;
+    if (isNaN(n)) return null;
     if (n > 30) {
       return parseFloat((n / 30.48).toFixed(1));
     }
@@ -616,12 +604,16 @@ export const EditProfile: React.FC = () => {
         about_me: formData.about_me.trim() || '',
         height: parseHeight(formData.height),
         weight: formData.weight ? parseFloat(formData.weight) || null : null,
-        complexion: formData.complexion || 'Fair',
-        marital_status: formData.marital_status || 'Never Married',
-        children_count: Number(formData.children_count) || 0,
+        complexion: formData.complexion || null,
+        marital_status: formData.marital_status || null,
+        children_count: formData.children_count !== undefined && formData.children_count !== null ? Number(formData.children_count) : 0,
         children_living_status: formData.children_living_status || '',
-        physical_status: formData.physical_status === 'Yes' || formData.physical_status === 'Physically Challenged' ? 'Physically Challenged' : (formData.physical_status || 'Normal'),
-        physical_disability: formData.physical_status === 'Yes' || formData.physical_status === 'Physically Challenged' ? 'YES' : 'NO',
+        physical_status: formData.physical_status === 'Yes' || formData.physical_status === 'Physically Challenged'
+          ? 'Physically Challenged'
+          : (formData.physical_status === 'No' ? 'Normal' : (formData.physical_status || null)),
+        physical_disability: formData.physical_status === 'Yes' || formData.physical_status === 'Physically Challenged'
+          ? 'YES'
+          : (formData.physical_status === 'No' ? 'NO' : null),
         disability_information: formData.disability_information || '',
 
         // Education & Career
@@ -657,7 +649,7 @@ export const EditProfile: React.FC = () => {
         brothers_married_count: Number(formData.brothers_married_count) || 0,
         sisters_count: Number(formData.sisters_count) || 0,
         sisters_married_count: Number(formData.sisters_married_count) || 0,
-        living_with_parents: Boolean(formData.living_with_parents),
+        living_with_parents: formData.living_with_parents !== null ? Boolean(formData.living_with_parents) : null,
         family_location: formData.family_location || '',
         family_information: formData.family_information || '',
 
@@ -870,6 +862,7 @@ export const EditProfile: React.FC = () => {
                 onChange={e => handleFieldChange('marital_status', e.target.value)}
                 className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
               >
+                <option value="">Select Marital Status</option>
                 <option value="Never Married">Never Married</option>
                 <option value="Divorced">Divorced</option>
                 <option value="Widowed">Widowed</option>
@@ -887,6 +880,7 @@ export const EditProfile: React.FC = () => {
                 onChange={e => handleFieldChange('complexion', e.target.value)}
                 className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
               >
+                <option value="">Select Complexion</option>
                 <option value="Fair">Fair</option>
                 <option value="Very Fair">Very Fair</option>
                 <option value="Wheatish">Wheatish</option>
@@ -938,6 +932,7 @@ export const EditProfile: React.FC = () => {
                 onChange={e => handleFieldChange('physical_status', e.target.value)}
                 className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
               >
+                <option value="">Select Physical Status</option>
                 <option value="No">No (Normal)</option>
                 <option value="Yes">Yes (Physically Challenged)</option>
               </select>
@@ -1362,10 +1357,11 @@ export const EditProfile: React.FC = () => {
                 Living with Parents
               </label>
               <select
-                value={formData.living_with_parents ? 'Yes' : 'No'}
-                onChange={e => handleFieldChange('living_with_parents', e.target.value === 'Yes')}
+                value={formData.living_with_parents === true ? 'Yes' : (formData.living_with_parents === false ? 'No' : '')}
+                onChange={e => handleFieldChange('living_with_parents', e.target.value === '' ? null : e.target.value === 'Yes')}
                 className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E3F]/30 focus:border-[#8B1E3F]"
               >
+                <option value="">Select Status</option>
                 <option value="Yes">Yes</option>
                 <option value="No">No</option>
               </select>

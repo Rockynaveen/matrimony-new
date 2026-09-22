@@ -16,7 +16,7 @@ export const Footer: React.FC = () => {
             <Link to="/" className="inline-block group">
               <div className="bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl border border-amber-400/40 shadow-md inline-flex items-center group-hover:scale-[1.03] transition-transform duration-300">
                 <img
-                  src="/images/logo.png"
+                  src="/images/logo final.png"
                   alt="Matrimony Logo"
                   className="h-12 sm:h-14 w-auto object-contain max-h-14"
                 />

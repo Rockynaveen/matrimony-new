@@ -371,9 +371,37 @@ export const ViewProfile: React.FC = () => {
         activeSource.is_verified === 1 ||
         String(activeSource.verification_status || '').toUpperCase() === 'VERIFIED'
       ),
-      compatibilityScore: typeof activeSource.match_percentage === 'number'
-        ? activeSource.match_percentage
-        : (Number(activeSource.compatibilityScore) || 85),
+      compatibilityScore: (() => {
+        const rawVal =
+          activeSource?.match_percentage ??
+          foundInRecommendations?.match_percentage ??
+          (activeSource as any)?.compatibility_score ??
+          (activeSource as any)?.compatibility_percentage ??
+          (foundInRecommendations as any)?.compatibility_score ??
+          (foundInRecommendations as any)?.compatibility_percentage ??
+          (activeSource as any)?.match_score ??
+          (foundInRecommendations as any)?.match_score ??
+          (activeSource as any)?.compatibilityScore ??
+          (foundInRecommendations as any)?.compatibilityScore ??
+          (activeSource as any)?.matchScore ??
+          (foundInRecommendations as any)?.matchScore;
+
+        if (rawVal === undefined || rawVal === null || rawVal === '') {
+          return null;
+        }
+
+        const num = typeof rawVal === 'number' ? rawVal : parseFloat(String(rawVal));
+        if (isNaN(num) || num <= 0) {
+          return null;
+        }
+
+        // If fraction between 0 and 1 (e.g. 0.07 -> 7%, 0.88 -> 88%), format as percentage
+        if (num > 0 && num <= 1) {
+          return Math.round(num * 100);
+        }
+
+        return Math.round(num);
+      })(),
       diet: toText(activeSource.diet, 'Not Specified'),
       smoking: toText(activeSource.smoking, 'Not Specified'),
       drinking: toText(activeSource.drinking, 'Not Specified'),
@@ -424,7 +452,7 @@ export const ViewProfile: React.FC = () => {
       birthTime: toText(activeSource.birth_time || activeSource.birthTime || activeSource.horoscope?.birthTime || activeSource.horoscope?.birth_time, ''),
       videoIntro: toText(activeSource.video_url || activeSource.video_introduction || activeSource.videoIntro)
     };
-  }, [activeSource, numericUserId, kmId, fullDisplayName, resolvedFirstName, resolvedLastName]);
+  }, [activeSource, foundInRecommendations, numericUserId, kmId, fullDisplayName, resolvedFirstName, resolvedLastName]);
 
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isJustSent, setIsJustSent] = useState(false);
@@ -622,11 +650,13 @@ export const ViewProfile: React.FC = () => {
                   />
                 )}
 
-                {/* Top-Left Match Badge */}
-                <div className="absolute top-3 left-3 bg-gradient-to-r from-[#e11d48] to-[#be123c] text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-md">
-                  <Heart className="h-3 w-3 fill-white text-white" />
-                  <span>{profile.compatibilityScore}% Match</span>
-                </div>
+                {/* Top-Left Exact AI Match Badge (Only when authentic percentage exists - Never dummy fallback) */}
+                {profile.compatibilityScore !== null && (
+                  <div className="absolute top-3 left-3 bg-gradient-to-r from-[#382104]/90 via-[#68430B]/90 to-[#8C5E13]/90 text-amber-200 border border-amber-300/60 text-xs font-black px-3 py-1 rounded-full flex items-center gap-1.5 shadow-md backdrop-blur-xs">
+                    <Sparkles className="h-3.5 w-3.5 text-yellow-300 fill-yellow-300/50 shrink-0" />
+                    <span>{profile.compatibilityScore}% Match</span>
+                  </div>
+                )}
 
                 {/* Left Carousel Arrow */}
                 {galleryList.length > 1 && (
@@ -677,14 +707,20 @@ export const ViewProfile: React.FC = () => {
             {/* Middle Column: Core Profile Details & Bio */}
             <div className="lg:col-span-5 space-y-4">
               <div>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-stone-900">
                     {profile.name}
                   </h1>
                   {profile.verified && (
-                    <div className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#9f1239] text-white shrink-0 shadow-2xs" title="Verified Profile">
+                    <div className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#8B1E3F] text-white shrink-0 shadow-2xs" title="Verified Profile">
                       <Check className="h-3 w-3 stroke-[3]" />
                     </div>
+                  )}
+                  {profile.compatibilityScore !== null && (
+                    <span className="inline-flex items-center gap-1 text-xs font-black text-amber-900 bg-amber-100/90 border border-amber-300/80 px-2.5 py-0.5 rounded-full shadow-2xs">
+                      <Sparkles className="h-3 w-3 text-amber-600 fill-amber-500/40 shrink-0" />
+                      <span>{profile.compatibilityScore}% Match</span>
+                    </span>
                   )}
                 </div>
 

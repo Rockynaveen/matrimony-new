@@ -10,6 +10,7 @@ import {
 } from '../../hooks/useMatching';
 import { useFilterOptions } from '../../hooks/useSearchQueries';
 import { RecommendationCard } from '../../components/matching/RecommendationCard';
+import { AskAIAssistant } from '../../components/matching/WhatsAppAIAssistant';
 import {
   Filter,
   Search,
@@ -232,46 +233,42 @@ export const MatchesPage: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-[#7B5313]/60 via-[#A67520]/40 to-transparent pointer-events-none" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-white/15 pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col justify-center min-h-[165px] sm:min-h-[185px]">
+          <div className="relative z-10 flex flex-col justify-center py-4 px-5 sm:px-8 max-w-4xl space-y-2">
             
-            {/* Header Copy & Trust Badges */}
-            <div className="p-6 sm:p-8 lg:p-10 max-w-3xl space-y-3.5">
-              
-              {/* Shimmering Gold Pill Eyebrow */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-300/25 to-yellow-400/25 border border-amber-200/60 text-amber-100 backdrop-blur-md shadow-xs">
-                <Sparkles className="w-3.5 h-3.5 text-yellow-300 fill-yellow-300/30 shrink-0" />
-                <span className="text-[11px] font-black uppercase tracking-widest text-amber-100 drop-shadow-xs">
-                  YOUR PERFECT MATCH AWAITS
-                </span>
+            {/* Shimmering Gold Pill Eyebrow */}
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-300/25 to-yellow-400/25 border border-amber-200/60 text-amber-100 backdrop-blur-md shadow-xs w-fit">
+              <Sparkles className="w-3 h-3 text-yellow-300 fill-yellow-300/30 shrink-0" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-100 drop-shadow-xs">
+                YOUR PERFECT MATCH AWAITS
+              </span>
+            </div>
+
+            {/* Main Headline with Shimmering Gold Accent */}
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-extrabold tracking-tight text-white leading-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.4)]">
+              Matches{' '}
+              <span className="font-serif italic font-extrabold bg-gradient-to-r from-[#FFFBEB] via-[#FDE047] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent drop-shadow-[0_2px_14px_rgba(253,224,71,0.55)]">
+                for You
+              </span>
+            </h1>
+
+            {/* Subtitle */}
+            <p className="text-xs sm:text-sm text-amber-100/90 font-medium leading-normal max-w-xl drop-shadow-xs">
+              Discover meaningful connections, one profile at a time.
+            </p>
+
+            {/* Gold Frosted Quality & Trust Badges */}
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 border border-amber-300/40 text-[11px] font-semibold text-amber-100 shadow-sm backdrop-blur-md">
+                <ShieldCheck className="h-3 w-3 text-emerald-400 shrink-0" />
+                <span>100% Verified Profiles</span>
               </div>
-
-              {/* Main Headline with Shimmering Gold Accent */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-extrabold tracking-tight text-white leading-[1.15] drop-shadow-[0_2px_10px_rgba(0,0,0,0.4)]">
-                Matches{' '}
-                <span className="font-serif italic font-extrabold bg-gradient-to-r from-[#FFFBEB] via-[#FDE047] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent drop-shadow-[0_2px_14px_rgba(253,224,71,0.55)]">
-                  for You
-                </span>
-              </h1>
-
-              {/* Subtitle */}
-              <p className="text-xs sm:text-sm md:text-base text-amber-100/95 font-medium leading-relaxed max-w-xl drop-shadow-xs">
-                Discover meaningful connections, one profile at a time.
-              </p>
-
-              {/* Gold Frosted Quality & Trust Badges */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/35 border border-amber-300/40 text-xs font-semibold text-amber-100 shadow-sm backdrop-blur-md">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span>100% Verified Profiles</span>
-                </div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/35 border border-amber-300/40 text-xs font-semibold text-amber-100 shadow-sm backdrop-blur-md">
-                  <Sparkles className="h-3.5 w-3.5 text-yellow-300 shrink-0" />
-                  <span>AI Compatibility Scored</span>
-                </div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/35 border border-amber-300/40 text-xs font-semibold text-amber-100 shadow-sm backdrop-blur-md">
-                  <Users className="h-3.5 w-3.5 text-amber-300 shrink-0" />
-                  <span>{sortedMatches.length} Curated Matches</span>
-                </div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 border border-amber-300/40 text-[11px] font-semibold text-amber-100 shadow-sm backdrop-blur-md">
+                <Sparkles className="h-3 w-3 text-yellow-300 shrink-0" />
+                <span>AI Compatibility Scored</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 border border-amber-300/40 text-[11px] font-semibold text-amber-100 shadow-sm backdrop-blur-md">
+                <Users className="h-3 w-3 text-amber-300 shrink-0" />
+                <span>{sortedMatches.length} Curated Matches</span>
               </div>
             </div>
 
@@ -575,9 +572,11 @@ export const MatchesPage: React.FC = () => {
 
         </div>
 
-
-
       </div>
+
+      {/* Floating Ask AI Button & Interactive Dialog */}
+      <AskAIAssistant matches={recommendations || []} />
+
     </div>
   );
 };

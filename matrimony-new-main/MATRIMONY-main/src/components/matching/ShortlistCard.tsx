@@ -63,7 +63,22 @@ export const ShortlistCard: React.FC<ShortlistCardProps> = ({ profile }) => {
           {/* Media Head */}
           <div className="relative aspect-square w-full overflow-hidden bg-stone-50">
             <MatchAvatar
-              photo={profile.profile_photo}
+              photo={
+                profile.profile_photo ||
+                (profile as any).profile_image ||
+                (profile as any).profileImage ||
+                (profile as any).photo ||
+                (profile as any).photo_url ||
+                (profile as any).avatar ||
+                (profile as any).image ||
+                (profile as any).image_url ||
+                (profile as any).user?.profile_photo ||
+                (profile as any).user?.photo ||
+                (profile as any).user?.avatar ||
+                (profile as any).photos?.[0] ||
+                (profile as any).gallery?.[0] ||
+                (profile as any).images?.[0]
+              }
               firstName={profile.first_name}
               lastName={profile.last_name}
               variant="card"

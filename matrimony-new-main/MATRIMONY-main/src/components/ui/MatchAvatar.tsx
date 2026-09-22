@@ -23,7 +23,6 @@ export const isDummyImage = (url?: string | null): boolean => {
     lower.includes('ui-avatars.com') ||
     lower.includes('recommended_bride') ||
     lower.includes('recommended_groom') ||
-    lower.includes('images/profiles') ||
     lower.includes('default_avatar') ||
     lower.includes('avatar-placeholder') ||
     lower.includes('ananya_')
@@ -35,11 +34,13 @@ export const formatPhotoUrl = (url?: string | null): string => {
   const trimmed = url.trim();
   if (!trimmed) return '';
   if (isDummyImage(trimmed)) return '';
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('data:')
+  ) {
     return trimmed;
-  }
-  if (trimmed.startsWith('/images/') || trimmed.startsWith('images/')) {
-    return '';
   }
   const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   return `https://matrimony-production-4b00.up.railway.app${cleanPath}`;

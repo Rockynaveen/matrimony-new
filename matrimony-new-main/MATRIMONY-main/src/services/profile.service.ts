@@ -76,7 +76,7 @@ function parseHeightValue(val: any): number {
     }
     return parseFloat(directNum.toFixed(1));
   }
-  return 5.8;
+  return null;
 }
 
 function parseWeightValue(val: any): number | null {
@@ -126,7 +126,7 @@ function sanitizeProfilePayload(payload: any): ProfileCreateRequest {
     throw new Error('Invalid profile payload');
   }
 
-  const sanitizeChoice = (val: any, allowed: string[], fallback: string): string => {
+  const sanitizeChoice = (val: any, allowed: string[], fallback = ''): string => {
     if (!val || typeof val !== 'string' || val === 'string') return fallback;
     const match = allowed.find(a => a.toLowerCase() === val.toLowerCase());
     return match || val;
@@ -142,7 +142,7 @@ function sanitizeProfilePayload(payload: any): ProfileCreateRequest {
     about_me: str(payload.about_me, ''),
     height: parseHeightValue(payload.height),
     weight: parseWeightValue(payload.weight),
-    complexion: str(payload.complexion, 'Fair'),
+    complexion: str(payload.complexion, ''),
     highest_education: str(payload.highest_education, ''),
     education_id: toNullableNum(payload.education_id),
     education_detail: str(payload.education_detail, ''),
@@ -176,27 +176,28 @@ function sanitizeProfilePayload(payload: any): ProfileCreateRequest {
     brothers_married_count: toNullableNum(payload.brothers_married_count ?? payload.brothersMarriedCount) ?? 0,
     sisters_count: toNullableNum(payload.sisters_count ?? payload.sistersCount) ?? 0,
     sisters_married_count: toNullableNum(payload.sisters_married_count ?? payload.sistersMarriedCount) ?? 0,
-    living_with_parents: payload.living_with_parents !== undefined ? Boolean(payload.living_with_parents) : true,
+    living_with_parents: payload.living_with_parents !== undefined && payload.living_with_parents !== null ? Boolean(payload.living_with_parents) : null,
     family_location: str(payload.family_location || payload.familyLocation, ''),
     family_information: str(payload.family_information || payload.familyInformation || payload.family_info, ''),
 
-    diet: sanitizeChoice(payload.diet, ['Vegetarian', 'Non-Vegetarian', 'Eggetarian'], 'Vegetarian'),
-    smoking: sanitizeChoice(payload.smoking, ['No', 'Occasionally', 'Yes'], 'No'),
-    drinking: sanitizeChoice(payload.drinking, ['No', 'Occasionally', 'Yes'], 'No'),
+    diet: payload.diet ? sanitizeChoice(payload.diet, ['Vegetarian', 'Non-Vegetarian', 'Eggetarian'], '') : '',
+    smoking: payload.smoking ? sanitizeChoice(payload.smoking, ['No', 'Occasionally', 'Yes'], '') : '',
+    drinking: payload.drinking ? sanitizeChoice(payload.drinking, ['No', 'Occasionally', 'Yes'], '') : '',
     languages_known: Array.isArray(payload.languages_known) ? payload.languages_known.join(', ') : str(payload.languages_known, ''),
     language_ids: Array.isArray(payload.language_ids) ? payload.language_ids.map(Number).filter(n => !isNaN(n)) : undefined,
     hobbies_interests: Array.isArray(payload.hobbies_interests) ? payload.hobbies_interests.join(', ') : str(payload.hobbies_interests, ''),
     hobby_ids: Array.isArray(payload.hobby_ids) ? payload.hobby_ids.map(Number).filter(n => !isNaN(n)) : undefined,
-    marital_status: sanitizeChoice(payload.marital_status, ['Never Married', 'Divorced', 'Widowed', 'Awaiting Divorce'], 'Never Married'),
+    marital_status: payload.marital_status ? sanitizeChoice(payload.marital_status, ['Never Married', 'Divorced', 'Widowed', 'Awaiting Divorce'], '') : '',
 
     // Children & Disability
     children_count: toNullableNum(payload.children_count ?? payload.childrenCount) ?? 0,
     children_living_status: str(payload.children_living_status || payload.childrenLivingStatus || payload.living_status, ''),
-    physical_status: str(payload.physical_status || payload.physicalStatus, 'Normal'),
-    physical_disability: str(
-      payload.physical_disability || payload.physicalDisability,
-      (payload.physical_status === 'Physically Challenged' || payload.physical_status === 'Yes') ? 'YES' : 'NO'
-    ),
+    physical_status: str(payload.physical_status || payload.physicalStatus, ''),
+    physical_disability: payload.physical_disability
+      ? str(payload.physical_disability)
+      : (payload.physical_status === 'Physically Challenged' || payload.physical_status === 'Yes'
+        ? 'YES'
+        : (payload.physical_status === 'Normal' || payload.physical_status === 'No' ? 'NO' : '')),
     disability_information: str(payload.disability_information || payload.disabilityInformation || payload.disability_info, ''),
     disability_info: str(payload.disability_information || payload.disabilityInformation || payload.disability_info, ''),
 
@@ -805,7 +806,26 @@ export const profileService = {
 
     const res = await axiosClient.postForm<any>('/upload/profile/photo', formData);
     if (res.status === 200 || res.status === 201) {
-      const photoUrl = res.data?.photo_url || res.data?.photo || res.data?.profile_photo || res.data?.url || res.data?.data?.profile_photo;
+      let photoUrl =
+        res.data?.photo_url ||
+        res.data?.photo ||
+        res.data?.profile_photo ||
+        res.data?.url ||
+        res.data?.image_url ||
+        res.data?.file_url ||
+        res.data?.image ||
+        res.data?.data?.photo_url ||
+        res.data?.data?.profile_photo ||
+        res.data?.data?.photo ||
+        res.data?.data?.url ||
+        res.data?.profile?.profile_photo ||
+        res.data?.user?.profile_photo;
+
+      if (photoUrl && typeof photoUrl === 'string' && !photoUrl.startsWith('http') && !photoUrl.startsWith('data:')) {
+        const cleanPath = photoUrl.startsWith('/') ? photoUrl : `/${photoUrl}`;
+        photoUrl = `https://matrimony-production-4b00.up.railway.app${cleanPath}`;
+      }
+
       return {
         photo_url: photoUrl,
         message: res.data?.message || 'Profile photo uploaded successfully!'

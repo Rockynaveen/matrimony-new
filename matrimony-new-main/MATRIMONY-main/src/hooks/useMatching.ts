@@ -248,3 +248,10 @@ export function useUnblockProfile() {
     }
   });
 }
+
+// 16. Ask AI Natural Language Matching Mutation (/api/matching/ask-ai/)
+export function useAskAI() {
+  return useMutation({
+    mutationFn: (query: string) => matchingApi.askAI(query),
+  });
+}

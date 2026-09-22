@@ -72,10 +72,12 @@ const MainLayout: React.FC = () => {
     window.scrollTo(0, 0);
   }, [pathname]);
 
+  const isHome = pathname === '/';
+
   return (
     <div className="flex flex-col min-h-screen bg-transparent text-foreground">
       <Navbar />
-      <main className="flex-1">
+      <main className={`flex-1 ${isHome ? '' : 'pt-20'}`}>
         <ErrorBoundary>
           <React.Suspense fallback={<LoadingScreen message="Navigating to page..." />}>
             <Outlet />

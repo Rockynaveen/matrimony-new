@@ -525,17 +525,17 @@ export const SearchPage: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-[#7B5313]/60 via-[#A67520]/40 to-transparent pointer-events-none" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-white/15 pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col justify-center min-h-[165px] sm:min-h-[185px] p-6 sm:p-8 lg:p-10 max-w-3xl space-y-3.5">
+          <div className="relative z-10 flex flex-col justify-center py-4 px-5 sm:px-8 max-w-4xl space-y-2">
             {/* Shimmering Gold Pill Eyebrow */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-300/25 to-yellow-400/25 border border-amber-200/60 text-amber-100 backdrop-blur-md shadow-xs w-fit">
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300 fill-yellow-300/30 shrink-0" />
-              <span className="text-[11px] font-black uppercase tracking-widest text-amber-100 drop-shadow-xs">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-300/25 to-yellow-400/25 border border-amber-200/60 text-amber-100 backdrop-blur-md shadow-xs w-fit">
+              <Sparkles className="w-3 h-3 text-yellow-300 fill-yellow-300/30 shrink-0" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-100 drop-shadow-xs">
                 ADVANCED PROFILE SEARCH
               </span>
             </div>
 
             {/* Main Headline with Shimmering Gold Accent */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-extrabold tracking-tight text-white leading-[1.15] drop-shadow-[0_2px_10px_rgba(0,0,0,0.4)]">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-extrabold tracking-tight text-white leading-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.4)]">
               Search{' '}
               <span className="font-serif italic font-extrabold bg-gradient-to-r from-[#FFFBEB] via-[#FDE047] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent drop-shadow-[0_2px_14px_rgba(253,224,71,0.55)]">
                 Bride or Groom
@@ -543,22 +543,22 @@ export const SearchPage: React.FC = () => {
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xs sm:text-sm md:text-base text-amber-100/95 font-medium leading-relaxed max-w-xl drop-shadow-xs">
+            <p className="text-xs sm:text-sm text-amber-100/90 font-medium leading-normal max-w-xl drop-shadow-xs">
               Explore authentic profiles with live multi-criteria filtering across community, location, education, and profession.
             </p>
 
             {/* Gold Frosted Quality & Trust Badges */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/35 border border-amber-300/40 text-xs font-semibold text-amber-100 shadow-sm backdrop-blur-md">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 border border-amber-300/40 text-[11px] font-semibold text-amber-100 shadow-sm backdrop-blur-md">
+                <ShieldCheck className="h-3 w-3 text-emerald-400 shrink-0" />
                 <span>100% Verified Profiles</span>
               </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/35 border border-amber-300/40 text-xs font-semibold text-amber-100 shadow-sm backdrop-blur-md">
-                <Sparkles className="h-3.5 w-3.5 text-yellow-300 shrink-0" />
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 border border-amber-300/40 text-[11px] font-semibold text-amber-100 shadow-sm backdrop-blur-md">
+                <Sparkles className="h-3 w-3 text-yellow-300 shrink-0" />
                 <span>AI Compatibility Scored</span>
               </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/35 border border-amber-300/40 text-xs font-semibold text-amber-100 shadow-sm backdrop-blur-md">
-                <User className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 border border-amber-300/40 text-[11px] font-semibold text-amber-100 shadow-sm backdrop-blur-md">
+                <User className="h-3 w-3 text-amber-300 shrink-0" />
                 <span>{totalProfiles} Profiles Available</span>
               </div>
             </div>
@@ -1277,10 +1277,10 @@ export const SearchPage: React.FC = () => {
                   return (
                     <Card
                       key={profile.id}
-                      className="bg-gradient-to-b from-white via-[#FFF8FA] to-[#FDF0F5] rounded-2xl border border-amber-300/80 hover:border-amber-400 shadow-[0_4px_16px_rgba(212,175,55,0.08)] hover:shadow-[0_12px_32px_rgba(212,175,55,0.18)] transition-all duration-300 p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative group overflow-hidden"
+                      className="bg-white rounded-2xl border border-stone-200 hover:border-[#8B1E3F]/40 shadow-xs hover:shadow-md transition-all duration-300 p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative group overflow-hidden"
                     >
                       {/* Left: Profile Image with Heart & Exact Match Pill */}
-                      <div className="relative shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-gradient-to-b from-white via-[#FFF5F8] to-[#FCE7F0] border border-rose-100/60 shadow-2xs">
+                      <div className="relative shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-white border border-stone-100 shadow-2xs">
                         <MatchAvatar
                           photo={profile.profileImage || (profile as any).profile_photo || (profile as any).photo}
                           name={profile.name}
@@ -1292,7 +1292,7 @@ export const SearchPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={(e) => handleToggleShortlist(profile, e)}
-                          className="absolute top-2 right-2 h-7 w-7 rounded-full bg-white/95 hover:bg-white border border-amber-300/60 shadow-md flex items-center justify-center transition-all cursor-pointer z-10 active:scale-90"
+                          className="absolute top-2 right-2 h-7 w-7 rounded-full bg-white hover:bg-stone-50 border border-stone-200 shadow-xs flex items-center justify-center transition-all cursor-pointer z-10 active:scale-90"
                           title={isShortlisted ? 'Remove from Shortlist' : 'Add to Shortlist'}
                         >
                           <Heart
@@ -1305,8 +1305,8 @@ export const SearchPage: React.FC = () => {
                         {/* Top-Left Exact Match Score Pill (if present) or Online Status */}
                         <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
                           {typeof matchScoreVal === 'number' && matchScoreVal > 0 ? (
-                            <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#382104]/90 via-[#68430B]/90 to-[#8C5E13]/90 text-amber-200 border border-amber-300/60 text-[9.5px] font-black px-2 py-0.5 rounded-full shadow-md backdrop-blur-xs">
-                              <Sparkles className="h-2.5 w-2.5 text-yellow-300 fill-yellow-300/50 shrink-0" />
+                            <span className="inline-flex items-center gap-1 bg-[#8B1E3F] text-white text-[9.5px] font-bold px-2 py-0.5 rounded-full shadow-xs">
+                              <Sparkles className="h-2.5 w-2.5 text-amber-300 fill-amber-300 shrink-0" />
                               <span>{Math.round(matchScoreVal)}%</span>
                             </span>
                           ) : (
@@ -1331,14 +1331,14 @@ export const SearchPage: React.FC = () => {
                           <div className="flex items-center gap-2 min-w-0">
                             <h3
                               onClick={() => handleViewProfile(profile)}
-                              className="font-bold text-base sm:text-lg text-stone-900 hover:text-[#B48128] transition-colors cursor-pointer truncate"
+                              className="font-bold text-base sm:text-lg text-stone-900 hover:text-[#8B1E3F] transition-colors cursor-pointer truncate"
                               title={profile.name}
                             >
                               {profile.name}
                             </h3>
                             {profile.verified && (
-                              <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#7B5313] via-[#9E6E1F] to-[#C99738] text-amber-100 border border-amber-200/50 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-2xs">
-                                <ShieldCheck className="h-3 w-3 text-amber-200" />
+                              <span className="inline-flex items-center gap-1 bg-emerald-700 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs">
+                                <ShieldCheck className="h-3 w-3 text-emerald-200" />
                                 <span>Verified</span>
                               </span>
                             )}
@@ -1348,85 +1348,67 @@ export const SearchPage: React.FC = () => {
                           <div
                             className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border shrink-0 transition-all ${
                               isOnline
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-2xs'
-                                : 'bg-stone-50 text-stone-500 border-stone-200'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-stone-100 text-stone-600 border-stone-200'
                             }`}
                           >
                             <span
-                              className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                              className={`h-2 w-2 rounded-full ${
                                 isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'
                               }`}
                             />
-                            <span>{isOnline ? 'Active Now' : 'Offline'}</span>
+                            <span>{isOnline ? 'Online' : 'Offline'}</span>
                           </div>
                         </div>
 
-                        {/* Sub-row 1: Age | Height | Religion | Caste */}
-                        <div className="text-xs text-stone-600 font-medium flex items-center gap-2 flex-wrap">
-                          {profile.age ? (
-                            <span className="flex items-center gap-1">
-                              <span>{profile.age} Years</span>
-                            </span>
-                          ) : null}
+                        {/* Age • Height • Religion & Caste • Mother Tongue */}
+                        <div className="flex items-center gap-2 text-xs text-stone-600 font-medium flex-wrap">
+                          {profile.age && <span>{profile.age} Yrs</span>}
                           {profile.height && (
                             <>
                               <span className="text-stone-300">•</span>
                               <span>{profile.height}</span>
                             </>
                           )}
-                          {profile.religion && (
+                          {(profile.religion || (profile as any).caste) && (
                             <>
                               <span className="text-stone-300">•</span>
-                              <span>{profile.religion}{profile.caste ? `, ${profile.caste}` : ''}</span>
+                              <span>{[profile.religion, (profile as any).caste].filter(Boolean).join(', ')}</span>
+                            </>
+                          )}
+                          {profile.motherTongue && (
+                            <>
+                              <span className="text-stone-300">•</span>
+                              <span>{profile.motherTongue}</span>
                             </>
                           )}
                         </div>
 
-                        {/* Sub-row 2: Education & Profession & Location with Gold Icons */}
-                        <div className="space-y-1 pt-0.5 text-xs text-stone-600">
+                        {/* Education, Profession, Location Tags */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
                           {profile.education && (
-                            <div className="flex items-center gap-1.5 truncate">
-                              <GraduationCap className="h-3.5 w-3.5 text-[#B48128] shrink-0" />
+                            <div className="flex items-center gap-1.5 text-xs text-stone-600 truncate bg-stone-50 border border-stone-200/80 px-2.5 py-1.5 rounded-xl">
+                              <GraduationCap className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
                               <span className="truncate">{profile.education}</span>
                             </div>
                           )}
+
                           {profile.profession && (
-                            <div className="flex items-center gap-1.5 truncate">
-                              <Briefcase className="h-3.5 w-3.5 text-[#B48128] shrink-0" />
+                            <div className="flex items-center gap-1.5 text-xs text-stone-600 truncate bg-stone-50 border border-stone-200/80 px-2.5 py-1.5 rounded-xl">
+                              <Briefcase className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
                               <span className="truncate">{profile.profession}</span>
                             </div>
                           )}
-                          <div className="flex items-center gap-1.5 truncate">
-                            <MapPin className="h-3.5 w-3.5 text-[#B48128] shrink-0" />
+
+                          <div className="flex items-center gap-1.5 text-xs text-stone-600 truncate bg-stone-50 border border-stone-200/80 px-2.5 py-1.5 rounded-xl">
+                            <MapPin className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
                             <span className="truncate">{locationText}</span>
                           </div>
                         </div>
 
-                        {/* Sub-row 3: Tags / Pills */}
-                        {(complexionText || maritalStatusText || incomeText) && (
-                          <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                            {complexionText && (
-                              <span className="px-2.5 py-0.5 bg-amber-50/80 rounded-full text-[11px] font-semibold text-stone-700 flex items-center gap-1 border border-amber-200/60">
-                                <span>{complexionText}</span>
-                              </span>
-                            )}
-                            {maritalStatusText && (
-                              <span className="px-2.5 py-0.5 bg-rose-50/80 rounded-full text-[11px] font-semibold text-stone-700 flex items-center gap-1 border border-rose-200/60">
-                                <span>{maritalStatusText}</span>
-                              </span>
-                            )}
-                            {incomeText && (
-                              <span className="px-2.5 py-0.5 bg-amber-50/80 rounded-full text-[11px] font-semibold text-stone-700 flex items-center gap-1 border border-amber-200/60">
-                                <span className="text-[#8B1E3F] font-bold">₹</span>
-                                <span>{incomeText}</span>
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Sub-row 4: Bio / About */}
+                        {/* Bio snippet if available */}
                         {bioText ? (
-                          <p className="text-xs text-stone-500 line-clamp-2 leading-relaxed pt-0.5">
+                          <p className="text-xs text-stone-500 line-clamp-1 italic pt-0.5">
                             {bioText}
                           </p>
                         ) : null}
@@ -1437,14 +1419,14 @@ export const SearchPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleViewProfile(profile)}
-                          className="flex-1 md:flex-none w-full md:w-36 py-2 px-4 bg-gradient-to-r from-[#8B1E3F] via-[#B83358] via-[#B48128] to-[#C99738] hover:from-[#761734] hover:to-[#B68428] text-white text-xs font-bold rounded-xl transition-all shadow-xs text-center cursor-pointer active:scale-[0.99]"
+                          className="flex-1 md:flex-none w-full md:w-36 py-2 px-4 bg-[#8B1E3F] hover:bg-[#721733] text-white text-xs font-bold rounded-xl transition-all shadow-xs text-center cursor-pointer active:scale-[0.99]"
                         >
                           View Profile
                         </button>
                         <button
                           type="button"
                           onClick={(e) => handleToggleShortlist(profile, e)}
-                          className="flex-1 md:flex-none w-full md:w-36 py-2 px-4 border border-amber-300/80 hover:border-amber-400 bg-white/90 hover:bg-white text-stone-800 text-xs font-bold rounded-xl transition-all shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
+                          className="flex-1 md:flex-none w-full md:w-36 py-2 px-4 border border-stone-200 hover:border-stone-300 bg-white hover:bg-stone-50 text-stone-800 text-xs font-bold rounded-xl transition-all shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
                         >
                           <Heart className={`h-3.5 w-3.5 ${isShortlisted ? 'fill-rose-500 text-rose-500' : 'text-stone-500'}`} />
                           <span>{isShortlisted ? 'Shortlisted' : 'Shortlist'}</span>
@@ -1458,7 +1440,7 @@ export const SearchPage: React.FC = () => {
               /* ─────────────────────────────────────────────────────
                  Grid View (Alternative Grid Cards Layout)
               ────────────────────────────────────────────────────── */
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {displayedProfiles.map((profile) => {
                   const isShortlisted = shortlistedIds.includes(profile.id);
                   const isOnline = profile.online === true || profile.lastActive === 'Online';
@@ -1478,12 +1460,12 @@ export const SearchPage: React.FC = () => {
                   return (
                     <Card
                       key={profile.id}
-                      className="h-full flex flex-col justify-between bg-gradient-to-b from-white via-[#FFF8FA] to-[#FDF0F5] rounded-2xl border border-amber-300/80 hover:border-amber-400 shadow-[0_4px_16px_rgba(212,175,55,0.08)] hover:shadow-[0_12px_32px_rgba(212,175,55,0.18)] transition-all duration-300 overflow-hidden group p-0 gap-0"
+                      className="h-full flex flex-col justify-between bg-white rounded-2xl border border-stone-200 hover:border-[#8B1E3F]/40 shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden group p-0 gap-0"
                     >
                       {/* Upper Visual Container: Photo with Badges & Action */}
                       <div
                         onClick={() => handleViewProfile(profile)}
-                        className="relative aspect-[4/3.8] w-full overflow-hidden bg-gradient-to-b from-white via-[#FFF5F8] to-[#FCE7F0] border-b border-rose-100/60 cursor-pointer select-none"
+                        className="relative aspect-[4/3.8] w-full overflow-hidden bg-white border-b border-stone-100 cursor-pointer select-none"
                       >
                         <MatchAvatar
                           photo={profile.profileImage || (profile as any).profile_photo || (profile as any).photo}
@@ -1492,24 +1474,21 @@ export const SearchPage: React.FC = () => {
                           imgClassName="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
                         />
 
-                        {/* Sheen & Subtle Shade */}
-                        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/25 pointer-events-none" />
-
                         {/* Top-Left: Exact AI Match Percentage (Only if authentic percentage from backend exists) */}
                         {exactMatchPercentage !== null && (
                           <div className="absolute top-2.5 left-2.5 z-10">
-                            <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#382104]/90 via-[#68430B]/90 to-[#8C5E13]/90 text-amber-200 border border-amber-300/60 text-[10.5px] font-black px-2.5 py-0.5 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.35)] backdrop-blur-xs">
-                              <Sparkles className="h-3 w-3 text-yellow-300 fill-yellow-300/50 shrink-0" />
+                            <span className="inline-flex items-center gap-1 bg-[#8B1E3F] text-white text-[10.5px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
+                              <Sparkles className="h-3 w-3 text-amber-300 fill-amber-300 shrink-0" />
                               <span>{exactMatchPercentage}% Match</span>
                             </span>
                           </div>
                         )}
 
-                        {/* Top-Right: Circular White Shortlist Heart Button with Gold Border */}
+                        {/* Top-Right: Circular White Shortlist Heart Button */}
                         <button
                           type="button"
                           onClick={(e) => handleToggleShortlist(profile, e)}
-                          className="absolute top-2.5 right-2.5 z-10 h-8 w-8 rounded-full bg-white/95 hover:bg-white shadow-md flex items-center justify-center text-stone-600 hover:text-rose-500 border border-amber-300/60 transition-all active:scale-90 cursor-pointer"
+                          className="absolute top-2.5 right-2.5 z-10 h-8 w-8 rounded-full bg-white hover:bg-stone-50 shadow-xs flex items-center justify-center text-stone-600 hover:text-rose-500 border border-stone-200 transition-all active:scale-90 cursor-pointer"
                           title={isShortlisted ? 'Remove from Shortlist' : 'Add to Shortlist'}
                         >
                           <Heart
@@ -1524,8 +1503,8 @@ export const SearchPage: React.FC = () => {
                         {/* Bottom-Left: Verified + Online Badge */}
                         <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap">
                           {profile.verified && (
-                            <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#7B5313] via-[#9E6E1F] to-[#C99738] text-amber-100 border border-amber-200/50 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs backdrop-blur-xs">
-                              <ShieldCheck className="h-3 w-3 text-amber-200" />
+                            <span className="inline-flex items-center gap-1 bg-emerald-700 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs">
+                              <ShieldCheck className="h-3 w-3 text-emerald-200" />
                               <span>Verified</span>
                             </span>
                           )}
@@ -1546,8 +1525,8 @@ export const SearchPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Lower Info Details in Pink & White Gradient */}
-                      <CardContent className="p-3.5 flex-1 flex flex-col justify-between space-y-2.5 bg-gradient-to-b from-white via-[#FFF8FA] to-[#FDF0F5]">
+                      {/* Lower Info Details in Pure White */}
+                      <CardContent className="p-3.5 flex-1 flex flex-col justify-between space-y-2.5 bg-white">
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between gap-1">
                             <h4
@@ -1558,7 +1537,7 @@ export const SearchPage: React.FC = () => {
                               {profile.name}
                             </h4>
                             {exactMatchPercentage !== null && (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-amber-900 bg-amber-100/90 border border-amber-300/80 px-1.5 py-0.2 rounded-md shadow-2xs shrink-0">
+                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#8B1E3F] bg-[#8B1E3F]/10 px-1.5 py-0.2 rounded-md shrink-0">
                                 {exactMatchPercentage}%
                               </span>
                             )}
@@ -1574,7 +1553,7 @@ export const SearchPage: React.FC = () => {
 
                           {profile.profession && (
                             <div className="flex items-center gap-1.5 text-xs text-stone-700 font-medium truncate">
-                              <Briefcase className="h-3.5 w-3.5 text-[#B48128] shrink-0" />
+                              <Briefcase className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
                               <span className="truncate">{profile.profession}</span>
                             </div>
                           )}
@@ -1587,18 +1566,18 @@ export const SearchPage: React.FC = () => {
                       </CardContent>
 
                       {/* Action Buttons: View Profile & Shortlist */}
-                      <CardFooter className="p-3.5 pt-0 grid grid-cols-2 gap-2 bg-gradient-to-b from-[#FDF0F5] to-[#FCEDF3]">
+                      <CardFooter className="p-3.5 pt-0 grid grid-cols-2 gap-2 bg-white">
                         <button
                           type="button"
                           onClick={() => handleViewProfile(profile)}
-                          className="py-2 bg-gradient-to-r from-[#8B1E3F] via-[#B83358] via-[#B48128] to-[#C99738] hover:from-[#761734] hover:to-[#B68428] text-white text-xs font-bold rounded-xl transition-all shadow-xs text-center cursor-pointer active:scale-[0.99]"
+                          className="py-2 bg-[#8B1E3F] hover:bg-[#721733] text-white text-xs font-bold rounded-xl transition-all shadow-xs text-center cursor-pointer active:scale-[0.99]"
                         >
                           View Profile
                         </button>
                         <button
                           type="button"
                           onClick={(e) => handleToggleShortlist(profile, e)}
-                          className="py-2 border border-amber-300/80 hover:border-amber-400 bg-white/90 hover:bg-white text-stone-800 text-xs font-bold rounded-xl transition-all shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
+                          className="py-2 border border-stone-200 hover:border-stone-300 bg-white hover:bg-stone-50 text-stone-800 text-xs font-bold rounded-xl transition-all shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
                         >
                           <Heart className={`h-3.5 w-3.5 ${isShortlisted ? 'fill-rose-500 text-rose-500' : 'text-stone-500'}`} />
                           <span>{isShortlisted ? 'Saved' : 'Shortlist'}</span>

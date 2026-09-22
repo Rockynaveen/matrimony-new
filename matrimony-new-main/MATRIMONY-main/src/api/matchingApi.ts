@@ -7,7 +7,8 @@ import type {
   ShortlistCreateSchema,
   IgnoreCreateSchema,
   BlockCreateSchema,
-  MessageResponseSchema
+  MessageResponseSchema,
+  AISearchResponseSchema
 } from '../types/matching.types';
 
 const toIntegerId = (val: any): number => {
@@ -215,6 +216,19 @@ export const matchingApi = {
   },
   removeShortlist: async (userId: number | string): Promise<MessageResponseSchema> => {
     return matchingApi.removeFromShortlist(toIntegerId(userId));
+  },
+
+  // 16. POST /api/matching/ask-ai/
+  askAI: async (query: string): Promise<AISearchResponseSchema> => {
+    const cleanQuery = query?.trim() || '';
+    if (!cleanQuery) {
+      throw new Error('Query string is required for Ask AI matching.');
+    }
+    const res = await axiosClient.post<AISearchResponseSchema>('/matching/ask-ai/', { query: cleanQuery });
+    if (res.status >= 200 && res.status < 300) {
+      return res.data;
+    }
+    throw new Error(extractErrorMsg(res.data, res.status));
   }
 };
 

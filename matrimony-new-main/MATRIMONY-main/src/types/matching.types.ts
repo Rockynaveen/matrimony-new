@@ -79,3 +79,30 @@ export interface MessageResponseSchema {
   success: boolean;
   message: string;
 }
+
+// ─── Ask AI Matching Types (/api/matching/ask-ai/) ───
+export interface AISearchRequestSchema {
+  query: string;
+}
+
+export interface AISearchMatchCardSchema {
+  profile_id: number;
+  name: string;
+  age?: number | null;
+  education?: string | null;
+  profession?: string | null;
+  location?: string | null;
+  match_percentage: number;
+  matched_fields?: string[];
+  unmatched_fields?: string[];
+  unavailable_fields?: string[];
+}
+
+export interface AISearchResponseSchema {
+  success: boolean;
+  query: string;
+  interpreted_preferences?: Record<string, any>;
+  total_matches: number;
+  matches: AISearchMatchCardSchema[];
+  message?: string | null;
+}

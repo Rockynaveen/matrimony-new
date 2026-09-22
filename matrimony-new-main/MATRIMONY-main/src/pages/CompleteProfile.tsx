@@ -44,6 +44,7 @@ import { Button } from '../components/ui/Button';
 import { Separator } from '../components/ui/Separator';
 import { Badge } from '../components/ui/Badge';
 import { SearchableMultiSelect } from '../components/ui/SearchableMultiSelect';
+import { formatPhotoUrl } from '../components/ui/MatchAvatar';
 
 export const CompleteProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -305,6 +306,16 @@ export const CompleteProfile: React.FC = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Helper to read file as persistent Base64 Data URL
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Profile Photo Upload
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -317,19 +328,31 @@ export const CompleteProfile: React.FC = () => {
 
     try {
       setIsUploadingPhoto(true);
-      const localPreviewUrl = URL.createObjectURL(file);
-      handleChange('profile_photo', localPreviewUrl);
+      // Immediately convert to Base64 so preview and persistence work reliably
+      const base64Url = await fileToBase64(file);
+      handleChange('profile_photo', base64Url);
 
-      const res = await profileService.uploadProfilePhoto(file);
-      if (res?.photo_url) {
-        handleChange('profile_photo', res.photo_url);
-        updateCurrentUserAvatar(res.photo_url);
-        localStorage.setItem('logged_in_avatar', res.photo_url);
+      try {
+        const res = await profileService.uploadProfilePhoto(file);
+        if (res?.photo_url) {
+          const finalUrl = res.photo_url.startsWith('http') ? res.photo_url : formatPhotoUrl(res.photo_url);
+          handleChange('profile_photo', finalUrl);
+          updateCurrentUserAvatar(finalUrl);
+          localStorage.setItem('logged_in_avatar', finalUrl);
+        } else {
+          updateCurrentUserAvatar(base64Url);
+          localStorage.setItem('logged_in_avatar', base64Url);
+        }
+        showToast('Profile photo uploaded successfully!');
+      } catch (uploadErr) {
+        console.warn('Backend photo upload note, saved locally:', uploadErr);
+        updateCurrentUserAvatar(base64Url);
+        localStorage.setItem('logged_in_avatar', base64Url);
+        showToast('Profile photo attached!');
       }
-      showToast('Profile photo uploaded successfully!');
     } catch (err: any) {
-      console.warn('Photo upload response:', err);
-      showToast('Photo uploaded!');
+      console.warn('Photo processing error:', err);
+      showToast('Could not process selected image');
     } finally {
       setIsUploadingPhoto(false);
     }

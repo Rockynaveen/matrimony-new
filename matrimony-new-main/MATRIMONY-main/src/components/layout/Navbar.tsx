@@ -80,6 +80,7 @@ export const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   
   const location = useLocation();
 
@@ -93,6 +94,16 @@ export const Navbar: React.FC = () => {
     { label: 'Success Stories', path: '/success-stories' },
     { label: 'Membership', path: '/membership' }
   ];
+
+  // Scroll detection to switch transparent <-> white
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -109,23 +120,39 @@ export const Navbar: React.FC = () => {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[#E8DDD5]/80 bg-white/95 backdrop-blur-xl transition-all duration-300 shadow-2xs">
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
+        isScrolled
+          ? 'bg-white/95 backdrop-blur-xl border-b border-[#E8DDD5]/80 shadow-md'
+          : 'bg-transparent border-b border-transparent shadow-none'
+      }`}
+    >
       {/* Top Thin Golden Accent Ribbon */}
-      <div className="h-1 w-full bg-gradient-to-r from-[#8B1E3F] via-[#D4AF37] to-[#C44569]" />
+      <div
+        className={`h-1 w-full bg-gradient-to-r from-[#8B1E3F] via-[#D4AF37] to-[#C44569] transition-opacity duration-300 ${
+          isScrolled ? 'opacity-100' : 'opacity-80'
+        }`}
+      />
 
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center h-full py-1 my-0 group overflow-hidden">
+        <Link to="/" className="flex items-center h-full p-0 m-0 group">
           <img
-            src="/images/logo.png"
+            src="/images/logo final.png"
             alt="Vivah Logo"
-            className="h-14 sm:h-16 w-auto object-contain max-h-16 py-0 my-0 group-hover:scale-105 transition-transform duration-300"
+            className="h-full max-h-20 w-auto object-contain p-0 m-0 group-hover:scale-105 transition-transform duration-300"
           />
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-1 bg-[#F5ECE5]/60 p-1.5 rounded-2xl border border-[#E8DDD5]/60 shadow-inner">
+        <nav
+          className={`hidden lg:flex items-center gap-1 p-1.5 rounded-2xl border transition-all duration-300 ${
+            isScrolled
+              ? 'bg-[#F5ECE5]/60 border-[#E8DDD5]/60 shadow-inner'
+              : 'bg-white/40 backdrop-blur-md border-white/40 shadow-xs'
+          }`}
+        >
           {navLinks.map(link => {
             const isActive = location.pathname === link.path;
             return (
@@ -140,7 +167,9 @@ export const Navbar: React.FC = () => {
                 className={`relative px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-200 ${
                   isActive
                     ? 'bg-white text-[#8B1E3F] shadow-sm font-bold scale-[1.02]'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-white/70'
+                    : isScrolled
+                      ? 'text-muted-foreground hover:text-foreground hover:bg-white/70'
+                      : 'text-stone-800 hover:text-stone-950 hover:bg-white/60'
                 }`}
               >
                 {link.label}

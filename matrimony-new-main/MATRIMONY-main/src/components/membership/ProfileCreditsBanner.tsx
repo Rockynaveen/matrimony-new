@@ -23,18 +23,18 @@ export const ProfileCreditsBanner: React.FC<{ className?: string }> = ({ classNa
     <div className={`w-full bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/90 text-black flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden ${className}`}>
       
       {/* Subtle Background Accent */}
-      <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-pink-500/5 to-transparent pointer-events-none" />
+      <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-[#C70F4B]/10 to-transparent pointer-events-none" />
 
       {/* Left Info Section */}
       <div className="flex items-center gap-4 min-w-0 w-full md:w-auto relative z-10">
-        <div className="h-12 w-12 rounded-xl bg-[#C44569] text-white flex items-center justify-center shrink-0 shadow-xs">
+        <div className="h-12 w-12 rounded-xl bg-[#C70F4B] text-white flex items-center justify-center shrink-0 shadow-xs">
           <Crown className="h-6 w-6 text-amber-300 fill-amber-300" />
         </div>
 
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-pink-50 text-[#C44569] border border-pink-200/80 uppercase tracking-wider">
-              <Sparkles className="h-3 w-3 text-[#C44569]" /> {planName} Plan Active
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#C70F4B]/10 text-[#C70F4B] border border-[#C70F4B]/25 uppercase tracking-wider">
+              <Sparkles className="h-3 w-3 text-[#C70F4B]" /> {planName} Plan Active
             </span>
             <span className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 font-bold uppercase tracking-wider rounded-full ${
               remainingCredits > 0 
@@ -47,7 +47,7 @@ export const ProfileCreditsBanner: React.FC<{ className?: string }> = ({ classNa
 
           <h3 className="font-bold text-base sm:text-lg text-black leading-snug">
             {remainingCredits > 0 ? (
-              <span>You have <strong className="text-[#C44569] font-bold">{remainingCredits} profile credits</strong> remaining to unlock full profile details.</span>
+              <span>You have <strong className="text-[#C70F4B] font-bold">{remainingCredits} profile credits</strong> remaining to unlock full profile details.</span>
             ) : (
               <span className="text-rose-600 font-bold">Profile contact details are locked. Upgrade your plan to view unlimited profiles!</span>
             )}
@@ -65,11 +65,11 @@ export const ProfileCreditsBanner: React.FC<{ className?: string }> = ({ classNa
         <div className="hidden lg:flex flex-col gap-1.5 w-36">
           <div className="flex justify-between items-center text-[11px] font-bold text-slate-600">
             <span>Credits Used</span>
-            <span className="text-[#C44569] font-bold">{usedCredits} / {totalCredits}</span>
+            <span className="text-[#C70F4B] font-bold">{usedCredits} / {totalCredits}</span>
           </div>
           <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
             <div
-              className="h-full bg-gradient-to-r from-[#C83259] to-[#E11D48] rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-[#C70F4B] to-[#E01E5A] rounded-full transition-all duration-500"
               style={{ width: `${percentUsed}%` }}
             />
           </div>
@@ -78,7 +78,7 @@ export const ProfileCreditsBanner: React.FC<{ className?: string }> = ({ classNa
         <Button
           size="sm"
           onClick={() => navigate('/membership')}
-          className="bg-gradient-to-r from-[#C83259] to-[#E11D48] hover:from-[#A82547] hover:to-[#BE123C] text-white font-bold text-xs py-2.5 px-5 rounded-xl shadow-xs hover:shadow-sm transition-all flex items-center justify-center gap-1.5 w-full sm:w-auto shrink-0 cursor-pointer"
+          className="bg-gradient-to-r from-[#C70F4B] to-[#E01E5A] hover:from-[#A80B3E] hover:to-[#C70F4B] text-white font-bold text-xs py-2.5 px-5 rounded-xl shadow-xs hover:shadow-sm transition-all flex items-center justify-center gap-1.5 w-full sm:w-auto shrink-0 cursor-pointer"
         >
           {remainingCredits > 0 ? (
             <>

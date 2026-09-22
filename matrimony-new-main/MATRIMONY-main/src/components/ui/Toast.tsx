@@ -18,7 +18,7 @@ export const Toast: React.FC = () => {
           className="fixed top-24 right-6 z-[60] flex items-start gap-3.5 bg-white/95 text-stone-900 p-4 rounded-2xl shadow-2xl border border-[#8B1E3F]/20 backdrop-blur-xl max-w-sm w-full ring-1 ring-black/5"
         >
           {/* Toast Icon Badge */}
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#8B1E3F] to-[#C44569] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#8B1E3F]/20 mt-0.5">
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#8B1E3F] to-[#C70F4B] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#8B1E3F]/20 mt-0.5">
             <Sparkles className="h-4 w-4" />
           </div>
 

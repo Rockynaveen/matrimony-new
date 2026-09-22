@@ -43,12 +43,12 @@ export const HowItWorks: React.FC = () => {
 
         {/* Step 2 */}
         <ScrollReveal direction="up" delay={0.2}>
-          <Card className="p-8 flex flex-col md:flex-row items-center gap-8 border-l-4 border-l-[#C44569]">
-            <div className="h-20 w-20 rounded-2xl bg-[#C44569]/10 text-[#C44569] flex items-center justify-center shrink-0">
+          <Card className="p-8 flex flex-col md:flex-row items-center gap-8 border-l-4 border-l-[#C70F4B]">
+            <div className="h-20 w-20 rounded-2xl bg-[#C70F4B]/10 text-[#C70F4B] flex items-center justify-center shrink-0">
               <Search className="h-10 w-10" />
             </div>
             <div className="space-y-2 text-center md:text-left">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#C44569]">Step 02</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#C70F4B]">Step 02</span>
               <h3 className="font-serif text-2xl font-bold">Discover AI Recommended Matches</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Use our advanced filters to search by religion, caste, profession, income, city, or NRI location. Our AI compatibility engine highlights profiles with high match scores.

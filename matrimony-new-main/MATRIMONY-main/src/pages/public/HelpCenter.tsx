@@ -45,7 +45,7 @@ export const HelpCenter: React.FC = () => {
         </Card>
 
         <Card className="p-6 space-y-3 cursor-pointer hover:border-primary/40" onClick={() => navigate('/faqs')}>
-          <MessageSquare className="h-8 w-8 text-[#C44569]" />
+          <MessageSquare className="h-8 w-8 text-[#C70F4B]" />
           <h3 className="font-serif text-lg font-bold">Privacy & Blocking</h3>
           <p className="text-xs text-muted-foreground">Hiding phone numbers, blocking abusive users & reporting fake profiles.</p>
         </Card>

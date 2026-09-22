@@ -119,7 +119,7 @@ export const Navbar: React.FC = () => {
     >
       {/* Top Thin Golden Accent Ribbon */}
       <div
-        className={`h-1 w-full bg-gradient-to-r from-[#8B1E3F] via-[#D4AF37] to-[#C44569] transition-opacity duration-300 ${
+        className={`h-1 w-full bg-gradient-to-r from-[#8B1E3F] via-[#D4AF37] to-[#C70F4B] transition-opacity duration-300 ${
           isScrolled ? 'opacity-100' : 'opacity-80'
         }`}
       />
@@ -197,7 +197,7 @@ export const Navbar: React.FC = () => {
                 >
                   <Bell className="h-5 w-5 text-muted-foreground" />
                   {unreadNotifs > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#C44569] text-[10px] font-bold text-white shadow-xs animate-bounce">
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#C70F4B] text-[10px] font-bold text-white shadow-xs animate-bounce">
                       {unreadNotifs}
                     </span>
                   )}

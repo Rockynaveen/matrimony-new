@@ -9,13 +9,25 @@ export const membershipKeys = {
 };
 
 export function useMyMembership() {
-  const hasToken = !!localStorage.getItem('access_token');
   return useQuery<MyMembershipOut, Error>({
     queryKey: membershipKeys.myMembership(),
     queryFn: () => membershipApi.getMyMembership(),
-    enabled: hasToken,
-    staleTime: 30 * 1000,
-    refetchInterval: 30 * 1000
+    initialData: () => {
+      const local = membershipApi.getLocalActiveMembership();
+      if (local) return local;
+      const storedCredits = localStorage.getItem('user_membership_credits');
+      const credits = storedCredits !== null && !isNaN(Number(storedCredits)) ? Number(storedCredits) : 3;
+      return {
+        plan_name: 'Free',
+        price: 0,
+        profile_credits: 3,
+        used_credits: Math.max(0, 3 - credits),
+        remaining_credits: credits,
+        validity_days: null,
+        expires_at: null
+      };
+    },
+    staleTime: 5 * 1000
   });
 }
 

@@ -48,6 +48,8 @@ import {
   useRecommendations
 } from '../../hooks/useMatching';
 import { useCreatePrivacyReport } from '../../hooks/usePrivacyReports';
+import { membershipApi } from '../../api/membershipApi';
+import { membershipKeys } from '../../hooks/useMembership';
 
 // ─── Safe conversion helpers ───
 const toText = (val: any, fallback = ''): string => {
@@ -98,7 +100,7 @@ export const toImageUrl = (val: any): string => {
 
 export const ViewProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { profiles, showToast, setActiveChatUserId } = useApp();
+  const { profiles, showToast, setActiveChatUserId, currentUser } = useApp();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -131,6 +133,53 @@ export const ViewProfile: React.FC = () => {
       return;
     }
 
+    // Check if viewing one's own profile
+    const isSelf = Boolean(
+      (currentUser?.id && (String(currentUser.id) === rawIdentifier || (isNumeric && Number(currentUser.id) === numericUserId))) ||
+      (currentUser?.member_id && rawIdentifier && currentUser.member_id.toLowerCase() === rawIdentifier.toLowerCase())
+    );
+
+    // Profile credit reduction & lock check for candidate profiles
+    if (!isSelf) {
+      let unlockedList: string[] = [];
+      try {
+        unlockedList = JSON.parse(localStorage.getItem('user_unlocked_profiles') || '[]');
+      } catch {
+        unlockedList = [];
+      }
+
+      const isAlreadyUnlocked =
+        unlockedList.includes(rawIdentifier) ||
+        (isNumeric && unlockedList.includes(String(numericUserId))) ||
+        (kmId && unlockedList.includes(kmId.toLowerCase()));
+
+      if (!isAlreadyUnlocked) {
+        const remaining = membershipApi.getRemainingCredits();
+        if (remaining <= 0) {
+          setLockErrorMessage('Profile Locked. You have used all your matching profile credits. Take a membership to view more profiles.');
+          setIsLockedModalOpen(true);
+          setIsLoading(false);
+          return;
+        }
+
+        // Consume 1 credit to view this new profile
+        const newRemaining = membershipApi.consumeCredit();
+        const updatedList = Array.from(new Set([
+          ...unlockedList,
+          rawIdentifier,
+          String(numericUserId),
+          kmId.toLowerCase()
+        ].filter(Boolean)));
+        localStorage.setItem('user_unlocked_profiles', JSON.stringify(updatedList));
+
+        queryClient.invalidateQueries({ queryKey: membershipKeys.all });
+        queryClient.invalidateQueries({ queryKey: membershipKeys.myMembership() });
+        queryClient.invalidateQueries({ queryKey: ['membership'] });
+
+        showToast(`1 contact credit used. ${newRemaining} profile credits remaining.`);
+      }
+    }
+
     setIsLoading(true);
     profileService.getProfileByUserId(rawIdentifier)
       .then((data) => {
@@ -148,7 +197,7 @@ export const ViewProfile: React.FC = () => {
       .finally(() => {
         setIsLoading(false);
       });
-  }, [rawIdentifier]);
+  }, [rawIdentifier, currentUser?.id, currentUser?.member_id]);
 
   // Resolve profile from fetched API data, AppContext profiles, or recommendations/shortlist
   const foundInProfiles = profiles.find(
@@ -551,6 +600,62 @@ export const ViewProfile: React.FC = () => {
       elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
+
+  if (isLockedModalOpen) {
+    return (
+      <div className="min-h-[80vh] bg-[#faf8f7] flex items-center justify-center p-4">
+        <Modal
+          isOpen={true}
+          onClose={() => {
+            setIsLockedModalOpen(false);
+            navigate('/membership');
+          }}
+          title="🔒 Profile Locked"
+        >
+          <div className="space-y-5 p-1 text-stone-900 text-center">
+            <div className="h-16 w-16 bg-rose-50 border border-rose-200 rounded-full flex items-center justify-center mx-auto text-[#9f1239] shadow-sm">
+              <Lock className="h-8 w-8 text-[#9f1239]" />
+            </div>
+
+            <div className="space-y-2">
+              <Badge variant="gold" className="bg-[#D4AF37]/20 text-[#8B1E3F] border-[#D4AF37]/50 font-extrabold px-3 py-1 text-xs">
+                0 Credits Remaining
+              </Badge>
+              <h3 className="font-serif font-extrabold text-xl text-stone-900">Profile Access Restricted</h3>
+              <p className="text-xs font-semibold text-stone-600 max-w-sm mx-auto leading-relaxed">
+                {lockErrorMessage || 'Profile Locked. You have used all your matching profile credits. Take a membership to view more profiles.'}
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-3 border-t border-stone-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsLockedModalOpen(false);
+                  navigate('/matches');
+                }}
+                className="w-full sm:w-1/2 font-bold text-xs border-stone-300 rounded-xl"
+              >
+                Back to Matches
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => {
+                  setIsLockedModalOpen(false);
+                  navigate('/membership');
+                }}
+                className="w-full sm:w-1/2 font-extrabold text-xs bg-[#9f1239] hover:bg-[#881337] text-white shadow-md rounded-xl"
+              >
+                <Crown className="h-4 w-4 mr-1 text-white" /> Take Membership
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      </div>
+    );
+  }
 
   if (isLoading || (isRecLoading && !apiFetchedProfile)) {
     return <LoadingScreen title="Member Profile" message="Loading profile details..." />;

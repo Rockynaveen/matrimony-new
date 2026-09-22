@@ -359,7 +359,7 @@ export const PreferencesPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-          <Loader2 className="h-8 w-8 text-[#C44569] animate-spin" />
+          <Loader2 className="h-8 w-8 text-[#C70F4B] animate-spin" />
           <p className="text-sm font-semibold text-slate-700">Loading your preferences...</p>
         </div>
       </div>
@@ -386,7 +386,7 @@ export const PreferencesPage: React.FC = () => {
           {/* ============================================================== */}
           {/* 1. Basic Preferences                                           */}
           {/* ============================================================== */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-300 shadow-xs p-6 sm:p-8 shadow-2xs space-y-6">
             <div className="flex items-center gap-2">
               <User className="h-3.5 w-3.5 text-blue-600" />
               <h2 className="text-xs sm:text-sm font-bold text-slate-900">
@@ -407,7 +407,7 @@ export const PreferencesPage: React.FC = () => {
                   value={formData.minimum_age}
                   onChange={e => handleChange('minimum_age', e.target.value ? Number(e.target.value) : '')}
                   placeholder="18"
-                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 hover:border-slate-400 rounded-xl placeholder:text-slate-500 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 shadow-2xs"
                 />
               </div>
               <div className="md:col-span-5 space-y-1.5">
@@ -421,7 +421,7 @@ export const PreferencesPage: React.FC = () => {
                   value={formData.maximum_age}
                   onChange={e => handleChange('maximum_age', e.target.value ? Number(e.target.value) : '')}
                   placeholder="60"
-                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 hover:border-slate-400 rounded-xl placeholder:text-slate-500 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 shadow-2xs"
                 />
               </div>
               <div className="md:col-span-2 flex items-center justify-start md:justify-end pb-2 sm:pb-3">
@@ -443,7 +443,7 @@ export const PreferencesPage: React.FC = () => {
                   value={formData.minimum_height}
                   onChange={e => handleChange('minimum_height', e.target.value ? Number(e.target.value) : '')}
                   placeholder="Min cm"
-                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 hover:border-slate-400 rounded-xl placeholder:text-slate-500 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 shadow-2xs"
                 />
               </div>
               <div className="md:col-span-5 space-y-1.5">
@@ -455,7 +455,7 @@ export const PreferencesPage: React.FC = () => {
                   value={formData.maximum_height}
                   onChange={e => handleChange('maximum_height', e.target.value ? Number(e.target.value) : '')}
                   placeholder="Max cm"
-                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 hover:border-slate-400 rounded-xl placeholder:text-slate-500 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 shadow-2xs"
                 />
               </div>
               <div className="md:col-span-2 flex items-center justify-start md:justify-end pb-2 sm:pb-3">
@@ -485,7 +485,7 @@ export const PreferencesPage: React.FC = () => {
           {/* ============================================================== */}
           {/* 2. Education & Profession                                      */}
           {/* ============================================================== */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-300 shadow-xs p-6 sm:p-8 shadow-2xs space-y-6">
             <div className="flex items-center gap-2">
               <GraduationCap className="h-3.5 w-3.5 text-blue-600" />
               <h2 className="text-xs sm:text-sm font-bold text-slate-900">
@@ -525,7 +525,7 @@ export const PreferencesPage: React.FC = () => {
           {/* ============================================================== */}
           {/* 3. Religion & Caste                                            */}
           {/* ============================================================== */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-300 shadow-xs p-6 sm:p-8 shadow-2xs space-y-6">
             <div className="flex items-center gap-2">
               <Sparkles className="h-3.5 w-3.5 text-blue-600" />
               <h2 className="text-xs sm:text-sm font-bold text-slate-900">
@@ -568,7 +568,7 @@ export const PreferencesPage: React.FC = () => {
           {/* ============================================================== */}
           {/* 4. Lifestyle & Languages                                       */}
           {/* ============================================================== */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-300 shadow-xs p-6 sm:p-8 shadow-2xs space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Heart className="h-3.5 w-3.5 text-blue-600" />
@@ -640,7 +640,7 @@ export const PreferencesPage: React.FC = () => {
           {/* ============================================================== */}
           {/* 5. Marital Status & Horoscope                                  */}
           {/* ============================================================== */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-300 shadow-xs p-6 sm:p-8 shadow-2xs space-y-6">
             <div className="flex items-center gap-2">
               <Compass className="h-3.5 w-3.5 text-blue-600" />
               <h2 className="text-xs sm:text-sm font-bold text-slate-900">
@@ -688,7 +688,7 @@ export const PreferencesPage: React.FC = () => {
           {/* ============================================================== */}
           {/* 6. Preferred Locations (Dependent Hierarchy)                   */}
           {/* ============================================================== */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-300 shadow-xs p-6 sm:p-8 shadow-2xs space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <MapPin className="h-3.5 w-3.5 text-blue-600" />

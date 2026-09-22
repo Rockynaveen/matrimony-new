@@ -714,7 +714,7 @@ export const SearchPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-2">
 
           {/* ── Left Column: Dynamic Backend Filters Sidebar Card ── */}
-          <Card className="lg:col-span-3 bg-white rounded-2xl border border-stone-200/90 shadow-2xs p-5 space-y-4">
+          <Card className="lg:col-span-3 bg-white rounded-2xl border border-stone-300 shadow-sm p-5 space-y-4">
             
             {/* Sidebar Header with Active Count & Reset */}
             <div className="flex items-center justify-between pb-3 border-b border-stone-100">
@@ -762,7 +762,7 @@ export const SearchPage: React.FC = () => {
                         max={sidebarAgeMax}
                         value={sidebarAgeMin}
                         onChange={(e) => setSidebarAgeMin(Math.max(18, Number(e.target.value)))}
-                        className="w-14 h-8 text-center text-xs font-bold border border-stone-200 rounded-lg bg-stone-50 text-stone-900 focus:ring-1 focus:ring-[#B81D4F] focus:outline-none"
+                        className="w-14 h-8 text-center text-xs font-bold border border-stone-300 hover:border-stone-400 rounded-lg bg-white text-stone-900 shadow-2xs focus:ring-1 focus:ring-[#B81D4F] focus:outline-none"
                       />
                       <div className="flex-1 relative flex items-center">
                         <input
@@ -780,7 +780,7 @@ export const SearchPage: React.FC = () => {
                         max="70"
                         value={sidebarAgeMax}
                         onChange={(e) => setSidebarAgeMax(Math.min(70, Number(e.target.value)))}
-                        className="w-14 h-8 text-center text-xs font-bold border border-stone-200 rounded-lg bg-stone-50 text-stone-900 focus:ring-1 focus:ring-[#B81D4F] focus:outline-none"
+                        className="w-14 h-8 text-center text-xs font-bold border border-stone-300 hover:border-stone-400 rounded-lg bg-white text-stone-900 shadow-2xs focus:ring-1 focus:ring-[#B81D4F] focus:outline-none"
                       />
                     </div>
                   </div>
@@ -798,7 +798,7 @@ export const SearchPage: React.FC = () => {
                     <Ruler className="h-3.5 w-3.5 text-[#B81D4F]" />
                     <span>Height Range</span>
                   </div>
-                  {openSections.height ? <ChevronUp className="h-3.5 w-3.5 text-stone-400" /> : <ChevronDown className="h-3.5 w-3.5 text-stone-400" />}
+                  {openSections.height ? <ChevronUp className="h-3.5 w-3.5 text-stone-600" /> : <ChevronDown className="h-3.5 w-3.5 text-stone-600" />}
                 </button>
 
                 {openSections.height && (
@@ -807,27 +807,27 @@ export const SearchPage: React.FC = () => {
                       <select
                         value={heightMin}
                         onChange={(e) => setHeightMin(e.target.value)}
-                        className="w-full bg-stone-50 border border-stone-200 rounded-xl px-2.5 py-1.5 text-xs font-medium text-stone-800 appearance-none focus:outline-none cursor-pointer"
+                        className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-stone-900 appearance-none focus:outline-none cursor-pointer shadow-2xs"
                       >
                         <option value="Any">Min Height</option>
                         {heightOptions.filter(h => h !== 'Any').map(h => (
                           <option key={h} value={h}>{h}</option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute right-2 top-2 h-3 w-3 text-stone-400 pointer-events-none" />
+                      <ChevronDown className="absolute right-2 top-2 h-3 w-3 text-stone-600 pointer-events-none" />
                     </div>
                     <div className="relative">
                       <select
                         value={heightMax}
                         onChange={(e) => setHeightMax(e.target.value)}
-                        className="w-full bg-stone-50 border border-stone-200 rounded-xl px-2.5 py-1.5 text-xs font-medium text-stone-800 appearance-none focus:outline-none cursor-pointer"
+                        className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-stone-900 appearance-none focus:outline-none cursor-pointer shadow-2xs"
                       >
                         <option value="Any">Max Height</option>
                         {heightOptions.filter(h => h !== 'Any').map(h => (
                           <option key={h} value={h}>{h}</option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute right-2 top-2 h-3 w-3 text-stone-400 pointer-events-none" />
+                      <ChevronDown className="absolute right-2 top-2 h-3 w-3 text-stone-600 pointer-events-none" />
                     </div>
                   </div>
                 )}
@@ -852,7 +852,7 @@ export const SearchPage: React.FC = () => {
                     <select
                       value={maritalStatus}
                       onChange={(e) => setMaritalStatus(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-medium text-stone-800 appearance-none focus:outline-none cursor-pointer"
+                      className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none cursor-pointer shadow-2xs"
                     >
                       {maritalStatusOptions.map(m => (
                         <option key={m} value={m}>{m}</option>
@@ -882,7 +882,7 @@ export const SearchPage: React.FC = () => {
                     <select
                       value={religion}
                       onChange={(e) => handleReligionChange(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-medium text-stone-800 appearance-none focus:outline-none cursor-pointer"
+                      className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none cursor-pointer shadow-2xs"
                     >
                       <option value="Any">Any Religion</option>
                       {religionOptions.filter(r => r !== 'Any').map(r => (
@@ -913,7 +913,7 @@ export const SearchPage: React.FC = () => {
                     <select
                       value={caste}
                       onChange={(e) => setCaste(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-medium text-stone-800 appearance-none focus:outline-none cursor-pointer"
+                      className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none cursor-pointer shadow-2xs"
                     >
                       <option value="Any">
                         {isLoadingCastes ? 'Loading Castes...' : 'Any Caste'}
@@ -946,7 +946,7 @@ export const SearchPage: React.FC = () => {
                     <select
                       value={motherTongue}
                       onChange={(e) => setMotherTongue(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-medium text-stone-800 appearance-none focus:outline-none cursor-pointer"
+                      className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none cursor-pointer shadow-2xs"
                     >
                       <option value="Any">Any Mother Tongue</option>
                       {motherTongueOptions.filter(m => m !== 'Any').map(m => (
@@ -977,7 +977,7 @@ export const SearchPage: React.FC = () => {
                     <select
                       value={educationFilter}
                       onChange={(e) => setEducationFilter(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-medium text-stone-800 appearance-none focus:outline-none cursor-pointer"
+                      className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none cursor-pointer shadow-2xs"
                     >
                       <option value="Any">Any Education</option>
                       {educationOptions.filter(e => e !== 'Any').map(e => (
@@ -1008,7 +1008,7 @@ export const SearchPage: React.FC = () => {
                     <select
                       value={professionFilter}
                       onChange={(e) => setProfessionFilter(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-medium text-stone-800 appearance-none focus:outline-none cursor-pointer"
+                      className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none cursor-pointer shadow-2xs"
                     >
                       <option value="Any">Any Profession</option>
                       {professionOptions.filter(p => p !== 'Any').map(p => (
@@ -1041,7 +1041,7 @@ export const SearchPage: React.FC = () => {
                     <select
                       value={incomeFilter}
                       onChange={(e) => setIncomeFilter(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-medium text-stone-800 appearance-none focus:outline-none cursor-pointer"
+                      className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none cursor-pointer shadow-2xs"
                     >
                       <option value="Any">Any Income</option>
                       {incomeOptions.filter(i => i !== 'Any').map(i => (
@@ -1072,7 +1072,7 @@ export const SearchPage: React.FC = () => {
                     <select
                       value={locationFilter}
                       onChange={(e) => setLocationFilter(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-medium text-stone-800 appearance-none focus:outline-none cursor-pointer"
+                      className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none cursor-pointer shadow-2xs"
                     >
                       <option value="Any">Any Location</option>
                       {locationOptions.filter(l => l !== 'Any').map(l => (
@@ -1103,7 +1103,7 @@ export const SearchPage: React.FC = () => {
                     <select
                       value={dietFilter}
                       onChange={(e) => setDietFilter(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-medium text-stone-800 appearance-none focus:outline-none cursor-pointer"
+                      className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none cursor-pointer shadow-2xs"
                     >
                       {dietOptions.map(d => (
                         <option key={d} value={d}>{d}</option>
@@ -1133,7 +1133,7 @@ export const SearchPage: React.FC = () => {
                     <select
                       value={manglikFilter}
                       onChange={(e) => setManglikFilter(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-medium text-stone-800 appearance-none focus:outline-none cursor-pointer"
+                      className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none cursor-pointer shadow-2xs"
                     >
                       {manglikOptions.map(m => (
                         <option key={m} value={m}>{m}</option>

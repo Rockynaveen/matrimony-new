@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clock,
   ArrowRight,
+  ArrowLeft,
   RefreshCw,
   Info,
   User,
@@ -29,6 +30,13 @@ export const IdentityVerification: React.FC = () => {
   const { logout, skipVerificationForSession } = useApp();
 
   const handleSkipForNow = () => {
+    localStorage.setItem('verification_skipped', 'true');
+    sessionStorage.setItem('verification_skipped_session', 'true');
+    skipVerificationForSession();
+    navigate('/matches');
+  };
+
+  const handleNext = () => {
     localStorage.setItem('verification_skipped', 'true');
     sessionStorage.setItem('verification_skipped_session', 'true');
     skipVerificationForSession();
@@ -92,17 +100,9 @@ export const IdentityVerification: React.FC = () => {
           <div className="flex items-center gap-2 ml-auto">
             <button
               type="button"
-              onClick={handleSkipForNow}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-blue-200 bg-blue-50/90 hover:bg-blue-100 text-blue-800 text-xs font-bold transition-all cursor-pointer shadow-2xs"
-            >
-              <span>Skip for now →</span>
-            </button>
-
-            <button
-              type="button"
               onClick={() => fetchStatus()}
               disabled={isLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all cursor-pointer shadow-2xs"
             >
               <RefreshCw className={`h-3.5 w-3.5 text-slate-500 ${isLoading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
@@ -327,23 +327,34 @@ export const IdentityVerification: React.FC = () => {
         )}
 
         {/* ── 5. Bottom Navigation Bar ── */}
-        <div className="flex items-center justify-between pt-2 pb-12">
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 pb-12 border-t border-slate-200">
           <button
             type="button"
             onClick={() => navigate('/preferences')}
-            className="text-xs font-bold px-6 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-400 active:scale-[0.98] transition-all cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-400 active:scale-[0.98] transition-all cursor-pointer shadow-2xs"
           >
-            Back to Partner Preferences
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Partner Preferences</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleSkipForNow}
-            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-5 py-2.5 rounded-xl cursor-pointer shadow-2xs transition-all active:scale-[0.98]"
-          >
-            <span>Skip for now &amp; Verify Later</span>
-            <ArrowRight className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSkipForNow}
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 hover:text-slate-900 bg-white border border-slate-300 hover:border-slate-400 px-5 py-2.5 rounded-xl cursor-pointer shadow-2xs transition-all active:scale-[0.98]"
+            >
+              <span>Skip for now</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleNext}
+              className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-white bg-[#8B1E3F] hover:bg-[#721833] px-6 py-2.5 rounded-xl cursor-pointer shadow-md hover:shadow-lg transition-all active:scale-[0.98]"
+            >
+              <span>Next</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
       </div>

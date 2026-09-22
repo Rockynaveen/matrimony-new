@@ -136,12 +136,12 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
 
       {/* Selected Tags Display */}
       {selectedItems.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+        <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-slate-50 border border-slate-300">
           {selectedItems.map(item => (
             <Badge
               key={item.id}
               variant="outline"
-              className="pl-2.5 pr-1.5 py-1 bg-white text-slate-800 border-slate-200 flex items-center gap-1.5 text-xs font-semibold shadow-2xs"
+              className="pl-2.5 pr-1.5 py-1 bg-white text-slate-800 border-slate-300 flex items-center gap-1.5 text-xs font-semibold shadow-2xs"
             >
               <span>{item.name}</span>
               <button
@@ -169,13 +169,13 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
           onClick={() => !disabled && setIsOpen(prev => !prev)}
           className={`flex items-center gap-2 w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border bg-white transition-all cursor-pointer select-none ${
             disabled
-              ? 'opacity-60 bg-slate-100 border-slate-200 cursor-not-allowed'
+              ? 'opacity-60 bg-slate-100 border-slate-300 cursor-not-allowed'
               : isOpen
               ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
-              : 'border-slate-200 hover:border-slate-300'
+              : 'border-slate-300 hover:border-slate-400 shadow-2xs'
           }`}
         >
-          <Search className="h-4 w-4 text-slate-400 shrink-0" />
+          <Search className="h-4 w-4 text-slate-500 shrink-0" />
           <input
             type="text"
             disabled={disabled}
@@ -187,19 +187,19 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
             onClick={e => e.stopPropagation()}
             onFocus={() => !disabled && setIsOpen(true)}
             placeholder={disabled ? disabledPlaceholder || placeholder : selectedItems.length > 0 ? `${selectedItems.length} selected — click to add more...` : placeholder}
-            className="w-full bg-transparent text-xs sm:text-sm text-slate-900 focus:outline-none placeholder:text-slate-400"
+            className="w-full bg-transparent text-xs sm:text-sm text-slate-900 focus:outline-none placeholder:text-slate-500 font-medium"
           />
           {selectedItems.length > 0 && (
             <span className="shrink-0 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold">
               {selectedItems.length}
             </span>
           )}
-          <ChevronDown className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-blue-600' : ''}`} />
+          <ChevronDown className={`h-4 w-4 text-slate-500 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-blue-600' : ''}`} />
         </div>
 
         {/* Dropdown Options with Shadcn Checkbox */}
         {isOpen && !disabled && (
-          <div className="absolute z-30 left-0 right-0 mt-1 max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 space-y-0.5 animate-in fade-in-50 zoom-in-95">
+          <div className="absolute z-30 left-0 right-0 mt-1 max-h-64 overflow-y-auto bg-white border border-slate-300 rounded-xl shadow-lg p-1.5 space-y-0.5 animate-in fade-in-50 zoom-in-95">
             <div className="flex items-center justify-between px-2.5 py-1.5 text-[11px] text-slate-500 border-b border-slate-100 mb-1">
               <span>{filteredItems.length} options</span>
               <div className="flex items-center gap-2">
@@ -331,12 +331,12 @@ export const StringMultiSelectDropdown: React.FC<StringMultiSelectDropdownProps>
 
       {/* Selected Tags Display */}
       {selectedValues.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+        <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-slate-50 border border-slate-300">
           {selectedValues.map(val => (
             <Badge
               key={val}
               variant="outline"
-              className="pl-2.5 pr-1.5 py-1 bg-white text-slate-800 border-slate-200 flex items-center gap-1.5 text-xs font-semibold shadow-2xs"
+              className="pl-2.5 pr-1.5 py-1 bg-white text-slate-800 border-slate-300 flex items-center gap-1.5 text-xs font-semibold shadow-2xs"
             >
               <span>{val}</span>
               <button
@@ -365,10 +365,10 @@ export const StringMultiSelectDropdown: React.FC<StringMultiSelectDropdownProps>
           className={`flex items-center justify-between w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border bg-white transition-all cursor-pointer select-none ${
             isOpen
               ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
-              : 'border-slate-200 hover:border-slate-300'
+              : 'border-slate-300 hover:border-slate-400 shadow-2xs'
           }`}
         >
-          <span className={`truncate ${selectedValues.length === 0 ? 'text-slate-400' : 'text-slate-900 font-medium'}`}>
+          <span className={`truncate ${selectedValues.length === 0 ? 'text-slate-500 font-medium' : 'text-slate-900 font-medium'}`}>
             {selectedValues.length > 0 ? selectedValues.join(', ') : placeholder}
           </span>
           <div className="flex items-center gap-2 shrink-0">
@@ -377,13 +377,13 @@ export const StringMultiSelectDropdown: React.FC<StringMultiSelectDropdownProps>
                 {selectedValues.length}
               </span>
             )}
-            <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-blue-600' : ''}`} />
+            <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180 text-blue-600' : ''}`} />
           </div>
         </div>
 
         {/* Dropdown Options with Shadcn Checkbox */}
         {isOpen && (
-          <div className="absolute z-30 left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 space-y-0.5 animate-in fade-in-50 zoom-in-95">
+          <div className="absolute z-30 left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-slate-300 rounded-xl shadow-lg p-1.5 space-y-0.5 animate-in fade-in-50 zoom-in-95">
             <div className="flex items-center justify-between px-2.5 py-1.5 text-[11px] text-slate-500 border-b border-slate-100 mb-1">
               <span>{options.length} options</span>
               <div className="flex items-center gap-2">

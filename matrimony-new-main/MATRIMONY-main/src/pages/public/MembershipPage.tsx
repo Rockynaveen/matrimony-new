@@ -36,8 +36,18 @@ export const MembershipPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Active User Membership state (GET /api/membership/my-membership/)
-  const [myMembership, setMyMembership] = useState<MyMembershipOut | null>(null);
-  const [loadingMyMembership, setLoadingMyMembership] = useState<boolean>(true);
+  const [myMembership, setMyMembership] = useState<MyMembershipOut | null>(() => {
+    return membershipApi.getLocalActiveMembership() || {
+      plan_name: 'Free',
+      price: 0,
+      profile_credits: 3,
+      used_credits: 0,
+      remaining_credits: Number(localStorage.getItem('user_membership_credits')) || 3,
+      validity_days: null,
+      expires_at: null
+    };
+  });
+  const [loadingMyMembership, setLoadingMyMembership] = useState<boolean>(false);
 
   // Offline Payment Modal State
   const [isOfflineModalOpen, setIsOfflineModalOpen] = useState<boolean>(false);
@@ -128,19 +138,19 @@ export const MembershipPage: React.FC = () => {
     setSubmittingOffline(true);
     try {
       if (selectedPlanForOffline) {
-        membershipApi.activatePlanLocally(selectedPlanForOffline, {
+        const updated = membershipApi.activatePlanLocally(selectedPlanForOffline, {
           customer_name: offlinePayload.customer_name,
           customer_email: offlinePayload.customer_email,
           customer_phone: offlinePayload.customer_phone,
           purchase_type: 'OFFLINE'
         });
+        showToast(`Offline payment recorded! Plan activated. Total available credits: ${updated.remaining_credits}.`);
       }
       try {
         await membershipApi.createOfflineTransaction(offlinePayload);
       } catch (err: any) {
         console.warn('[MembershipPage] Backend offline note:', err);
       }
-      showToast('Offline payment recorded! Plan & credits activated.');
       setIsOfflineModalOpen(false);
       await fetchMyMembership();
     } catch (err: any) {
@@ -467,7 +477,7 @@ export const MembershipPage: React.FC = () => {
                       isPopular
                         ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-stone-950 hover:opacity-95 border border-amber-300'
                         : isVIP
-                        ? 'bg-gradient-to-r from-[#8B1E3F] to-[#C44569] text-white hover:opacity-95'
+                        ? 'bg-gradient-to-r from-[#8B1E3F] to-[#C70F4B] text-white hover:opacity-95'
                         : isFree
                         ? 'border-stone-300 text-stone-800 hover:bg-stone-100'
                         : 'bg-[#8B1E3F] text-white hover:opacity-90'

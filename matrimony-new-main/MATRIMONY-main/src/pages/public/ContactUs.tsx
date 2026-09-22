@@ -81,47 +81,47 @@ export const ContactUs: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Full Name</label>
+                  <label className="text-xs font-bold text-slate-800 block mb-1">Full Name</label>
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder="Rahul Sharma"
-                    className="w-full bg-muted/30 border border-border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Email Address</label>
+                  <label className="text-xs font-bold text-slate-800 block mb-1">Email Address</label>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder="rahul@example.com"
-                    className="w-full bg-muted/30 border border-border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Mobile Number</label>
+                  <label className="text-xs font-bold text-slate-800 block mb-1">Mobile Number</label>
                   <input
                     type="tel"
                     required
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
                     placeholder="+91 98765 43210"
-                    className="w-full bg-muted/30 border border-border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Inquiry Topic</label>
+                  <label className="text-xs font-bold text-slate-800 block mb-1">Inquiry Topic</label>
                   <select
                     value={subject}
                     onChange={e => setSubject(e.target.value)}
-                    className="w-full bg-muted/30 border border-border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 shadow-2xs rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
                     <option value="Membership Inquiry">Membership Inquiry</option>
                     <option value="Verification Assistance">Verification Assistance</option>
@@ -133,14 +133,14 @@ export const ContactUs: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">Message</label>
+                <label className="text-xs font-bold text-slate-800 block mb-1">Message</label>
                 <textarea
                   rows={4}
                   required
                   value={message}
                   onChange={e => setMessage(e.target.value)}
                   placeholder="How can we assist you with your matrimonial search?"
-                  className="w-full bg-muted/30 border border-border rounded-xl p-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
 

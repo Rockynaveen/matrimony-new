@@ -2,7 +2,7 @@ import React from 'react';
 import { clsx } from 'clsx';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'primary' | 'secondary' | 'outline' | 'verified' | 'gold' | 'success' | 'danger';
+  variant?: 'default' | 'primary' | 'secondary' | 'outline' | 'verified' | 'gold' | 'success' | 'danger' | 'pink';
 }
 
 export const Badge: React.FC<BadgeProps> = ({ children, className, variant = 'primary', ...props }) => {
@@ -11,7 +11,8 @@ export const Badge: React.FC<BadgeProps> = ({ children, className, variant = 'pr
   const variants = {
     default: 'bg-muted text-muted-foreground',
     primary: 'bg-[#8B1E3F]/10 text-[#8B1E3F] border border-[#8B1E3F]/20',
-    secondary: 'bg-[#C44569]/10 text-[#C44569] border border-[#C44569]/20',
+    secondary: 'bg-[#C70F4B]/10 text-[#C70F4B] border border-[#C70F4B]/20',
+    pink: 'bg-[#C70F4B]/10 text-[#C70F4B] border border-[#C70F4B]/20 font-semibold',
     outline: 'border border-border text-foreground',
     verified: 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs font-medium',
     gold: 'bg-amber-100 text-amber-900 border border-amber-300 font-semibold shadow-2xs',

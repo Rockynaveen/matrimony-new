@@ -147,7 +147,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
           <div className="flex justify-center gap-6 text-xs font-semibold">
             <span className="flex items-center gap-2 text-[#8B1E3F]"><span className="h-3 w-3 rounded-full bg-[#8B1E3F]" /> Male (Groom) 54%</span>
-            <span className="flex items-center gap-2 text-[#C44569]"><span className="h-3 w-3 rounded-full bg-[#C44569]" /> Female (Bride) 46%</span>
+            <span className="flex items-center gap-2 text-[#C70F4B]"><span className="h-3 w-3 rounded-full bg-[#C70F4B]" /> Female (Bride) 46%</span>
           </div>
         </Card>
 
@@ -166,7 +166,7 @@ export const AdminDashboard: React.FC = () => {
                 <XAxis dataKey="city" style={{ fontSize: 10 }} />
                 <YAxis style={{ fontSize: 10 }} />
                 <Tooltip />
-                <Bar dataKey="profiles" fill="#C44569" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="profiles" fill="#C70F4B" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

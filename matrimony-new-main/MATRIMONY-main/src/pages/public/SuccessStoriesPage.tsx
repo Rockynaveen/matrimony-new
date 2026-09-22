@@ -38,7 +38,7 @@ export const SuccessStoriesPage: React.FC = () => {
                 <CardContent className="p-6 space-y-3">
                   <h3 className="font-serif text-xl font-bold text-[#8B1E3F]">{story.coupleName}</h3>
                   <p className="text-xs text-stone-600 font-semibold flex items-center gap-2">
-                    <Calendar className="h-3.5 w-3.5 text-[#C44569]" /> {story.weddingDate} • {story.location}
+                    <Calendar className="h-3.5 w-3.5 text-[#C70F4B]" /> {story.weddingDate} • {story.location}
                   </p>
                   <p className="text-xs text-stone-600 leading-relaxed italic line-clamp-3">
                     "{story.story}"
@@ -77,7 +77,7 @@ export const SuccessStoriesPage: React.FC = () => {
                 <CardContent className="p-6 space-y-3">
                   <h3 className="font-serif text-xl font-bold text-[#8B1E3F]">{story.coupleName}</h3>
                   <p className="text-xs text-stone-600 font-semibold flex items-center gap-2">
-                    <Calendar className="h-3.5 w-3.5 text-[#C44569]" /> {story.weddingDate} • {story.location}
+                    <Calendar className="h-3.5 w-3.5 text-[#C70F4B]" /> {story.weddingDate} • {story.location}
                   </p>
                   <p className="text-xs text-stone-600 leading-relaxed italic line-clamp-3">
                     "{story.story}"

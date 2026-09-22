@@ -85,7 +85,7 @@ export const RegisterWizard: React.FC = () => {
         {/* Header */}
         <div className="text-center space-y-2">
           <Link to="/" className="inline-flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#8B1E3F] to-[#C44569] text-white shadow-md">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#8B1E3F] to-[#C70F4B] text-white shadow-md">
               <Heart className="h-5 w-5 fill-white stroke-none" />
             </div>
             <span className="font-serif text-2xl font-bold tracking-tight text-foreground">
@@ -107,7 +107,7 @@ export const RegisterWizard: React.FC = () => {
 
           <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-[#8B1E3F] via-[#C44569] to-[#D4AF37] transition-all duration-500 rounded-full"
+              className="h-full bg-gradient-to-r from-[#8B1E3F] via-[#C70F4B] to-[#D4AF37] transition-all duration-500 rounded-full"
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
@@ -171,7 +171,7 @@ export const RegisterWizard: React.FC = () => {
                         className={`p-4 rounded-2xl border-2 text-center transition-all flex flex-col items-center gap-2 ${
                           formData.gender === 'Female'
                             ? 'border-[#8B1E3F] bg-[#8B1E3F]/10 text-[#8B1E3F] font-bold shadow-sm'
-                            : 'border-border text-muted-foreground bg-muted/20 hover:bg-muted/40'
+                            : 'border-slate-300 text-slate-700 bg-white hover:bg-slate-50 shadow-2xs'
                         }`}
                       >
                         <Heart className="h-6 w-6" />
@@ -184,7 +184,7 @@ export const RegisterWizard: React.FC = () => {
                         className={`p-4 rounded-2xl border-2 text-center transition-all flex flex-col items-center gap-2 ${
                           formData.gender === 'Male'
                             ? 'border-[#8B1E3F] bg-[#8B1E3F]/10 text-[#8B1E3F] font-bold shadow-sm'
-                            : 'border-border text-muted-foreground bg-muted/20 hover:bg-muted/40'
+                            : 'border-slate-300 text-slate-700 bg-white hover:bg-slate-50 shadow-2xs'
                         }`}
                       >
                         <UserCheck className="h-6 w-6" />
@@ -201,7 +201,7 @@ export const RegisterWizard: React.FC = () => {
                       value={formData.name}
                       onChange={e => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Pooja Sharma"
-                      className="w-full bg-muted/20 border border-border rounded-xl px-3.5 py-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl px-3.5 py-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
 
@@ -213,7 +213,7 @@ export const RegisterWizard: React.FC = () => {
                         required
                         value={formData.dob}
                         onChange={e => setFormData({ ...formData, dob: e.target.value })}
-                        className="w-full bg-muted/20 border border-border rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                        className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl px-3.5 py-2.5 text-xs font-medium"
                       />
                     </div>
                     <div>
@@ -223,7 +223,7 @@ export const RegisterWizard: React.FC = () => {
                         required
                         value={formData.phone}
                         onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full bg-muted/20 border border-border rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                        className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl px-3.5 py-2.5 text-xs font-medium"
                       />
                     </div>
                   </div>
@@ -235,7 +235,7 @@ export const RegisterWizard: React.FC = () => {
                       required
                       value={formData.email}
                       onChange={e => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full bg-muted/20 border border-border rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                      className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl px-3.5 py-2.5 text-xs font-medium"
                     />
                   </div>
                 </div>
@@ -257,7 +257,7 @@ export const RegisterWizard: React.FC = () => {
                       <select
                         value={formData.religion}
                         onChange={e => setFormData({ ...formData, religion: e.target.value })}
-                        className="w-full bg-muted/20 border border-border rounded-xl p-2.5 text-xs font-bold"
+                        className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-2.5 text-xs font-bold"
                       >
                         <option value="Hindu">Hindu</option>
                         <option value="Muslim">Muslim</option>
@@ -273,7 +273,7 @@ export const RegisterWizard: React.FC = () => {
                         type="text"
                         value={formData.caste}
                         onChange={e => setFormData({ ...formData, caste: e.target.value })}
-                        className="w-full bg-muted/20 border border-border rounded-xl p-2.5 text-xs font-medium"
+                        className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-2.5 text-xs font-medium"
                       />
                     </div>
                   </div>
@@ -284,7 +284,7 @@ export const RegisterWizard: React.FC = () => {
                       <select
                         value={formData.motherTongue}
                         onChange={e => setFormData({ ...formData, motherTongue: e.target.value })}
-                        className="w-full bg-muted/20 border border-border rounded-xl p-2.5 text-xs font-bold"
+                        className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-2.5 text-xs font-bold"
                       >
                         <option value="Hindi">Hindi</option>
                         <option value="Marathi">Marathi</option>
@@ -302,7 +302,7 @@ export const RegisterWizard: React.FC = () => {
                         type="text"
                         value={formData.city}
                         onChange={e => setFormData({ ...formData, city: e.target.value })}
-                        className="w-full bg-muted/20 border border-border rounded-xl p-2.5 text-xs font-medium"
+                        className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-2.5 text-xs font-medium"
                       />
                     </div>
                   </div>
@@ -326,7 +326,7 @@ export const RegisterWizard: React.FC = () => {
                       value={formData.education}
                       onChange={e => setFormData({ ...formData, education: e.target.value })}
                       placeholder="e.g. M.Tech Computer Science / MBA"
-                      className="w-full bg-muted/20 border border-border rounded-xl p-2.5 text-xs font-medium"
+                      className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-2.5 text-xs font-medium"
                     />
                   </div>
 
@@ -337,7 +337,7 @@ export const RegisterWizard: React.FC = () => {
                         type="text"
                         value={formData.profession}
                         onChange={e => setFormData({ ...formData, profession: e.target.value })}
-                        className="w-full bg-muted/20 border border-border rounded-xl p-2.5 text-xs font-medium"
+                        className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-2.5 text-xs font-medium"
                       />
                     </div>
 
@@ -346,7 +346,7 @@ export const RegisterWizard: React.FC = () => {
                       <select
                         value={formData.income}
                         onChange={e => setFormData({ ...formData, income: e.target.value })}
-                        className="w-full bg-muted/20 border border-border rounded-xl p-2.5 text-xs font-bold"
+                        className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-2.5 text-xs font-bold"
                       >
                         <option value="₹10 - 15 Lakhs">₹10 - 15 Lakhs</option>
                         <option value="₹15 - 20 Lakhs">₹15 - 20 Lakhs</option>
@@ -390,7 +390,7 @@ export const RegisterWizard: React.FC = () => {
                       rows={3}
                       value={formData.about}
                       onChange={e => setFormData({ ...formData, about: e.target.value })}
-                      className="w-full bg-muted/20 border border-border rounded-xl p-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                 </div>
@@ -413,7 +413,7 @@ export const RegisterWizard: React.FC = () => {
                         type="number"
                         value={formData.prefAgeMin}
                         onChange={e => setFormData({ ...formData, prefAgeMin: parseInt(e.target.value) })}
-                        className="w-full bg-muted/20 border border-border rounded-xl p-2.5 text-xs font-bold"
+                        className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-2.5 text-xs font-bold"
                       />
                     </div>
                     <div>
@@ -422,7 +422,7 @@ export const RegisterWizard: React.FC = () => {
                         type="number"
                         value={formData.prefAgeMax}
                         onChange={e => setFormData({ ...formData, prefAgeMax: parseInt(e.target.value) })}
-                        className="w-full bg-muted/20 border border-border rounded-xl p-2.5 text-xs font-bold"
+                        className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-2.5 text-xs font-bold"
                       />
                     </div>
                   </div>

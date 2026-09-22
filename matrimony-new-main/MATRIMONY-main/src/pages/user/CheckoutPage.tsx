@@ -124,7 +124,7 @@ export const CheckoutPage: React.FC = () => {
       : 'GOLD';
 
     const activateMembershipAndNavigate = (paymentIdStr: string) => {
-      membershipApi.activatePlanLocally(
+      const updatedMembership = membershipApi.activatePlanLocally(
         {
           id: selectedPlan.id,
           name: selectedPlan.name,
@@ -148,10 +148,10 @@ export const CheckoutPage: React.FC = () => {
         queryClient.refetchQueries({ queryKey: membershipKeys.myMembership() });
       } catch {}
 
-      showToast(`Payment successful! ${selectedPlan.name} activated with ${selectedPlan.profile_credits} contact credits.`);
+      showToast(`Payment successful! ${selectedPlan.name} activated (+${selectedPlan.profile_credits} credits). Total available: ${updatedMembership.remaining_credits} credits.`);
       addNotification({
         title: 'Membership Plan Activated! 👑',
-        message: `Your ${selectedPlan.name.toUpperCase()} Plan (₹${totalAmount.toLocaleString()}) was successfully activated with ${selectedPlan.profile_credits} Contact Credits and ${selectedPlan.validity_days} days validity.`,
+        message: `Your ${selectedPlan.name.toUpperCase()} Plan (₹${totalAmount.toLocaleString()}) was successfully activated with ${selectedPlan.profile_credits} Contact Credits. You now have ${updatedMembership.remaining_credits} total credits.`,
         category: 'Membership',
         link: '/membership'
       });
@@ -313,7 +313,7 @@ export const CheckoutPage: React.FC = () => {
                     value={upiId}
                     onChange={e => setUpiId(e.target.value)}
                     placeholder="e.g. mobile@upi / user@okhdfcbank"
-                    className="w-full bg-muted/30 border border-border rounded-xl p-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                   <span className="text-[10px] text-muted-foreground mt-1 block">Supports Google Pay, PhonePe, Paytm, BHIM & Razorpay Checkout</span>
                 </div>
@@ -322,16 +322,16 @@ export const CheckoutPage: React.FC = () => {
               {paymentMethod === 'card' && (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground block mb-1">Card Number</label>
+                    <label className="text-xs font-bold text-slate-800 block mb-1">Card Number</label>
                     <input
                       type="text"
                       placeholder="4532 •••• •••• 8892"
-                      className="w-full bg-muted/30 border border-border rounded-xl p-3 text-xs font-medium"
+                      className="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-3 text-xs font-medium"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <input type="text" placeholder="MM/YY" className="bg-muted/30 border border-border rounded-xl p-3 text-xs" />
-                    <input type="password" placeholder="CVV" className="bg-muted/30 border border-border rounded-xl p-3 text-xs" />
+                    <input type="text" placeholder="MM/YY" className="bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-3 text-xs font-medium" />
+                    <input type="password" placeholder="CVV" className="bg-white border border-slate-300 hover:border-slate-400 text-slate-900 placeholder:text-slate-500 shadow-2xs rounded-xl p-3 text-xs font-medium" />
                   </div>
                 </div>
               )}

@@ -401,11 +401,11 @@ export const Register: React.FC = () => {
                     Creating profile for
                   </Label>
                   <div className="relative">
-                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600 pointer-events-none" />
                     <select
                       id="register-for"
                       {...register('register_for')}
-                      className="flex h-9 w-full rounded-md border border-input bg-background pl-10 pr-3 py-1.5 text-xs sm:text-sm text-foreground shadow-xs ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                      className="flex h-10 w-full rounded-xl border border-slate-300 hover:border-slate-400 bg-white pl-10 pr-3 py-1.5 text-xs sm:text-sm text-slate-900 font-medium shadow-2xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B1E3F]/25 focus-visible:border-[#8B1E3F] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                     >
                       <option value="SELF">Myself</option>
                       <option value="SON">Son</option>
@@ -475,11 +475,11 @@ export const Register: React.FC = () => {
                       Gender
                     </Label>
                     <div className="relative">
-                      <Heart className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Heart className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600 pointer-events-none" />
                       <select
                         id="gender"
                         {...register('gender')}
-                        className="flex h-9 w-full rounded-md border border-input bg-background pl-10 pr-3 py-1.5 text-xs sm:text-sm text-foreground shadow-xs ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                        className="flex h-10 w-full rounded-xl border border-slate-300 hover:border-slate-400 bg-white pl-10 pr-3 py-1.5 text-xs sm:text-sm text-slate-900 font-medium shadow-2xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B1E3F]/25 focus-visible:border-[#8B1E3F] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                       >
                         <option value="Male">Male (Groom)</option>
                         <option value="Female">Female (Bride)</option>

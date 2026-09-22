@@ -21,7 +21,7 @@ export const REVENUE_GROWTH_DATA = [
 
 export const GENDER_RATIO_DATA = [
   { name: 'Groom (Male)', value: 54, color: '#8B1E3F' },
-  { name: 'Bride (Female)', value: 46, color: '#C44569' }
+  { name: 'Bride (Female)', value: 46, color: '#C70F4B' }
 ];
 
 export const RELIGION_BREAKDOWN_DATA = [

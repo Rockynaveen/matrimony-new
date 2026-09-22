@@ -138,7 +138,7 @@ export const MatchAvatar: React.FC<MatchAvatarProps> = ({
     >
       {/* Decorative ambient background accents */}
       <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-300/25 rounded-full blur-2xl pointer-events-none" />
-      <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-300/25 rounded-full blur-xl pointer-events-none" />
+      <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#C70F4B]/15 rounded-full blur-xl pointer-events-none" />
 
       {/* Initial Letter Badge */}
       <div className="relative z-10 flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/95 border-2 border-amber-300/80 shadow-[0_4px_20px_rgba(212,175,55,0.18)] backdrop-blur-xs">

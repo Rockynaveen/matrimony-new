@@ -226,6 +226,23 @@ export const membershipApi = {
   },
 
   /**
+   * Helper: Get remaining profile credits count
+   */
+  getRemainingCredits: (): number => {
+    try {
+      const active = membershipApi.getLocalActiveMembership();
+      if (active && typeof active.remaining_credits === 'number' && !isNaN(active.remaining_credits)) {
+        return Math.max(0, active.remaining_credits);
+      }
+      const stored = localStorage.getItem('user_membership_credits');
+      if (stored !== null && !isNaN(Number(stored))) {
+        return Math.max(0, Number(stored));
+      }
+    } catch (_) {}
+    return 3; // Default 3 free credits
+  },
+
+  /**
    * Helper: Get locally active membership details if present
    */
   getLocalActiveMembership: (): import('../types/membershipTypes').MyMembershipOut | null => {
@@ -234,6 +251,20 @@ export const membershipApi = {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed && parsed.plan_name) {
+          // Self-heal: If Silver plan was previously stored with only 10 credits without the 3 rollover credits,
+          // automatically accumulate the 3 rollover credits to make it 13 total credits (3 + 10 = 13).
+          if (
+            parsed.plan_name.toLowerCase().includes('silver') &&
+            parsed.remaining_credits === 10 &&
+            (!parsed.used_credits || parsed.used_credits === 0) &&
+            !localStorage.getItem('credits_reconciled_13')
+          ) {
+            parsed.remaining_credits = 13;
+            parsed.profile_credits = 13;
+            localStorage.setItem('user_active_membership', JSON.stringify(parsed));
+            localStorage.setItem('user_membership_credits', '13');
+            localStorage.setItem('credits_reconciled_13', 'true');
+          }
           return parsed;
         }
       }
@@ -242,27 +273,42 @@ export const membershipApi = {
   },
 
   /**
-   * Activate a plan locally and update user credits and transactions history
+   * Activate a plan locally and update user credits and transactions history.
+   * Accumulates existing remaining credits with new plan credits (e.g. 3 + 10 = 13).
    */
   activatePlanLocally: (plan: ApiMembershipPlan | any, meta?: any): import('../types/membershipTypes').MyMembershipOut => {
     const planName = plan.name || 'Premium';
     const numericPrice = typeof plan.price === 'string' ? parseFloat(plan.price) : Number(plan.price || 0);
-    const profileCredits = Number(plan.profile_credits ?? 10);
+    const planCredits = Number(plan.profile_credits ?? 10);
     const validityDays = plan.validity_days ? Number(plan.validity_days) : 365;
     const expiresAt = new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString();
+
+    const currentActive = membershipApi.getLocalActiveMembership();
+    const existingRemaining = currentActive?.remaining_credits !== undefined
+      ? Number(currentActive.remaining_credits)
+      : (localStorage.getItem('user_membership_credits') !== null
+          ? Number(localStorage.getItem('user_membership_credits'))
+          : 3);
+
+    const safeExistingRemaining = Math.max(0, isNaN(existingRemaining) ? 3 : existingRemaining);
+    // Accumulate existing credits with the new plan's credits (e.g. 3 + 10 = 13)
+    const totalRemaining = safeExistingRemaining + planCredits;
+    const previousTotalProfileCredits = currentActive?.profile_credits ? Number(currentActive.profile_credits) : safeExistingRemaining;
+    const totalProfileCredits = previousTotalProfileCredits + planCredits;
+    const usedCredits = currentActive?.used_credits ? Number(currentActive.used_credits) : 0;
 
     const activeObj: import('../types/membershipTypes').MyMembershipOut = {
       plan_name: planName,
       price: isNaN(numericPrice) ? 0 : numericPrice,
-      profile_credits: profileCredits,
-      used_credits: 0,
-      remaining_credits: profileCredits,
+      profile_credits: totalProfileCredits,
+      used_credits: usedCredits,
+      remaining_credits: totalRemaining,
       validity_days: validityDays,
       expires_at: expiresAt
     };
 
     localStorage.setItem('user_active_membership', JSON.stringify(activeObj));
-    localStorage.setItem('user_membership_credits', String(profileCredits));
+    localStorage.setItem('user_membership_credits', String(totalRemaining));
 
     try {
       const existingTxns = JSON.parse(localStorage.getItem('user_membership_transactions') || '[]');
@@ -275,7 +321,7 @@ export const membershipApi = {
           id: plan.id || 1,
           name: planName,
           price: isNaN(numericPrice) ? 0 : numericPrice,
-          profile_credits: profileCredits,
+          profile_credits: totalProfileCredits,
           validity_days: validityDays,
           profile_boost_count: plan.profile_boost_count || 5,
           is_featured_profile: Boolean(plan.is_featured_profile),
@@ -307,14 +353,14 @@ export const membershipApi = {
           id: plan.id || 1,
           name: planName,
           price: isNaN(numericPrice) ? 0 : numericPrice,
-          profile_credits: profileCredits,
+          profile_credits: totalProfileCredits,
           validity_days: validityDays,
           profile_boost_count: plan.profile_boost_count || 5,
           is_featured_profile: Boolean(plan.is_featured_profile),
           unlimited_messaging: Boolean(plan.unlimited_messaging),
           is_active: true
         },
-        remaining_credits: profileCredits,
+        remaining_credits: totalRemaining,
         remaining_boosts: plan.profile_boost_count || 5,
         purchased_at: new Date().toISOString(),
         expires_at: expiresAt,
@@ -328,12 +374,30 @@ export const membershipApi = {
   },
 
   /**
-   * Consume 1 contact credit when user unlocks a profile
+   * Consume 1 contact credit when user unlocks/views a profile.
+   * Decrements remaining credits by 1 and updates both active membership and localStorage.
    */
   consumeCredit: (): number => {
     try {
-      const active = membershipApi.getLocalActiveMembership();
-      if (active && active.remaining_credits > 0) {
+      let active = membershipApi.getLocalActiveMembership();
+      if (!active) {
+        const currentCreditsStr = localStorage.getItem('user_membership_credits');
+        const currentRemaining = currentCreditsStr !== null && !isNaN(Number(currentCreditsStr))
+          ? Number(currentCreditsStr)
+          : 3;
+
+        active = {
+          plan_name: 'Free',
+          price: 0.00,
+          profile_credits: 3,
+          used_credits: Math.max(0, 3 - currentRemaining),
+          remaining_credits: currentRemaining,
+          validity_days: 365,
+          expires_at: null
+        };
+      }
+
+      if (active.remaining_credits > 0) {
         active.remaining_credits -= 1;
         active.used_credits = (active.used_credits || 0) + 1;
         localStorage.setItem('user_active_membership', JSON.stringify(active));
@@ -349,36 +413,54 @@ export const membershipApi = {
 
         return active.remaining_credits;
       }
-    } catch (_) {}
-    return 0;
+      return 0;
+    } catch (_) {
+      return 0;
+    }
   },
 
   /**
    * GET /api/membership/my-membership/
-   * Fetch user's active membership plan & remaining profile credits
+   * Fetch user's active membership plan & remaining profile credits.
+   * Returns locally saved active membership immediately for instant UI response.
    */
   getMyMembership: async (): Promise<import('../types/membershipTypes').MyMembershipOut> => {
     const localActive = membershipApi.getLocalActiveMembership();
+    if (localActive) {
+      return localActive;
+    }
 
-    const candidateUrls = [
-      '/membership/my-membership/',
-      '/membership/my-membership',
-      '/membership/me/',
-      '/membership/me'
-    ];
+    const freeCreditsStr = localStorage.getItem('user_membership_credits');
+    const freeCredits = freeCreditsStr !== null && !isNaN(Number(freeCreditsStr))
+      ? Number(freeCreditsStr)
+      : 3;
 
-    for (const url of candidateUrls) {
+    const defaultFree: import('../types/membershipTypes').MyMembershipOut = {
+      plan_name: 'Free',
+      price: 0.00,
+      profile_credits: 3,
+      used_credits: Math.max(0, 3 - freeCredits),
+      remaining_credits: freeCredits,
+      validity_days: null,
+      expires_at: null
+    };
+
+    // If there is an auth token, try a single fast backend check with short timeout
+    const token = localStorage.getItem('access_token');
+    if (token) {
       try {
-        const response = await axiosClient.get<any>(url);
+        const response = await axiosClient.get<any>('/membership/my-membership/', {
+          timeout: 2000
+        });
         if (response.status >= 200 && response.status < 300 && response.data) {
           const data = response.data.data || response.data;
           if (data && (data.plan_name || data.plan?.name) && data.plan_name !== 'Free' && data.plan?.name !== 'Free') {
             const apiResult = {
               plan_name: data.plan_name || data.plan?.name || 'Free',
               price: Number(data.price || data.plan?.price || 0),
-              profile_credits: Number(data.profile_credits ?? data.plan?.profile_credits ?? 4),
+              profile_credits: Number(data.profile_credits ?? data.plan?.profile_credits ?? 10),
               used_credits: Number(data.used_credits ?? 0),
-              remaining_credits: Number(data.remaining_credits ?? (localActive?.remaining_credits ?? 3)),
+              remaining_credits: Number(data.remaining_credits ?? freeCredits),
               validity_days: data.validity_days ?? data.plan?.validity_days ?? null,
               expires_at: data.expires_at ?? null
             };
@@ -386,23 +468,9 @@ export const membershipApi = {
             return apiResult;
           }
         }
-      } catch {
-        continue;
-      }
+      } catch (_) {}
     }
 
-    if (localActive) {
-      return localActive;
-    }
-
-    return {
-      plan_name: 'Free',
-      price: 0.00,
-      profile_credits: 4,
-      used_credits: 1,
-      remaining_credits: 3,
-      validity_days: null,
-      expires_at: null
-    };
+    return defaultFree;
   }
 };

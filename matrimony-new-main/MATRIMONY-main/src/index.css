@@ -23,7 +23,7 @@
     --primary: #8B1E3F;
     --primary-foreground: #FFFFFF;
 
-    --secondary: #C44569;
+    --secondary: #C70F4B;
     --secondary-foreground: #FFFFFF;
 
     --accent: #D4AF37;
@@ -38,8 +38,8 @@
     --success: #2E7D32;
     --success-foreground: #FFFFFF;
 
-    --border: #E5E7EB;
-    --input: #E5E7EB;
+    --border: #CBD5E1;
+    --input: #94A3B8;
     --ring: #8B1E3F;
 
     --radius: 0.75rem;
@@ -58,7 +58,7 @@
     --popover: #241D20;
     --popover-foreground: #F7F3F0;
 
-    --primary: #C44569;
+    --primary: #C70F4B;
     --primary-foreground: #FFFFFF;
 
     --secondary: #8B1E3F;
@@ -76,9 +76,9 @@
     --success: #4CAF50;
     --success-foreground: #FFFFFF;
 
-    --border: #3D3237;
-    --input: #3D3237;
-    --ring: #C44569;
+    --border: #475569;
+    --input: #64748B;
+    --ring: #C70F4B;
   }
 }
 
@@ -137,6 +137,16 @@ body {
 
 button, input, select, textarea {
   font-family: Roboto, sans-serif !important;
+}
+
+/* High contrast, legible form inputs across all pages */
+input, select, textarea {
+  color: #0F172A;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #64748B !important;
+  opacity: 1 !important;
 }
 
 /* ================= UNIFIED HEADING FONT SIZES ACROSS WEBSITE ================= */
@@ -269,11 +279,11 @@ h6 {
 }
 
 .primary-gradient {
-  background: linear-gradient(135deg, #8B1E3F 0%, #C44569 100%);
+  background: linear-gradient(135deg, #8B1E3F 0%, #C70F4B 100%);
 }
 
 .primary-gradient-text {
-  background: linear-gradient(135deg, #8B1E3F 0%, #C44569 100%);
+  background: linear-gradient(135deg, #8B1E3F 0%, #C70F4B 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

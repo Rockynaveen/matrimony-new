@@ -13,7 +13,7 @@ export const BureauDashboard: React.FC = () => {
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-[#8B1E3F] to-[#C44569] text-white p-8 rounded-3xl shadow-xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-[#8B1E3F] to-[#C70F4B] text-white p-8 rounded-3xl shadow-xl">
         <div>
           <Badge variant="gold" className="bg-amber-400/20 text-amber-200 border-amber-400/30 mb-2">
             <Building2 className="h-3.5 w-3.5 mr-1" /> Royal Alliance Marriage Bureau Partner

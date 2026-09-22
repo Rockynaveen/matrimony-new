@@ -334,7 +334,7 @@ export const Home: React.FC = () => {
               </div>
 
               <div className="text-center space-y-3 relative">
-                <div className="h-16 w-16 rounded-full bg-[#C44569] text-white font-serif text-xl font-bold flex items-center justify-center mx-auto shadow-lg">
+                <div className="h-16 w-16 rounded-full bg-[#C70F4B] text-white font-serif text-xl font-bold flex items-center justify-center mx-auto shadow-lg">
                   2
                 </div>
                 <h4 className="font-serif text-lg font-bold">Set Preferences</h4>
@@ -422,7 +422,7 @@ export const Home: React.FC = () => {
                 <Crown className="h-4 w-4 text-[#D4AF37] animate-pulse" /> Royal & VIP Subscriptions
               </div>
               <h2 className="font-serif text-3xl sm:text-5xl font-black text-stone-900 tracking-tight leading-tight">
-                Invest in Your <span className="bg-gradient-to-r from-[#8B1E3F] via-[#A0234A] to-[#C44569] bg-clip-text text-transparent">Happily Ever After</span>
+                Invest in Your <span className="bg-gradient-to-r from-[#8B1E3F] via-[#A0234A] to-[#C70F4B] bg-clip-text text-transparent">Happily Ever After</span>
               </h2>
               <p className="text-sm sm:text-base text-stone-600 font-medium max-w-2xl mx-auto leading-relaxed">
                 Upgrade your membership to unlock verified contact numbers, direct messaging, priority search boost, and personalized human matchmaking.
@@ -623,9 +623,9 @@ export const Home: React.FC = () => {
                     </div>
                   </div>
                   <CardContent className="p-6 space-y-3">
-                    <h3 className="font-serif text-xl font-bold text-[#8B1E3F] group-hover:text-[#C44569] transition-colors">{story.coupleName}</h3>
+                    <h3 className="font-serif text-xl font-bold text-[#8B1E3F] group-hover:text-[#C70F4B] transition-colors">{story.coupleName}</h3>
                     <p className="text-xs text-stone-600 flex items-center gap-1.5 font-semibold">
-                      <Calendar className="h-3.5 w-3.5 text-[#C44569]" /> Married: {story.weddingDate} • {story.location}
+                      <Calendar className="h-3.5 w-3.5 text-[#C70F4B]" /> Married: {story.weddingDate} • {story.location}
                     </p>
                     <p className="text-xs text-stone-600 leading-relaxed italic line-clamp-3">
                       "{story.story}"

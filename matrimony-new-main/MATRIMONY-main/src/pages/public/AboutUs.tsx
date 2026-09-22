@@ -60,7 +60,7 @@ export const AboutUs: React.FC = () => {
             <p className="text-xs text-muted-foreground">AI matching based on horoscope dosha alignment, diet, education, and mutual partner preferences.</p>
           </Card>
           <Card className="p-6 space-y-3">
-            <Heart className="h-8 w-8 text-[#C44569]" />
+            <Heart className="h-8 w-8 text-[#C70F4B]" />
             <h4 className="font-serif text-lg font-bold">Compassionate Support</h4>
             <p className="text-xs text-muted-foreground">Relationship managers and 24/7 customer care to assist you at every step of your partner search.</p>
           </Card>

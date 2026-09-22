@@ -286,66 +286,65 @@ export const MatchesPage: React.FC = () => {
     <div className="min-h-screen bg-[#FAF7F5] text-stone-900 pb-20 font-sans antialiased">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        {/* ── 1. Royal Gold Luxury Matches Hero Card ── */}
-        <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-amber-300/50 bg-gradient-to-br from-[#4A3008] via-[#7B5313] via-[#A67520] to-[#C99738] text-white shadow-[0_14px_45px_rgba(180,120,20,0.35)]">
+        {/* ── 1. Matches Hero Banner (Burgundy & Logo Pink Theme) ── */}
+        <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border border-[#8B1E3F]/30 bg-gradient-to-br from-[#4A0A1C] via-[#721833] to-[#8B1E3F] text-white shadow-xl">
           
-          {/* Radiant Gold Ambient Glow Orbs */}
-          <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-yellow-300/30 blur-3xl pointer-events-none" />
-          <div className="absolute top-1/2 left-1/3 w-80 h-80 rounded-full bg-amber-400/30 blur-3xl pointer-events-none -translate-y-1/2" />
-          <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-yellow-500/25 blur-3xl pointer-events-none" />
+          {/* Logo Pink Ambient Glow Orbs */}
+          <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-[#C70F4B]/20 blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 left-1/3 w-80 h-80 rounded-full bg-[#8B1E3F]/30 blur-3xl pointer-events-none -translate-y-1/2" />
+          <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-[#C70F4B]/25 blur-3xl pointer-events-none" />
 
-          {/* Background Romantic Visual with Crisp Visibility */}
+          {/* Background Romantic Visual with Full Visibility (No Dark Overlay) */}
           <div className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-hidden">
             <img
               src="/images/matches_romantic_banner.jpg"
               alt=""
-              className="w-full h-full object-cover object-right md:object-[center_right] opacity-65 md:opacity-80"
+              className="w-full h-full object-cover object-right md:object-[center_right]"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
               }}
             />
           </div>
 
-          {/* Transparent Glass & Gold Tinted Overlays */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/35 backdrop-blur-[1px] pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-br from-[#7B5313]/60 via-[#A67520]/40 to-transparent pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-white/15 pointer-events-none" />
+          {/* Richer, Slightly Darker Pink Transparent Overlay */}
+          <div className="absolute inset-0 bg-[#C70F4B]/35 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#8B1E3F]/45 via-[#C70F4B]/30 to-[#C70F4B]/15 pointer-events-none" />
 
           <div className="relative z-10 flex flex-col justify-center py-4 px-5 sm:px-8 max-w-4xl space-y-2">
             
-            {/* Shimmering Gold Pill Eyebrow */}
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-300/25 to-yellow-400/25 border border-amber-200/60 text-amber-100 backdrop-blur-md shadow-xs w-fit">
-              <Sparkles className="w-3 h-3 text-yellow-300 fill-yellow-300/30 shrink-0" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-100 drop-shadow-xs">
+            {/* Pill Eyebrow */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/25 text-white backdrop-blur-md shadow-xs w-fit">
+              <Sparkles className="w-3.5 h-3.5 text-[#C70F4B] fill-[#C70F4B] shrink-0" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white">
                 YOUR PERFECT MATCH AWAITS
               </span>
             </div>
 
-            {/* Main Headline with Shimmering Gold Accent */}
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-extrabold tracking-tight text-white leading-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.4)]">
+            {/* Main Headline */}
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-extrabold tracking-tight text-white leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
               Matches{' '}
-              <span className="font-serif italic font-extrabold bg-gradient-to-r from-[#FFFBEB] via-[#FDE047] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent drop-shadow-[0_2px_14px_rgba(253,224,71,0.55)]">
+              <span className="font-serif italic font-extrabold text-[#FFC1D3] drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
                 for You
               </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xs sm:text-sm text-amber-100/90 font-medium leading-normal max-w-xl drop-shadow-xs">
+            <p className="text-xs sm:text-sm text-white font-medium leading-normal max-w-xl drop-shadow-[0_1px_8px_rgba(0,0,0,0.85)]">
               Discover meaningful connections, one profile at a time.
             </p>
 
-            {/* Gold Frosted Quality & Trust Badges */}
+            {/* Quality & Trust Badges */}
             <div className="flex flex-wrap items-center gap-2 pt-0.5">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 border border-amber-300/40 text-[11px] font-semibold text-amber-100 shadow-sm backdrop-blur-md">
-                <ShieldCheck className="h-3 w-3 text-emerald-400 shrink-0" />
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-white/20 text-[11px] font-semibold text-white shadow-sm backdrop-blur-md">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                 <span>100% Verified Profiles</span>
               </div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 border border-amber-300/40 text-[11px] font-semibold text-amber-100 shadow-sm backdrop-blur-md">
-                <Sparkles className="h-3 w-3 text-yellow-300 shrink-0" />
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-white/20 text-[11px] font-semibold text-white shadow-sm backdrop-blur-md">
+                <Sparkles className="h-3.5 w-3.5 text-[#C70F4B] shrink-0" />
                 <span>AI Compatibility Scored</span>
               </div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 border border-amber-300/40 text-[11px] font-semibold text-amber-100 shadow-sm backdrop-blur-md">
-                <Users className="h-3 w-3 text-amber-300 shrink-0" />
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-white/20 text-[11px] font-semibold text-white shadow-sm backdrop-blur-md">
+                <Users className="h-3.5 w-3.5 text-rose-300 shrink-0" />
                 <span>{sortedMatches.length} Curated Matches</span>
               </div>
             </div>
@@ -357,9 +356,9 @@ export const MatchesPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
           {/* ── Left Column: Filter Matches Sidebar Card ── */}
-          <Card className="lg:col-span-3 bg-white rounded-2xl border border-stone-200/90 shadow-2xs p-5 space-y-4">
+          <Card className="lg:col-span-3 bg-white rounded-2xl border border-stone-300 shadow-sm p-5 space-y-4">
             {/* Header: Title & Reset */}
-            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-200">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-[#8B1E3F]" />
                 <h3 className="font-bold text-sm text-stone-900">Filter Matches</h3>
@@ -367,7 +366,7 @@ export const MatchesPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-xs font-semibold text-[#8B1E3F] hover:underline cursor-pointer"
+                className="text-xs font-bold text-[#8B1E3F] hover:underline cursor-pointer"
               >
                 Reset
               </button>
@@ -375,8 +374,8 @@ export const MatchesPage: React.FC = () => {
 
             {/* Looking For: Bride / Groom */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-stone-800 block">Looking for</label>
-              <div className="grid grid-cols-2 gap-2 bg-stone-100/80 p-1 rounded-xl">
+              <label className="text-xs font-bold text-stone-900 block">Looking for</label>
+              <div className="grid grid-cols-2 gap-2 bg-stone-100 p-1 rounded-xl border border-stone-200">
                 <button
                   type="button"
                   onClick={() => setLookingFor('Bride')}
@@ -405,7 +404,7 @@ export const MatchesPage: React.FC = () => {
             {/* Age Range Slider */}
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-stone-800">Age Range</span>
+                <span className="font-bold text-stone-900">Age Range</span>
                 <span className="font-bold text-[#8B1E3F]">
                   {ageRange[0]} - {ageRange[1]} years
                 </span>
@@ -418,7 +417,7 @@ export const MatchesPage: React.FC = () => {
                 onChange={e => setAgeRange([ageRange[0], Number(e.target.value)])}
                 className="w-full accent-[#8B1E3F] cursor-pointer"
               />
-              <div className="flex justify-between text-[10px] font-semibold text-stone-400">
+              <div className="flex justify-between text-[10px] font-bold text-stone-600">
                 <span>18</span>
                 <span>50</span>
               </div>
@@ -426,100 +425,100 @@ export const MatchesPage: React.FC = () => {
 
             {/* Height Select */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-800 block">Height</label>
+              <label className="text-xs font-bold text-stone-900 block">Height</label>
               <div className="relative">
                 <select
                   value={heightFilter}
                   onChange={e => setHeightFilter(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-semibold text-stone-800 appearance-none focus:outline-none focus:border-[#8B1E3F]"
+                  className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none focus:border-[#8B1E3F] shadow-2xs"
                 >
                   {dynamicHeights.map(h => (
                     <option key={h} value={h}>{h === 'Any' ? 'Any Height' : h}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-600 pointer-events-none" />
               </div>
             </div>
 
             {/* Marital Status Select */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-800 block">Marital Status</label>
+              <label className="text-xs font-bold text-stone-900 block">Marital Status</label>
               <div className="relative">
                 <select
                   value={maritalStatus}
                   onChange={e => setMaritalStatus(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-semibold text-stone-800 appearance-none focus:outline-none focus:border-[#8B1E3F]"
+                  className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none focus:border-[#8B1E3F] shadow-2xs"
                 >
                   {dynamicMaritalStatuses.map(m => (
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-600 pointer-events-none" />
               </div>
             </div>
 
             {/* Religion Select */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-800 block">Religion</label>
+              <label className="text-xs font-bold text-stone-900 block">Religion</label>
               <div className="relative">
                 <select
                   value={religion}
                   onChange={e => setReligion(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-semibold text-stone-800 appearance-none focus:outline-none focus:border-[#8B1E3F]"
+                  className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none focus:border-[#8B1E3F] shadow-2xs"
                 >
                   {dynamicReligions.map(r => (
                     <option key={r} value={r}>{r}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-600 pointer-events-none" />
               </div>
             </div>
 
             {/* Caste Select */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-800 block">Caste</label>
+              <label className="text-xs font-bold text-stone-900 block">Caste</label>
               <div className="relative">
                 <select
                   value={caste}
                   onChange={e => setCaste(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-semibold text-stone-800 appearance-none focus:outline-none focus:border-[#8B1E3F]"
+                  className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none focus:border-[#8B1E3F] shadow-2xs"
                 >
                   {dynamicCastes.map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-600 pointer-events-none" />
               </div>
             </div>
 
             {/* Education Select */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-800 block">Education</label>
+              <label className="text-xs font-bold text-stone-900 block">Education</label>
               <div className="relative">
                 <select
                   value={education}
                   onChange={e => setEducation(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-semibold text-stone-800 appearance-none focus:outline-none focus:border-[#8B1E3F]"
+                  className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none focus:border-[#8B1E3F] shadow-2xs"
                 >
                   {dynamicEducations.map(ed => (
                     <option key={ed} value={ed}>{ed}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-600 pointer-events-none" />
               </div>
             </div>
 
             {/* Location Input */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-800 block">Location</label>
+              <label className="text-xs font-bold text-stone-900 block">Location</label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
+                <MapPin className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-600 pointer-events-none" />
                 <input
                   type="text"
                   value={locationQuery}
                   onChange={e => setLocationQuery(e.target.value)}
                   placeholder="Enter city or state"
-                  className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#8B1E3F]"
+                  className="w-full pl-9 pr-3 py-2 bg-white border border-stone-300 hover:border-stone-400 rounded-xl text-xs font-semibold text-stone-900 placeholder:text-stone-500 focus:outline-none focus:border-[#8B1E3F] shadow-2xs"
                 />
               </div>
             </div>

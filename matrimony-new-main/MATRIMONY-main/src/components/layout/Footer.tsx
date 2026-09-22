@@ -66,15 +66,15 @@ export const Footer: React.FC = () => {
             <h4 className="font-serif text-base font-semibold text-white mb-4">Customer Support</h4>
             <ul className="space-y-3 text-sm text-stone-400">
               <li className="flex items-center gap-2.5">
-                <PhoneCall className="h-4 w-4 text-[#C44569]" />
+                <PhoneCall className="h-4 w-4 text-[#C70F4B]" />
                 <span>+91 1800-889-2020 (Toll Free)</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Mail className="h-4 w-4 text-[#C44569]" />
+                <Mail className="h-4 w-4 text-[#C70F4B]" />
                 <span>support@vivahmatch.com</span>
               </li>
               <li className="flex items-start gap-2.5">
-                <MapPin className="h-4 w-4 text-[#C44569] shrink-0 mt-1" />
+                <MapPin className="h-4 w-4 text-[#C70F4B] shrink-0 mt-1" />
                 <span>Vivah Towers, Bandra Kurla Complex, Mumbai, MH 400051</span>
               </li>
             </ul>

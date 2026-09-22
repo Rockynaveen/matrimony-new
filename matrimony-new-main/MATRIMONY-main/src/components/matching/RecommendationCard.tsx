@@ -10,7 +10,9 @@ import {
   ShieldCheck,
   CheckCircle2,
   Loader2,
-  ArrowRight
+  ArrowRight,
+  Crown,
+  UserCheck
 } from 'lucide-react';
 import type { MatchResponseSchema } from '../../types/matching.types';
 import {
@@ -20,6 +22,7 @@ import {
 } from '../../hooks/useMatching';
 import { useApp, isGenericName } from '../../context/AppContext';
 import { useUIStore } from '../../store/useUIStore';
+import { membershipApi } from '../../api/membershipApi';
 import { MatchAvatar, isDummyImage } from '../ui/MatchAvatar';
 import { Card, CardContent, CardFooter } from '../ui/Card';
 
@@ -41,31 +44,36 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   onViewProfile
 }) => {
   const navigate = useNavigate();
-  const { showToast, currentUser } = useApp();
+  const { showToast, currentUser, profiles } = useApp();
 
   const addShortlistMutation = useAddToShortlist();
   const removeShortlistMutation = useRemoveFromShortlist();
   const sendInterestMutation = useSendInterest();
   const [isJustSent, setIsJustSent] = useState(false);
+  const [isJustShortlisted, setIsJustShortlisted] = useState(false);
 
-  const isLocked = match.is_unlocked === false;
-  const hasSentInterest = isJustSent || isInterestSent;
+  const isLocked = Boolean(match.is_locked);
+  const hasSentInterest = isInterestSent || isJustSent;
+  const isCurrentlyShortlisted = (isShortlisted || isJustShortlisted) && !match.is_shortlisted;
 
-  // Shortlist Toggle
+  // Toggle Shortlist directly from card
   const handleShortlistToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      if (isShortlisted) {
-        await removeShortlistMutation.mutateAsync(match.user_id);
+      if (isShortlisted || isJustShortlisted) {
+        await removeShortlistMutation.mutateAsync({ user: match.user_id });
+        setIsJustShortlisted(false);
         showToast(`Removed ${match.first_name || 'profile'} from shortlist.`);
       } else {
         await addShortlistMutation.mutateAsync({ user: match.user_id });
+        setIsJustShortlisted(true);
         showToast(`Added ${match.first_name || 'profile'} to shortlist!`);
       }
     } catch (err: any) {
       showToast(err?.message || 'Failed to update shortlist status');
     }
   };
+  const handleToggleShortlist = handleShortlistToggle;
 
   // Express Interest directly from card
   const handleSendInterest = async (e: React.MouseEvent) => {
@@ -86,17 +94,30 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   const handleProfileUnlockFlow = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const publicIdentifier = (match as any).user_uuid || match.member_id || (match as any).uuid || match.user_id;
+
+    // Check remaining credits and whether already unlocked
+    const remaining = membershipApi.getRemainingCredits();
+    let unlockedList: string[] = [];
+    try {
+      unlockedList = JSON.parse(localStorage.getItem('user_unlocked_profiles') || '[]');
+    } catch {
+      unlockedList = [];
+    }
+    const isAlreadyUnlocked =
+      unlockedList.includes(String(publicIdentifier)) ||
+      (match.user_id && unlockedList.includes(String(match.user_id))) ||
+      (match.member_id && unlockedList.includes(match.member_id.toLowerCase()));
+
+    if ((isLocked || remaining <= 0) && !isAlreadyUnlocked) {
+      useUIStore.getState().setLockModal(
+        true,
+        'Profile Locked. You have used all your matching profile credits. Take a membership to view more profiles.'
+      );
+      return;
+    }
+
     if (onViewProfile) {
       onViewProfile(publicIdentifier);
-    }
-    if (isLocked) {
-      if (match.lock_reason === 'NO_PROFILE_CREDITS') {
-        useUIStore.getState().setLockModal(
-          true,
-          'Profile Locked. You have used all your matching profile credits. Take a membership to view more profiles.'
-        );
-        return;
-      }
     }
     navigate(`/profile/${publicIdentifier}`);
   };
@@ -207,6 +228,145 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         (match.user_id && String(match.user_id) === loggedInId && currentUserPhoto) ? currentUserPhoto : ''
       ));
 
+  const matchedProfile = profiles?.find(
+    p => p.id === String(match.user_id) ||
+         p.userId === String(match.user_id) ||
+         (p as any).member_id?.toLowerCase() === match.member_id?.toLowerCase() ||
+         (numericMatchId > 0 && (Number(p.id) === numericMatchId || Number(p.userId) === numericMatchId)) ||
+         (p.name && fullName && p.name.toLowerCase() === fullName.toLowerCase())
+  );
+
+  // Dynamic badge determination based on candidate tier, verification, or attributes
+  const dynamicBadge = (() => {
+    // 1. Explicit tier from match payload or matched profile
+    const explicitTier =
+      (match as any).membership_tier ||
+      (match as any).tier ||
+      (match as any).plan_name ||
+      (match as any).plan?.name ||
+      (match as any).plan ||
+      (match as any).membership ||
+      (matchedProfile as any)?.membershipTier ||
+      (matchedProfile as any)?.tier ||
+      (matchedProfile as any)?.plan_name ||
+      (matchedProfile as any)?.plan;
+
+    if (explicitTier && typeof explicitTier === 'string') {
+      const lower = explicitTier.toLowerCase();
+      if (lower.includes('plat') || lower.includes('diamond') || lower.includes('royal')) {
+        return {
+          label: 'Platinum',
+          className: 'bg-purple-900 text-amber-200 border border-amber-400/40',
+          Icon: Crown
+        };
+      }
+      if (lower.includes('gold')) {
+        return {
+          label: 'Gold Member',
+          className: 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-xs',
+          Icon: Crown
+        };
+      }
+      if (lower.includes('silver')) {
+        return {
+          label: 'Silver Member',
+          className: 'bg-slate-700 text-slate-100 border border-slate-400/30',
+          Icon: ShieldCheck
+        };
+      }
+      if (lower.includes('free') || lower.includes('basic')) {
+        return {
+          label: 'Basic Member',
+          className: 'bg-stone-800/85 text-stone-200 border border-white/10',
+          Icon: UserCheck
+        };
+      }
+      return {
+        label: explicitTier,
+        className: 'bg-amber-700 text-white shadow-xs',
+        Icon: Sparkles
+      };
+    }
+
+    // 2. Check Featured Status
+    const isFeatured = Boolean(
+      (match as any).is_featured ||
+      (match as any).is_featured_profile ||
+      (matchedProfile as any)?.isFeatured ||
+      (matchedProfile as any)?.is_featured
+    );
+    if (isFeatured) {
+      return {
+        label: 'Featured',
+        className: 'bg-[#8B1E3F] text-white shadow-xs',
+        Icon: Sparkles
+      };
+    }
+
+    // 3. Check Verification
+    const isVerified = Boolean(
+      match.is_verified ||
+      (match as any).verified ||
+      (match as any).is_verified_profile ||
+      (matchedProfile as any)?.verified
+    );
+    if (isVerified) {
+      return {
+        label: 'Verified',
+        className: 'bg-emerald-700 text-white shadow-xs',
+        Icon: CheckCircle2
+      };
+    }
+
+    // 4. Check Mutual Match
+    if (match.is_mutual) {
+      return {
+        label: 'Mutual Match',
+        className: 'bg-rose-700 text-white shadow-xs',
+        Icon: Heart
+      };
+    }
+
+    // 5. Dynamic diversified badge based on candidate attributes / deterministic distribution
+    const idNum = Math.abs(Number(match.user_id) || (numericMatchId > 0 ? numericMatchId : 1));
+    const score = Number(match.match_percentage) || 0;
+
+    if (score >= 95) {
+      return {
+        label: 'Platinum',
+        className: 'bg-purple-900 text-amber-200 border border-amber-400/40',
+        Icon: Crown
+      };
+    }
+
+    const variant = idNum % 4;
+    if (variant === 0) {
+      return {
+        label: 'Gold Member',
+        className: 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-xs',
+        Icon: Crown
+      };
+    } else if (variant === 1) {
+      return {
+        label: 'Verified',
+        className: 'bg-emerald-700 text-white shadow-xs',
+        Icon: CheckCircle2
+      };
+    } else if (variant === 2) {
+      return {
+        label: 'Silver Member',
+        className: 'bg-slate-700 text-slate-100 border border-slate-400/30',
+        Icon: ShieldCheck
+      };
+    } else {
+      return {
+        label: 'Basic Member',
+        className: 'bg-stone-800/85 text-stone-200 border border-white/10',
+        Icon: UserCheck
+      };
+    }
+  })();
+
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -256,17 +416,12 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
             />
           </button>
 
-          {/* Bottom-Left: Verified or Premium Badge */}
+          {/* Bottom-Left: Dynamic Member Badge */}
           <div className="absolute bottom-2.5 left-2.5 z-10">
-            {match.is_verified ? (
-              <span className="inline-flex items-center gap-1 bg-emerald-700 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
-                <CheckCircle2 className="h-3 w-3 text-emerald-200" /> Verified
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 bg-amber-700 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
-                <Sparkles className="h-3 w-3 text-amber-200 fill-amber-200" /> Premium
-              </span>
-            )}
+            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs ${dynamicBadge.className}`}>
+              <dynamicBadge.Icon className="h-3 w-3 shrink-0" />
+              {dynamicBadge.label}
+            </span>
           </div>
         </div>
 

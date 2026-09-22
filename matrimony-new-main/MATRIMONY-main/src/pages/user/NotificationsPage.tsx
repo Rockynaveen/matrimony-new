@@ -225,7 +225,7 @@ export const NotificationsPage: React.FC = () => {
                       </div>
                     )}
                     {!n.read && (
-                      <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-[#C44569] border-2 border-white rounded-full" />
+                      <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-[#C70F4B] border-2 border-white rounded-full" />
                     )}
                   </div>
 

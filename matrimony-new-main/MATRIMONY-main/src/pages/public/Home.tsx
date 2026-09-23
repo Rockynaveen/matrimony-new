@@ -146,42 +146,42 @@ export const Home: React.FC = () => {
     <div className="space-y-0 pb-12 overflow-x-hidden">
 
       {/* ================= HERO SECTION (CINEMATIC SUNSET BACKGROUND WITHOUT SEARCH BAR) ================= */}
-      <section className="relative min-h-[100vh] h-[100vh] flex items-center overflow-hidden py-12">
+      <section className="relative min-h-[100svh] min-h-[100vh] h-auto lg:h-[100vh] flex items-center overflow-hidden pt-28 pb-14 sm:pt-32 sm:pb-16 lg:py-0">
 
         {/* Cinematic Sunset Couple Background Image */}
         <img
           src="/images/sunset_hero_couple.png"
           alt="Vivah Royal Matrimony Sunset Couple"
-          className="absolute inset-0 w-full h-full object-cover object-center"
+          className="absolute inset-0 w-full h-full object-cover object-[70%_center] sm:object-center"
         />
 
-        {/* Elegant Left-to-Right Dark Gradient Mask for Crisp Readable Text */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent md:w-3/4" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30" />
+        {/* Elegant Left-to-Right Dark Gradient Mask for Crisp Readable Text on All Screen Sizes */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/85 to-black/60 sm:from-black/90 sm:via-black/60 sm:to-transparent sm:w-3/4" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 sm:from-black/50 sm:to-black/30" />
 
         {/* Subtle Ambient Radial Glow */}
-        <div className="absolute top-1/3 left-10 w-[500px] h-[300px] bg-[#D4AF37]/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/4 sm:top-1/3 left-2 sm:left-10 w-64 sm:w-[500px] h-64 sm:h-[300px] bg-[#D4AF37]/15 rounded-full blur-3xl pointer-events-none" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-          <div className="max-w-2xl text-left space-y-6">
+          <div className="max-w-2xl text-left space-y-4 sm:space-y-6">
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-amber-300 text-xs font-extrabold uppercase tracking-widest shadow-xl">
-                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-amber-300 text-[10px] sm:text-xs font-extrabold uppercase tracking-wider sm:tracking-widest shadow-xl">
+                <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
                 <span>India's Premier Royal Matrimony Service</span>
               </div>
 
-              <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.12]">
-                Find Your Perfect <br />
-                <span className="gold-gradient-text">Life Partner</span>
+              <h1 className="font-serif text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.18] sm:leading-[1.12]">
+                Find Your Perfect <br className="hidden xs:inline" />
+                <span className="gold-gradient-text inline-block xs:inline">Life Partner</span>
               </h1>
 
-              <p className="text-base sm:text-xl text-stone-200 font-sans leading-relaxed pt-2">
+              <p className="text-sm sm:text-lg lg:text-xl text-stone-200/90 font-sans leading-relaxed pt-1 sm:pt-2 max-w-xl">
                 Discover meaningful connections with people who share your values, interests, and dreams.
               </p>
             </motion.div>
@@ -191,13 +191,13 @@ export const Home: React.FC = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="flex flex-col sm:flex-row items-center gap-4 pt-4"
+              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-2 sm:pt-4 w-full sm:w-auto"
             >
               <Button
                 variant="gold"
                 size="lg"
                 onClick={() => navigate('/register')}
-                className="w-full sm:w-auto uppercase tracking-wider"
+                className="w-full sm:w-auto uppercase tracking-wider text-xs sm:text-sm py-3 sm:py-3.5"
               >
                 Register Free Profile
               </Button>
@@ -206,9 +206,9 @@ export const Home: React.FC = () => {
                 variant="outline-white"
                 size="lg"
                 onClick={() => handleProtectedNavigate('/search')}
-                className="w-full sm:w-auto uppercase tracking-wider"
+                className="w-full sm:w-auto uppercase tracking-wider text-xs sm:text-sm py-3 sm:py-3.5"
               >
-                <Search className="h-4 w-4" /> Find Matches Now
+                <Search className="h-4 w-4 mr-1.5 shrink-0" /> Find Matches Now
               </Button>
             </motion.div>
 
@@ -217,16 +217,16 @@ export const Home: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="pt-6 flex flex-wrap items-center gap-6 text-xs text-stone-300 font-semibold"
+              className="pt-4 sm:pt-6 flex flex-col xs:flex-row flex-wrap items-start xs:items-center gap-2.5 sm:gap-6 text-[11px] sm:text-xs text-stone-200 font-semibold"
             >
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" /> 100% ID Verified Profiles
+              <span className="inline-flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" /> 100% ID Verified Profiles
               </span>
-              <span className="flex items-center gap-1.5">
-                <Lock className="h-4 w-4 text-amber-300" /> Privacy Controlled
+              <span className="inline-flex items-center gap-1.5">
+                <Lock className="h-4 w-4 text-amber-300 shrink-0" /> Privacy Controlled
               </span>
-              <span className="flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-amber-400" /> AI Horoscope Matchmaking
+              <span className="inline-flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-amber-400 shrink-0" /> AI Horoscope Matchmaking
               </span>
             </motion.div>
 
@@ -235,9 +235,9 @@ export const Home: React.FC = () => {
       </section>
 
       {/* ================= PLATFORM STATISTICS ================= */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <ScrollReveal direction="up" delay={0.1}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-md border border-amber-900/10 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-md border border-amber-900/10 text-center">
             <div>
               <h3 className="font-serif text-3xl sm:text-4xl font-bold text-[#8B1E3F]">
                 <AnimatedCounter target={100000} suffix="+" />

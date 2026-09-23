@@ -159,7 +159,9 @@ export const mapRawToProfile = (raw: any): Profile => {
       diet: raw.diet || '',
       smoking: raw.smoking || '',
       drinking: raw.drinking || ''
-    } as any
+    } as any,
+    membershipTier: raw.membership_tier || raw.membershipTier || raw.tier || raw.plan_name || raw.plan?.name,
+    isPremium: Boolean(raw.is_premium || raw.isPremium || raw.membership_tier === 'Premium' || raw.membership_tier === 'GOLD' || raw.membership_tier === 'PLATINUM')
   };
 };
 

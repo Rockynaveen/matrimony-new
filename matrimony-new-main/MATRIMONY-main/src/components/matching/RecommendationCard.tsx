@@ -12,7 +12,10 @@ import {
   Loader2,
   ArrowRight,
   Crown,
-  UserCheck
+  UserCheck,
+  Star,
+  User,
+  ChevronRight
 } from 'lucide-react';
 import type { MatchResponseSchema } from '../../types/matching.types';
 import {
@@ -256,29 +259,29 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
       if (lower.includes('plat') || lower.includes('diamond') || lower.includes('royal')) {
         return {
           label: 'Platinum',
-          className: 'bg-purple-900 text-amber-200 border border-amber-400/40',
+          className: 'bg-[#581C87] text-amber-200 border border-amber-400/30',
           Icon: Crown
         };
       }
       if (lower.includes('gold')) {
         return {
           label: 'Gold Member',
-          className: 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-xs',
+          className: 'bg-[#854D0E] text-amber-100 border border-amber-400/30',
           Icon: Crown
         };
       }
       if (lower.includes('silver')) {
         return {
           label: 'Silver Member',
-          className: 'bg-slate-700 text-slate-100 border border-slate-400/30',
-          Icon: ShieldCheck
+          className: 'bg-[#1E3A8A] text-white border border-blue-400/30',
+          Icon: Crown
         };
       }
       if (lower.includes('free') || lower.includes('basic')) {
         return {
           label: 'Basic Member',
-          className: 'bg-stone-800/85 text-stone-200 border border-white/10',
-          Icon: UserCheck
+          className: 'bg-[#334155] text-white border border-slate-500/30',
+          Icon: User
         };
       }
       return {
@@ -327,152 +330,156 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
       };
     }
 
-    // 5. Dynamic diversified badge based on candidate attributes / deterministic distribution
+    // 5. Dynamic diversified badge matching design (Silver Member, Basic Member)
     const idNum = Math.abs(Number(match.user_id) || (numericMatchId > 0 ? numericMatchId : 1));
     const score = Number(match.match_percentage) || 0;
 
     if (score >= 95) {
       return {
         label: 'Platinum',
-        className: 'bg-purple-900 text-amber-200 border border-amber-400/40',
+        className: 'bg-[#581C87] text-amber-200 border border-amber-400/30',
         Icon: Crown
       };
     }
 
-    const variant = idNum % 4;
+    const variant = idNum % 3;
     if (variant === 0) {
       return {
-        label: 'Gold Member',
-        className: 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-xs',
+        label: 'Silver Member',
+        className: 'bg-[#1E3A8A] text-white border border-blue-400/30',
         Icon: Crown
       };
     } else if (variant === 1) {
       return {
-        label: 'Verified',
-        className: 'bg-emerald-700 text-white shadow-xs',
-        Icon: CheckCircle2
-      };
-    } else if (variant === 2) {
-      return {
-        label: 'Silver Member',
-        className: 'bg-slate-700 text-slate-100 border border-slate-400/30',
-        Icon: ShieldCheck
+        label: 'Basic Member',
+        className: 'bg-[#334155] text-white border border-slate-500/30',
+        Icon: User
       };
     } else {
       return {
-        label: 'Basic Member',
-        className: 'bg-stone-800/85 text-stone-200 border border-white/10',
-        Icon: UserCheck
+        label: 'Silver Member',
+        className: 'bg-[#1E3A8A] text-white border border-blue-400/30',
+        Icon: Crown
       };
     }
   })();
 
   return (
     <motion.div
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -3 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="h-full flex flex-col"
+      className="h-full flex flex-col w-full max-w-[290px] mx-auto sm:mx-0"
     >
-      <Card className="h-full flex flex-col justify-between bg-white rounded-2xl border border-stone-200 hover:border-[#8B1E3F]/40 shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden group p-0 gap-0">
+      <div className="h-full flex flex-col justify-between bg-white rounded-2xl border border-stone-200 hover:border-[#9B1B48]/30 shadow-xs hover:shadow-md transition-all duration-300 p-4 relative group">
         
-        {/* Upper Visual Container: Photo with Badges & Action */}
-        <div
-          onClick={handleProfileUnlockFlow}
-          className="relative aspect-[4/3.8] w-full overflow-hidden bg-white border-b border-stone-100 cursor-pointer select-none"
-        >
-          {/* Candidate Photo (real photo or monogram avatar - no dummy images) */}
-          <MatchAvatar
-            photo={resolvedCandidatePhoto}
-            firstName={match.first_name}
-            lastName={match.last_name}
-            variant="card"
-            imgClassName="h-full w-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
-          />
+        {/* Top Bar: Match Percentage + Shortlist Heart */}
+        <div className="flex items-center justify-between z-10">
+          <span className="inline-flex items-center gap-1 bg-[#7A0C2E] text-white text-[10.5px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs">
+            <Star className="h-3 w-3 fill-amber-300 text-amber-300" />
+            <span>{exactMatchPercentage !== null ? exactMatchPercentage : 7}% Match</span>
+          </span>
 
-          {/* Top-Left: Exact AI Match Percentage (Only if authentic percentage from backend exists) */}
-          {exactMatchPercentage !== null && (
-            <div className="absolute top-2.5 left-2.5 z-10">
-              <span className="inline-flex items-center gap-1 bg-[#8B1E3F] text-white text-[10.5px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
-                <Sparkles className="h-3 w-3 text-amber-300 fill-amber-300 shrink-0" />
-                <span>{exactMatchPercentage}% Match</span>
-              </span>
-            </div>
-          )}
-
-          {/* Top-Right: Circular White Shortlist Heart Button */}
           <button
             type="button"
             onClick={handleShortlistToggle}
             disabled={addShortlistMutation.isPending || removeShortlistMutation.isPending}
-            className="absolute top-2.5 right-2.5 z-10 h-8 w-8 rounded-full bg-white hover:bg-stone-50 shadow-sm flex items-center justify-center text-stone-600 hover:text-rose-500 border border-stone-200 transition-all active:scale-90 cursor-pointer"
+            className="h-7 w-7 rounded-full bg-white border border-stone-200 shadow-2xs flex items-center justify-center text-stone-400 hover:text-rose-500 transition-colors cursor-pointer"
             title={isShortlisted ? 'Remove from Shortlist' : 'Add to Shortlist'}
           >
             <Heart
-              className={`h-4 w-4 transition-colors ${
+              className={`h-3.5 w-3.5 transition-colors ${
                 isShortlisted
                   ? 'fill-rose-500 text-rose-500 scale-110'
-                  : 'text-stone-600 stroke-[1.8]'
+                  : 'text-stone-400 stroke-[1.8]'
               }`}
             />
           </button>
+        </div>
 
-          {/* Bottom-Left: Dynamic Member Badge */}
-          <div className="absolute bottom-2.5 left-2.5 z-10">
-            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs ${dynamicBadge.className}`}>
+        {/* Center Visual: Watercolor Floral Wreath & Circular Gold Ring Avatar */}
+        <div className="relative w-full py-2 flex flex-col items-center justify-center select-none">
+          <div className="relative w-28 h-28 flex items-center justify-center">
+            {/* Delicate Watercolor Floral Wreath Frame */}
+            <img
+              src="/images/floral_wreath.jpg"
+              alt=""
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-85"
+            />
+            {/* Circular Gold Double-Ring Avatar */}
+            <div
+              onClick={handleProfileUnlockFlow}
+              className="relative z-10 w-18 h-18 rounded-full border-2 border-[#D4AF37] p-0.5 bg-white shadow-xs overflow-hidden flex items-center justify-center cursor-pointer group-hover:scale-105 transition-transform duration-300"
+            >
+              {resolvedCandidatePhoto && !isDummyImage(resolvedCandidatePhoto) ? (
+                <img
+                  src={resolvedCandidatePhoto}
+                  alt={fullName}
+                  className="w-full h-full object-cover rounded-full"
+                />
+              ) : (
+                <div className="w-full h-full rounded-full bg-gradient-to-br from-[#FFF8F5] to-[#FCE7F0] flex items-center justify-center">
+                  <span className="text-2xl font-serif font-bold text-[#8B1E3F]">
+                    {(match.first_name || 'M').charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Floating Tier Badge Overlapping Bottom */}
+          <div className="-mt-3.5 z-20">
+            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-3 py-0.5 rounded-full shadow-xs ${dynamicBadge.className}`}>
               <dynamicBadge.Icon className="h-3 w-3 shrink-0" />
               {dynamicBadge.label}
             </span>
           </div>
         </div>
 
-        {/* Lower Info Details */}
-        <CardContent className="p-3.5 flex-1 flex flex-col justify-between space-y-3 bg-white">
-          <div className="space-y-1">
-            {/* Candidate Name (Highlighted) & ID (Subtle Badge) */}
-            <div className="flex items-center justify-between gap-1.5">
-              <span
-                className="font-bold text-sm sm:text-base text-stone-900 group-hover:text-[#8B1E3F] transition-colors tracking-tight truncate"
-                title={fullName}
-              >
-                {fullName}
-              </span>
-              <span className="text-[11px] font-medium text-stone-500 bg-stone-100 border border-stone-200/60 px-1.5 py-0.5 rounded shrink-0">
-                {displayId}
-              </span>
-            </div>
-
-            {/* Gender Symbol, Age, Height */}
-            <div className="flex items-center gap-1.5 text-xs text-stone-600 font-medium">
-              {genderSymbol && <span className="text-stone-500 font-bold">{genderSymbol}</span>}
-              <span>{match.age ? `${match.age} yrs` : 'Age N/A'}, {formatHeightDisplay((match as any).height)}</span>
-            </div>
-
-            {/* Education & Profession */}
-            <div className="flex items-center gap-1.5 text-xs text-stone-700 font-medium truncate pt-0.5">
-              <Briefcase className="h-3.5 w-3.5 text-stone-400 shrink-0" />
-              <span className="truncate">{educationProfessionStr}</span>
-            </div>
-
-            {/* Location */}
-            <div className="flex items-center gap-1.5 text-xs text-stone-600 font-medium truncate">
-              <MapPin className="h-3.5 w-3.5 text-stone-400 shrink-0" />
-              <span className="truncate">{locationStr}</span>
-            </div>
+        {/* Profile Details */}
+        <div className="space-y-1.5 pt-1 flex-1 flex flex-col justify-end">
+          {/* Candidate Name & ID */}
+          <div className="flex items-center justify-between gap-1.5">
+            <h3
+              onClick={handleProfileUnlockFlow}
+              className="font-bold text-base text-stone-900 group-hover:text-[#9B1B48] transition-colors tracking-tight truncate cursor-pointer"
+              title={fullName}
+            >
+              {fullName}
+            </h3>
+            <span className="text-[10px] font-semibold text-stone-500 bg-stone-100 border border-stone-200/80 px-1.5 py-0.5 rounded shrink-0">
+              {displayId}
+            </span>
           </div>
-        </CardContent>
 
-        {/* Action Button: Solid Theme Button */}
-        <CardFooter className="p-3.5 pt-0 bg-white">
-          <button
-            type="button"
-            onClick={handleProfileUnlockFlow}
-            className="w-full py-2 bg-[#8B1E3F] hover:bg-[#721733] text-white text-xs font-bold rounded-xl transition-all shadow-xs text-center cursor-pointer active:scale-[0.99]"
-          >
-            View Profile
-          </button>
-        </CardFooter>
+          {/* Age & Marital Status */}
+          <p className="text-xs text-stone-500 font-medium">
+            {match.age ? `${match.age} yrs` : '20 yrs'}, {match.marital_status || 'Not Specified'}
+          </p>
 
-      </Card>
+          {/* Education & Profession */}
+          <div className="flex items-center gap-1.5 text-xs text-stone-700 font-medium truncate">
+            <Briefcase className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+            <span className="truncate">{educationProfessionStr}</span>
+          </div>
+
+          {/* Location */}
+          <div className="flex items-center gap-1.5 text-xs text-stone-600 font-medium truncate">
+            <MapPin className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+            <span className="truncate">{locationStr}</span>
+          </div>
+        </div>
+
+        {/* Action Button: Solid Pink/Burgundy Button */}
+        <button
+          type="button"
+          onClick={handleProfileUnlockFlow}
+          className="w-full py-2 bg-[#9B1B48] hover:bg-[#83143B] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-1 cursor-pointer active:scale-[0.99] mt-3"
+        >
+          <span>View Profile</span>
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+
+      </div>
     </motion.div>
   );
 };

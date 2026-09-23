@@ -62,7 +62,11 @@ export const Navbar: React.FC = () => {
 
   const displayName = (currentUser.name && !isGenericName(currentUser.name))
     ? currentUser.name
-    : extractNameFromEmail(currentUser.email || localStorage.getItem('logged_in_email'));
+    : (localStorage.getItem('logged_in_name') && !isGenericName(localStorage.getItem('logged_in_name')!))
+      ? localStorage.getItem('logged_in_name')!
+      : extractNameFromEmail(currentUser.email || localStorage.getItem('logged_in_email')) || 'Profile';
+
+  const displayPillText = displayName;
 
   const totalInterestsCount = (sentInterests?.length || 0) + (receivedInterests?.length || 0);
   const unreadNotifs = unreadCount > 0 ? unreadCount : notifications.filter(n => !n.read).length;
@@ -154,18 +158,15 @@ export const Navbar: React.FC = () => {
                   setIsNotifDropdownOpen(false);
                   setIsMobileMenuOpen(false);
                 }}
-                className={`relative px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-200 ${
+                className={`relative px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 ${
                   isActive
-                    ? 'bg-white text-[#8B1E3F] shadow-sm font-bold scale-[1.02]'
+                    ? 'bg-[#FCE7F0] text-[#9B1B48] font-bold shadow-2xs'
                     : isScrolled
-                      ? 'text-muted-foreground hover:text-foreground hover:bg-white/70'
-                      : 'text-stone-800 hover:text-stone-950 hover:bg-white/60'
+                      ? 'text-stone-700 hover:text-[#9B1B48] hover:bg-stone-100'
+                      : 'text-stone-700 hover:text-[#9B1B48] hover:bg-white/60'
                 }`}
               >
                 {link.label}
-                {isActive && (
-                  <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-3 h-0.5 bg-[#8B1E3F] rounded-full" />
-                )}
               </Link>
             );
           })}
@@ -271,7 +272,7 @@ export const Navbar: React.FC = () => {
                     </div>
                   )}
                   <span className="hidden sm:inline-block text-xs font-bold text-foreground">
-                    {displayName ? displayName.split(' ')[0] : 'Profile'}
+                    {displayPillText}
                   </span>
                   <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>

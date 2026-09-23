@@ -23,7 +23,12 @@ import {
   RefreshCw,
   AlertCircle,
   ShieldCheck,
-  Users
+  Users,
+  Crown,
+  User,
+  Heart,
+  Ruler,
+  GraduationCap
 } from 'lucide-react';
 import { LoadingScreen } from '../../components/ui/LoadingScreen';
 import { Button } from '../../components/ui/Button';
@@ -34,12 +39,11 @@ export const MatchesPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser } = useApp();
 
-  // Determine user's looking-for default
+  // Determine user's looking-for partner gender automatically and permanently
   const userGender = (currentUser?.gender || localStorage.getItem('logged_in_gender') || '').toLowerCase();
-  const defaultLookingFor = (userGender === 'female' || userGender === 'f') ? 'Groom' : 'Bride';
+  const lookingFor: 'Bride' | 'Groom' = (userGender === 'female' || userGender === 'f') ? 'Groom' : 'Bride';
 
   // Filter States
-  const [lookingFor, setLookingFor] = useState<'Bride' | 'Groom'>(defaultLookingFor);
   const [ageRange, setAgeRange] = useState<[number, number]>([18, 50]);
   const [heightFilter, setHeightFilter] = useState<string>('Any');
   const [maritalStatus, setMaritalStatus] = useState<string>('Any');
@@ -271,11 +275,10 @@ export const MatchesPage: React.FC = () => {
 
   // Reset Filters Handler
   const handleResetFilters = () => {
-    setLookingFor(defaultLookingFor);
-    setAgeRange([21, 35]);
+    setAgeRange([18, 50]);
     setHeightFilter('Any');
-    setMaritalStatus('Never Married');
-    setReligion('Hindu');
+    setMaritalStatus('Any');
+    setReligion('Any');
     setCaste('Any');
     setEducation('Any');
     setLocationQuery('');
@@ -286,18 +289,13 @@ export const MatchesPage: React.FC = () => {
     <div className="min-h-screen bg-[#FAF7F5] text-stone-900 pb-20 font-sans antialiased">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        {/* ── 1. Matches Hero Banner (Burgundy & Logo Pink Theme) ── */}
-        <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border border-[#8B1E3F]/30 bg-gradient-to-br from-[#4A0A1C] via-[#721833] to-[#8B1E3F] text-white shadow-xl">
+        {/* ── 1. Matches Hero Banner (Exact design from user screenshot) ── */}
+        <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border border-[#8B1E3F]/30 bg-[#6E0D29] text-white shadow-xl min-h-[220px] flex items-center">
           
-          {/* Logo Pink Ambient Glow Orbs */}
-          <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-[#C70F4B]/20 blur-3xl pointer-events-none" />
-          <div className="absolute top-1/2 left-1/3 w-80 h-80 rounded-full bg-[#8B1E3F]/30 blur-3xl pointer-events-none -translate-y-1/2" />
-          <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-[#C70F4B]/25 blur-3xl pointer-events-none" />
-
-          {/* Background Romantic Visual with Full Visibility (No Dark Overlay) */}
+          {/* Background Romantic Visual with Wedding Rings on Satin & Flowers */}
           <div className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-hidden">
             <img
-              src="/images/matches_romantic_banner.jpg"
+              src="/images/matches_exact_banner.jpg"
               alt=""
               className="w-full h-full object-cover object-right md:object-[center_right]"
               onError={(e) => {
@@ -306,49 +304,64 @@ export const MatchesPage: React.FC = () => {
             />
           </div>
 
-          {/* Richer, Slightly Darker Pink Transparent Overlay */}
-          <div className="absolute inset-0 bg-[#C70F4B]/35 pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#8B1E3F]/45 via-[#C70F4B]/30 to-[#C70F4B]/15 pointer-events-none" />
+          {/* Left Text Readability Mask */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#4A081D] via-[#6B112D]/85 to-transparent md:w-3/5 pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col justify-center py-4 px-5 sm:px-8 max-w-4xl space-y-2">
+          <div className="relative z-10 flex flex-col justify-center py-5 sm:py-6 px-5 sm:px-8 max-w-2xl space-y-2.5">
             
             {/* Pill Eyebrow */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/25 text-white backdrop-blur-md shadow-xs w-fit">
-              <Sparkles className="w-3.5 h-3.5 text-[#C70F4B] fill-[#C70F4B] shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white">
-                YOUR PERFECT MATCH AWAITS
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/30 border border-white/20 text-white/95 text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm shadow-xs w-fit">
+              <Crown className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+              <span>YOUR PERFECT MATCH AWAITS</span>
+            </div>
+
+            {/* Main Headline with script "You" */}
+            <div className="flex items-baseline gap-2 pt-0.5">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white leading-tight font-sans">
+                Matches for
+              </h1>
+              <span className="font-['Great_Vibes',cursive] text-[#F5D061] text-4xl sm:text-5xl lg:text-6xl font-normal leading-none drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
+                You
               </span>
             </div>
 
-            {/* Main Headline */}
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-extrabold tracking-tight text-white leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
-              Matches{' '}
-              <span className="font-serif italic font-extrabold text-[#FFC1D3] drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
-                for You
-              </span>
-            </h1>
-
             {/* Subtitle */}
-            <p className="text-xs sm:text-sm text-white font-medium leading-normal max-w-xl drop-shadow-[0_1px_8px_rgba(0,0,0,0.85)]">
+            <p className="text-xs sm:text-sm text-white/90 font-medium leading-normal max-w-xl">
               Discover meaningful connections, one profile at a time.
             </p>
 
-            {/* Quality & Trust Badges */}
-            <div className="flex flex-wrap items-center gap-2 pt-0.5">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-white/20 text-[11px] font-semibold text-white shadow-sm backdrop-blur-md">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+            {/* Exact Quality & Trust Badges */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#064E3B]/85 border border-[#10B981]/50 text-[#D1FAE5] text-[11px] font-medium shadow-xs backdrop-blur-sm">
+                <ShieldCheck className="h-3.5 w-3.5 text-[#34D399] shrink-0" />
                 <span>100% Verified Profiles</span>
               </div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-white/20 text-[11px] font-semibold text-white shadow-sm backdrop-blur-md">
-                <Sparkles className="h-3.5 w-3.5 text-[#C70F4B] shrink-0" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#701A75]/85 border border-[#E879F9]/50 text-[#FCE7F3] text-[11px] font-medium shadow-xs backdrop-blur-sm">
+                <Sparkles className="h-3.5 w-3.5 text-[#F472B6] shrink-0" />
                 <span>AI Compatibility Scored</span>
               </div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-white/20 text-[11px] font-semibold text-white shadow-sm backdrop-blur-md">
-                <Users className="h-3.5 w-3.5 text-rose-300 shrink-0" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#78350F]/85 border border-[#FBBF24]/50 text-[#FEF3C7] text-[11px] font-medium shadow-xs backdrop-blur-sm">
+                <User className="h-3.5 w-3.5 text-[#FBBF24] shrink-0" />
                 <span>{sortedMatches.length} Curated Matches</span>
               </div>
             </div>
 
+          </div>
+
+          {/* Ask AI button on far right edge of banner */}
+          <div className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-20 hidden md:block">
+            <button
+              type="button"
+              data-ask-ai-trigger
+              onClick={() => {
+                const assistantBtn = document.querySelector('button[aria-label="Ask AI Assistant"]') as HTMLElement;
+                if (assistantBtn) assistantBtn.click();
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#B45309] hover:bg-[#92400E] text-white text-xs font-bold shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              <ShieldCheck className="h-4 w-4 text-amber-200" />
+              <span>Ask AI</span>
+            </button>
           </div>
         </div>
 
@@ -356,56 +369,27 @@ export const MatchesPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
           {/* ── Left Column: Filter Matches Sidebar Card ── */}
-          <Card className="lg:col-span-3 bg-white rounded-2xl border border-stone-300 shadow-sm p-5 space-y-4">
+          <div className="lg:col-span-3 bg-white rounded-2xl border border-stone-200 shadow-xs p-5 space-y-4">
             {/* Header: Title & Reset */}
             <div className="flex items-center justify-between pb-3 border-b border-stone-200">
               <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-[#8B1E3F]" />
+                <Filter className="h-4 w-4 text-[#9B1B48]" />
                 <h3 className="font-bold text-sm text-stone-900">Filter Matches</h3>
               </div>
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-xs font-bold text-[#8B1E3F] hover:underline cursor-pointer"
+                className="text-xs font-bold text-[#9B1B48] hover:underline cursor-pointer"
               >
                 Reset
               </button>
             </div>
 
-            {/* Looking For: Bride / Groom */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-stone-900 block">Looking for</label>
-              <div className="grid grid-cols-2 gap-2 bg-stone-100 p-1 rounded-xl border border-stone-200">
-                <button
-                  type="button"
-                  onClick={() => setLookingFor('Bride')}
-                  className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    lookingFor === 'Bride'
-                      ? 'bg-[#8B1E3F] text-white shadow-xs'
-                      : 'text-stone-700 hover:text-stone-900'
-                  }`}
-                >
-                  Bride
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLookingFor('Groom')}
-                  className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    lookingFor === 'Groom'
-                      ? 'bg-[#8B1E3F] text-white shadow-xs'
-                      : 'text-stone-700 hover:text-stone-900'
-                  }`}
-                >
-                  Groom
-                </button>
-              </div>
-            </div>
-
             {/* Age Range Slider */}
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-stone-900">Age Range</span>
-                <span className="font-bold text-[#8B1E3F]">
+                <span className="font-semibold text-stone-900">Age Range</span>
+                <span className="font-bold text-[#9B1B48]">
                   {ageRange[0]} - {ageRange[1]} years
                 </span>
               </div>
@@ -415,9 +399,9 @@ export const MatchesPage: React.FC = () => {
                 max="50"
                 value={ageRange[1]}
                 onChange={e => setAgeRange([ageRange[0], Number(e.target.value)])}
-                className="w-full accent-[#8B1E3F] cursor-pointer"
+                className="w-full accent-[#9B1B48] cursor-pointer"
               />
-              <div className="flex justify-between text-[10px] font-bold text-stone-600">
+              <div className="flex justify-between text-[10px] font-bold text-stone-400">
                 <span>18</span>
                 <span>50</span>
               </div>
@@ -425,100 +409,105 @@ export const MatchesPage: React.FC = () => {
 
             {/* Height Select */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-900 block">Height</label>
+              <label className="text-xs font-semibold text-stone-900 block">Height</label>
               <div className="relative">
+                <Ruler className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#9B1B48] pointer-events-none" />
                 <select
                   value={heightFilter}
                   onChange={e => setHeightFilter(e.target.value)}
-                  className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none focus:border-[#8B1E3F] shadow-2xs"
+                  className="w-full bg-white border border-stone-200 hover:border-stone-300 rounded-xl pl-8.5 pr-8 py-2 text-xs font-medium text-stone-900 appearance-none focus:outline-none focus:border-[#9B1B48] shadow-2xs"
                 >
                   {dynamicHeights.map(h => (
                     <option key={h} value={h}>{h === 'Any' ? 'Any Height' : h}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-600 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>
             </div>
 
             {/* Marital Status Select */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-900 block">Marital Status</label>
+              <label className="text-xs font-semibold text-stone-900 block">Marital Status</label>
               <div className="relative">
+                <Heart className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#9B1B48] pointer-events-none" />
                 <select
                   value={maritalStatus}
                   onChange={e => setMaritalStatus(e.target.value)}
-                  className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none focus:border-[#8B1E3F] shadow-2xs"
+                  className="w-full bg-white border border-stone-200 hover:border-stone-300 rounded-xl pl-8.5 pr-8 py-2 text-xs font-medium text-stone-900 appearance-none focus:outline-none focus:border-[#9B1B48] shadow-2xs"
                 >
                   {dynamicMaritalStatuses.map(m => (
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-600 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>
             </div>
 
             {/* Religion Select */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-900 block">Religion</label>
+              <label className="text-xs font-semibold text-stone-900 block">Religion</label>
               <div className="relative">
+                <User className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#9B1B48] pointer-events-none" />
                 <select
                   value={religion}
                   onChange={e => setReligion(e.target.value)}
-                  className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none focus:border-[#8B1E3F] shadow-2xs"
+                  className="w-full bg-white border border-stone-200 hover:border-stone-300 rounded-xl pl-8.5 pr-8 py-2 text-xs font-medium text-stone-900 appearance-none focus:outline-none focus:border-[#9B1B48] shadow-2xs"
                 >
                   {dynamicReligions.map(r => (
                     <option key={r} value={r}>{r}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-600 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>
             </div>
 
             {/* Caste Select */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-900 block">Caste</label>
+              <label className="text-xs font-semibold text-stone-900 block">Caste</label>
               <div className="relative">
+                <MapPin className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#9B1B48] pointer-events-none" />
                 <select
                   value={caste}
                   onChange={e => setCaste(e.target.value)}
-                  className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none focus:border-[#8B1E3F] shadow-2xs"
+                  className="w-full bg-white border border-stone-200 hover:border-stone-300 rounded-xl pl-8.5 pr-8 py-2 text-xs font-medium text-stone-900 appearance-none focus:outline-none focus:border-[#9B1B48] shadow-2xs"
                 >
                   {dynamicCastes.map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-600 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>
             </div>
 
             {/* Education Select */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-900 block">Education</label>
+              <label className="text-xs font-semibold text-stone-900 block">Education</label>
               <div className="relative">
+                <GraduationCap className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#9B1B48] pointer-events-none" />
                 <select
                   value={education}
                   onChange={e => setEducation(e.target.value)}
-                  className="w-full bg-white border border-stone-300 hover:border-stone-400 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-900 appearance-none focus:outline-none focus:border-[#8B1E3F] shadow-2xs"
+                  className="w-full bg-white border border-stone-200 hover:border-stone-300 rounded-xl pl-8.5 pr-8 py-2 text-xs font-medium text-stone-900 appearance-none focus:outline-none focus:border-[#9B1B48] shadow-2xs"
                 >
                   {dynamicEducations.map(ed => (
                     <option key={ed} value={ed}>{ed}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-600 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>
             </div>
 
             {/* Location Input */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-900 block">Location</label>
+              <label className="text-xs font-semibold text-stone-900 block">Location</label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-2.5 h-3.5 w-3.5 text-stone-600 pointer-events-none" />
+                <MapPin className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#9B1B48] pointer-events-none" />
                 <input
                   type="text"
                   value={locationQuery}
                   onChange={e => setLocationQuery(e.target.value)}
                   placeholder="Enter city or state"
-                  className="w-full pl-9 pr-3 py-2 bg-white border border-stone-300 hover:border-stone-400 rounded-xl text-xs font-semibold text-stone-900 placeholder:text-stone-500 focus:outline-none focus:border-[#8B1E3F] shadow-2xs"
+                  className="w-full pl-8.5 pr-3 py-2 bg-white border border-stone-200 hover:border-stone-300 rounded-xl text-xs font-medium text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#9B1B48] shadow-2xs"
                 />
               </div>
             </div>
@@ -526,57 +515,57 @@ export const MatchesPage: React.FC = () => {
             {/* Big Show Matches Button */}
             <button
               type="button"
-              className="w-full py-2.5 bg-[#8B1E3F] hover:bg-[#721833] text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer mt-2 active:scale-[0.99]"
+              className="w-full py-2.5 bg-[#9B1B48] hover:bg-[#83143B] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer mt-2 active:scale-[0.99]"
             >
               <Search className="h-3.5 w-3.5" />
               <span>Show Matches</span>
             </button>
-          </Card>
+          </div>
 
           {/* ── Right Column: Matches Listing ── */}
           <div className="lg:col-span-9 space-y-4">
             
             {/* Top Bar: Count & Sorting Controls */}
-            <Card className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200/90 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs">
               {/* Title Count */}
               <div>
-                <h2 className="text-xl sm:text-2xl font-serif font-bold text-stone-900">
-                  <span className="text-[#8B1E3F] font-extrabold mr-1.5">
+                <h2 className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight">
+                  <span className="font-bold mr-1.5">
                     {sortedMatches.length}
                   </span>
                   Matches Found
                 </h2>
-                <p className="text-xs text-stone-500 font-medium">Based on your preferences</p>
+                <p className="text-xs text-stone-500 font-medium mt-0.5">Based on your preferences</p>
               </div>
 
               {/* Controls: Sort Dropdown + View Toggle */}
               <div className="flex items-center gap-2.5">
                 <div className="flex items-center gap-1.5 text-xs text-stone-600 font-medium">
-                  <span className="hidden sm:inline">Sort by</span>
+                  <span>Sort by</span>
                   <div className="relative">
                     <select
                       value={sortBy}
                       onChange={e => setSortBy(e.target.value)}
-                      className="bg-stone-50 border border-stone-200 hover:border-stone-300 text-stone-900 text-xs font-semibold py-1.5 pl-3 pr-7 rounded-xl appearance-none focus:outline-none focus:border-[#8B1E3F]"
+                      className="bg-white border border-stone-200 hover:border-stone-300 text-stone-800 text-xs font-semibold py-1.5 pl-3 pr-7 rounded-lg appearance-none focus:outline-none focus:border-[#9B1B48]"
                     >
                       <option value="Most Relevant">Most Relevant</option>
                       <option value="Age: Low to High">Age: Low to High</option>
                       <option value="Age: High to Low">Age: High to Low</option>
                       <option value="Name (A-Z)">Name (A-Z)</option>
                     </select>
-                    <ChevronDown className="absolute right-2.5 top-2.5 h-3 w-3 text-stone-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-2 top-2 h-3 w-3 text-stone-400 pointer-events-none" />
                   </div>
                 </div>
 
                 {/* Grid / List Mode Switcher */}
-                <div className="flex items-center gap-1 border border-stone-200 p-0.5 rounded-xl bg-stone-50">
+                <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => setViewMode('grid')}
                     className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                       viewMode === 'grid'
-                        ? 'bg-[#8B1E3F] text-white shadow-2xs'
-                        : 'text-stone-500 hover:text-stone-800'
+                        ? 'bg-[#9B1B48] text-white shadow-2xs'
+                        : 'bg-white border border-stone-200 text-stone-400 hover:text-stone-700'
                     }`}
                     title="Grid View"
                   >
@@ -587,8 +576,8 @@ export const MatchesPage: React.FC = () => {
                     onClick={() => setViewMode('list')}
                     className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                       viewMode === 'list'
-                        ? 'bg-[#8B1E3F] text-white shadow-2xs'
-                        : 'text-stone-500 hover:text-stone-800'
+                        ? 'bg-[#9B1B48] text-white shadow-2xs'
+                        : 'bg-white border border-stone-200 text-stone-400 hover:text-stone-700'
                     }`}
                     title="List View"
                   >
@@ -596,7 +585,7 @@ export const MatchesPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-            </Card>
+            </div>
 
             {/* Profile Cards Content */}
             {isLoading ? (
@@ -606,13 +595,13 @@ export const MatchesPage: React.FC = () => {
                 <AlertCircle className="h-8 w-8 text-rose-500 mx-auto" />
                 <h3 className="font-bold text-base text-stone-900">Failed to Load Matches</h3>
                 <p className="text-xs text-stone-500">We could not fetch recommendations from the server.</p>
-                <Button size="sm" onClick={() => refetch()} className="bg-[#8B1E3F] text-white">
+                <Button size="sm" onClick={() => refetch()} className="bg-[#9B1B48] text-white">
                   <RefreshCw className="h-3.5 w-3.5 mr-1" /> Retry
                 </Button>
               </div>
             ) : sortedMatches.length === 0 ? (
               <div className="p-12 text-center border border-stone-200 rounded-2xl bg-white space-y-3">
-                <Sparkles className="h-8 w-8 text-[#8B1E3F] mx-auto" />
+                <Sparkles className="h-8 w-8 text-[#9B1B48] mx-auto" />
                 <h3 className="font-bold text-base text-stone-900">No Matches Found for Current Filters</h3>
                 <p className="text-xs text-stone-500 max-w-sm mx-auto">
                   Try broadening your age, religion, or location criteria to see more compatible profiles.
@@ -620,7 +609,7 @@ export const MatchesPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="px-4 py-2 bg-[#8B1E3F] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#721833] cursor-pointer"
+                  className="px-4 py-2 bg-[#9B1B48] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#83143B] cursor-pointer"
                 >
                   Reset All Filters
                 </button>
@@ -629,7 +618,7 @@ export const MatchesPage: React.FC = () => {
               <div
                 className={
                   viewMode === 'grid'
-                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+                    ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5'
                     : 'space-y-4'
                 }
               >

@@ -25,7 +25,9 @@ export const isDummyImage = (url?: string | null): boolean => {
     lower.includes('recommended_groom') ||
     lower.includes('default_avatar') ||
     lower.includes('avatar-placeholder') ||
-    lower.includes('ananya_')
+    lower.includes('ananya_') ||
+    lower.includes('/images/profiles/') ||
+    lower.includes('images/profiles/')
   );
 };
 

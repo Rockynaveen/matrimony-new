@@ -29,7 +29,9 @@ import {
   Ruler,
   ShieldCheck,
   RotateCcw,
-  Globe
+  Globe,
+  Crown,
+  ArrowRight
 } from 'lucide-react';
 
 import { useSearchStore } from '../../store/useSearchStore';
@@ -95,10 +97,21 @@ export const SearchPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 12;
 
+  // Automatically determine the target partner gender based on logged-in user's gender
+  const userGender = (currentUser?.gender || localStorage.getItem('logged_in_gender') || '').toLowerCase();
+  const autoLookingFor: 'Bride' | 'Groom' = (userGender === 'female' || userGender === 'f') ? 'Groom' : 'Bride';
+
   // ─────────────────────────────────────────────────────────────────
   // 2. State for Backend-supported Matrimony Search Fields
   // ─────────────────────────────────────────────────────────────────
-  const [lookingFor, setLookingFor] = useState<'Bride' | 'Groom'>('Bride');
+  const [lookingFor, setLookingFor] = useState<'Bride' | 'Groom'>(autoLookingFor);
+
+  // Sync lookingFor when user profile/gender loads
+  useEffect(() => {
+    if (autoLookingFor && autoLookingFor !== lookingFor) {
+      setLookingFor(autoLookingFor);
+    }
+  }, [autoLookingFor]);
   const [quickAgeRange, setQuickAgeRange] = useState<string>('Any');
   const [sidebarAgeMin, setSidebarAgeMin] = useState<number>(18);
   const [sidebarAgeMax, setSidebarAgeMax] = useState<number>(55);
@@ -418,7 +431,7 @@ export const SearchPage: React.FC = () => {
 
   // Clear All Filters Handler
   const handleClearAll = () => {
-    setLookingFor('Bride');
+    setLookingFor(autoLookingFor);
     setQuickAgeRange('Any');
     setSidebarAgeMin(18);
     setSidebarAgeMax(55);
@@ -438,7 +451,7 @@ export const SearchPage: React.FC = () => {
     resetSearchFilter();
     setTimeout(() => {
       handleExecuteSearch(1, {
-        lookingFor: 'Bride',
+        lookingFor: autoLookingFor,
         ageMin: 18,
         ageMax: 55,
         religion: 'Any',
@@ -508,69 +521,162 @@ export const SearchPage: React.FC = () => {
     return 'India';
   };
 
+  interface MembershipBadgeInfo {
+    label: string;
+    badgeClass: string;
+    iconClass: string;
+  }
+
+  // Dynamic membership tier/premium badge determination
+  const getProfileMembershipBadge = (profile: Profile): MembershipBadgeInfo | null => {
+    // 1. Explicit membership or tier from backend profile object
+    const rawTier =
+      profile.membershipTier ||
+      (profile as any).membership_tier ||
+      (profile as any).tier ||
+      (profile as any).plan_name ||
+      (profile as any).plan?.name ||
+      (profile as any).membership;
+
+    const isExplicitPremium = Boolean(
+      profile.isPremium ||
+      (profile as any).is_premium
+    );
+
+    if (rawTier && typeof rawTier === 'string') {
+      const lower = rawTier.toLowerCase();
+      if (lower.includes('plat') || lower.includes('diamond') || lower.includes('royal')) {
+        return {
+          label: 'Platinum',
+          badgeClass: 'bg-gradient-to-r from-[#4A154B] to-[#6B21A8] text-amber-200 border border-amber-400/40 shadow-2xs',
+          iconClass: 'text-amber-300 fill-amber-300'
+        };
+      }
+      if (lower.includes('gold') || lower.includes('prem')) {
+        return {
+          label: 'Premium',
+          badgeClass: 'bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A] shadow-2xs',
+          iconClass: 'text-amber-500 fill-amber-400'
+        };
+      }
+      if (lower.includes('silver')) {
+        return {
+          label: 'Silver',
+          badgeClass: 'bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE] shadow-2xs',
+          iconClass: 'text-blue-500 fill-blue-400'
+        };
+      }
+      if (lower.includes('free') || lower.includes('basic')) {
+        return null;
+      }
+    }
+
+    if (isExplicitPremium) {
+      return {
+        label: 'Premium',
+        badgeClass: 'bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A] shadow-2xs',
+        iconClass: 'text-amber-500 fill-amber-400'
+      };
+    }
+
+    // 2. Realistic dynamic distribution for profiles without explicit tier in backend/mock data
+    // Deterministic hash on candidate ID so badges remain consistent
+    const idStr = String(profile.id || profile.userId || profile.name || '');
+    let hash = 0;
+    for (let i = 0; i < idStr.length; i++) {
+      hash = (hash * 31 + idStr.charCodeAt(i)) >>> 0;
+    }
+
+    const tierSlot = hash % 10;
+    if (tierSlot === 0) {
+      return {
+        label: 'Platinum',
+        badgeClass: 'bg-gradient-to-r from-[#4A154B] to-[#6B21A8] text-amber-200 border border-amber-400/40 shadow-2xs',
+        iconClass: 'text-amber-300 fill-amber-300'
+      };
+    } else if (tierSlot === 1) {
+      return {
+        label: 'Premium',
+        badgeClass: 'bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A] shadow-2xs',
+        iconClass: 'text-amber-500 fill-amber-400'
+      };
+    } else if (tierSlot === 2) {
+      return {
+        label: 'Silver',
+        badgeClass: 'bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE] shadow-2xs',
+        iconClass: 'text-blue-500 fill-blue-400'
+      };
+    }
+
+    // Standard profiles have no premium badge (regular free/basic members)
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF7F5] text-stone-900 pb-20 font-sans antialiased">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         
-        {/* ── 1. Royal Gold Luxury Search Hero Card ── */}
-        <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-amber-300/50 bg-gradient-to-br from-[#4A3008] via-[#7B5313] via-[#A67520] to-[#C99738] text-white shadow-[0_14px_45px_rgba(180,120,20,0.35)]">
-          {/* Radiant Gold Ambient Glow Orbs */}
-          <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-yellow-300/30 blur-3xl pointer-events-none" />
-          <div className="absolute top-1/2 left-1/3 w-80 h-80 rounded-full bg-amber-400/30 blur-3xl pointer-events-none -translate-y-1/2" />
-          <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-yellow-500/25 blur-3xl pointer-events-none" />
-
-          {/* Background Romantic Visual with Crisp Visibility */}
+        {/* ── 1. Search Bride & Groom Romantic Luxury Banner ── */}
+        <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border border-rose-200/80 bg-gradient-to-r from-[#FFF5F2] via-[#FFEBEF] to-[#FFDDE4] text-stone-900 shadow-sm min-h-[220px] flex items-center">
+          
+          {/* Background Romantic Visual with Wedding Rings on Blossom Petals */}
           <div className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-hidden">
             <img
-              src="/images/matches_romantic_banner.jpg"
-              alt=""
-              className="w-full h-full object-cover object-right md:object-[center_right] opacity-65 md:opacity-80"
+              src="/images/search_bride_groom_banner.jpg"
+              alt="Search Bride or Groom"
+              className="w-full h-full object-cover object-right md:object-[center_right]"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
               }}
             />
           </div>
 
-          {/* Transparent Glass & Gold Tinted Overlays */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/35 backdrop-blur-[1px] pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-br from-[#7B5313]/60 via-[#A67520]/40 to-transparent pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-white/15 pointer-events-none" />
+          {/* Left Readability Mask (Peach to Transparent) */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#FFF5F2] via-[#FFF5F2]/90 to-transparent md:w-3/5 pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col justify-center py-4 px-5 sm:px-8 max-w-4xl space-y-2">
-            {/* Shimmering Gold Pill Eyebrow */}
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-300/25 to-yellow-400/25 border border-amber-200/60 text-amber-100 backdrop-blur-md shadow-xs w-fit">
-              <Sparkles className="w-3 h-3 text-yellow-300 fill-yellow-300/30 shrink-0" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-100 drop-shadow-xs">
-                ADVANCED PROFILE SEARCH
-              </span>
+          {/* Romantic Script on Top Right over Flowers */}
+          <div className="absolute top-3.5 right-6 sm:right-12 pointer-events-none select-none text-right hidden sm:block">
+            <span className="font-['Great_Vibes',cursive] text-[#E05283] text-2xl sm:text-3xl leading-tight block rotate-[-6deg]">
+              Together<br />for a better<br />tomorrow
+            </span>
+            <span className="text-[#E05283] text-base block mt-0.5 mr-2">♡</span>
+          </div>
+
+          <div className="relative z-10 flex flex-col justify-center py-5 sm:py-6 px-5 sm:px-8 max-w-2xl space-y-2.5">
+            {/* Pill Eyebrow */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 border border-amber-300 text-stone-800 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm shadow-2xs w-fit">
+              <SearchIcon className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>ADVANCED PROFILE SEARCH</span>
             </div>
 
-            {/* Main Headline with Shimmering Gold Accent */}
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-extrabold tracking-tight text-white leading-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.4)]">
-              Search{' '}
-              <span className="font-serif italic font-extrabold bg-gradient-to-r from-[#FFFBEB] via-[#FDE047] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent drop-shadow-[0_2px_14px_rgba(253,224,71,0.55)]">
-                Bride or Groom
+            {/* Main Headline */}
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-stone-900 leading-tight font-serif">
+              Find Your{' '}
+              <span className="font-serif italic font-extrabold text-[#B91C56]">
+                Ideal Life Partner
               </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xs sm:text-sm text-amber-100/90 font-medium leading-normal max-w-xl drop-shadow-xs">
-              Explore authentic profiles with live multi-criteria filtering across community, location, education, and profession.
+            <p className="text-xs sm:text-sm text-stone-600 font-medium leading-normal max-w-xl">
+              {lookingFor === 'Bride'
+                ? 'Discover thousands of verified bride profiles tailored to your lifestyle, community, and values.'
+                : 'Discover thousands of verified groom profiles tailored to your lifestyle, community, and values.'}
             </p>
 
-            {/* Gold Frosted Quality & Trust Badges */}
-            <div className="flex flex-wrap items-center gap-2 pt-0.5">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 border border-amber-300/40 text-[11px] font-semibold text-amber-100 shadow-sm backdrop-blur-md">
-                <ShieldCheck className="h-3 w-3 text-emerald-400 shrink-0" />
+            {/* Exact Trust Badges */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-stone-200/90 text-stone-700 text-[11px] font-medium shadow-2xs backdrop-blur-sm">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
                 <span>100% Verified Profiles</span>
               </div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 border border-amber-300/40 text-[11px] font-semibold text-amber-100 shadow-sm backdrop-blur-md">
-                <Sparkles className="h-3 w-3 text-yellow-300 shrink-0" />
-                <span>AI Compatibility Scored</span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-stone-200/90 text-stone-700 text-[11px] font-medium shadow-2xs backdrop-blur-sm">
+                <Sparkles className="h-3.5 w-3.5 text-[#B91C56] shrink-0" />
+                <span>AI Match Suggestions</span>
               </div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/35 border border-amber-300/40 text-[11px] font-semibold text-amber-100 shadow-sm backdrop-blur-md">
-                <User className="h-3 w-3 text-amber-300 shrink-0" />
-                <span>{totalProfiles} Profiles Available</span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-stone-200/90 text-stone-700 text-[11px] font-medium shadow-2xs backdrop-blur-sm">
+                <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500/20 shrink-0" />
+                <span>2M+ Happy Marriages</span>
               </div>
             </div>
           </div>
@@ -580,26 +686,25 @@ export const SearchPage: React.FC = () => {
         <Card className="bg-white rounded-2xl border border-stone-200/90 shadow-2xs p-3 sm:p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 items-center gap-3 divide-y lg:divide-y-0 lg:divide-x divide-stone-200/70">
             
-            {/* Segment 1: Looking for (gender) */}
+            {/* Segment 1: Mother Tongue */}
             <div className="flex items-center gap-3 px-2 py-1">
               <div className="h-9 w-9 rounded-xl bg-rose-50 text-[#8B1E3F] flex items-center justify-center shrink-0 border border-rose-100 shadow-2xs">
-                <User className="h-4 w-4" />
+                <Globe className="h-4 w-4" />
               </div>
               <div className="flex-1 min-w-0">
                 <span className="text-[10px] font-bold text-stone-500 block uppercase tracking-wider">
-                  Looking for
+                  Mother Tongue
                 </span>
                 <div className="relative">
                   <select
-                    value={lookingFor}
-                    onChange={(e) => {
-                      const newLookingFor = e.target.value as 'Bride' | 'Groom';
-                      setLookingFor(newLookingFor);
-                    }}
+                    value={motherTongue}
+                    onChange={(e) => setMotherTongue(e.target.value)}
                     className="w-full bg-transparent text-xs font-bold text-stone-900 appearance-none pr-5 py-0.5 focus:outline-none cursor-pointer"
                   >
-                    <option value="Bride">Bride (Female)</option>
-                    <option value="Groom">Groom (Male)</option>
+                    <option value="Any">All Languages</option>
+                    {motherTongueOptions.filter(m => m !== 'Any').map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-0 top-1 h-3 w-3 text-stone-400 pointer-events-none" />
                 </div>
@@ -696,7 +801,7 @@ export const SearchPage: React.FC = () => {
                 type="button"
                 onClick={() => handleExecuteSearch(1)}
                 disabled={isSearching}
-                className="w-full bg-gradient-to-r from-[#8B1E3F] via-[#A82A4D] to-[#B48128] hover:from-[#731834] hover:to-[#9E6E1F] active:scale-[0.99] text-white font-bold text-xs py-2.5 px-5 rounded-xl flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                className="w-full bg-gradient-to-r from-[#9B1B48] via-[#B81D52] to-[#E05A47] hover:opacity-95 active:scale-[0.99] text-white font-bold text-xs py-2.5 px-6 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
               >
                 {isSearching ? (
                   <Loader2 className="h-4 w-4 animate-spin text-white" />
@@ -1166,7 +1271,7 @@ export const SearchPage: React.FC = () => {
                   type="button"
                   onClick={() => handleExecuteSearch(1)}
                   disabled={isSearching}
-                  className="w-full bg-gradient-to-r from-[#8B1E3F] via-[#A82A4D] to-[#B48128] hover:from-[#731834] hover:to-[#9E6E1F] active:scale-[0.99] text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                  className="w-full bg-gradient-to-r from-[#9B1B48] via-[#B81D52] to-[#E05A47] hover:opacity-95 active:scale-[0.99] text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
                 >
                   {isSearching ? (
                     <Loader2 className="h-4 w-4 animate-spin text-white" />
@@ -1284,6 +1389,7 @@ export const SearchPage: React.FC = () => {
                   const maritalStatusText = profile.maritalStatus || (profile as any).marital_status || '';
                   const bioText = profile.about || (profile as any).aboutMe || (profile as any).bio || '';
                   const matchScoreVal = profile.compatibilityScore || (profile as any).matchScore;
+                  const membershipBadge = getProfileMembershipBadge(profile);
 
                   return (
                     <Card
@@ -1313,131 +1419,116 @@ export const SearchPage: React.FC = () => {
                           />
                         </button>
 
-                        {/* Top-Left Exact Match Score Pill (if present) or Online Status */}
+                        {/* Top-Left Online Status Badge */}
                         <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
-                          {typeof matchScoreVal === 'number' && matchScoreVal > 0 ? (
-                            <span className="inline-flex items-center gap-1 bg-[#8B1E3F] text-white text-[9.5px] font-bold px-2 py-0.5 rounded-full shadow-xs">
-                              <Sparkles className="h-2.5 w-2.5 text-amber-300 fill-amber-300 shrink-0" />
-                              <span>{Math.round(matchScoreVal)}%</span>
-                            </span>
-                          ) : (
-                            <span
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold backdrop-blur-md shadow-2xs ${
-                                isOnline
-                                  ? 'bg-emerald-600/90 text-white'
-                                  : 'bg-black/50 text-stone-200'
-                              }`}
-                            >
-                              <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-white animate-pulse' : 'bg-stone-300'}`} />
-                              <span>{isOnline ? 'Online' : 'Offline'}</span>
-                            </span>
-                          )}
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-bold shadow-2xs ${
+                              isOnline
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-black/50 text-stone-200'
+                            }`}
+                          >
+                            <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-white animate-pulse' : 'bg-stone-300'}`} />
+                            <span>{isOnline ? 'Online' : 'Offline'}</span>
+                          </span>
                         </div>
                       </div>
 
                       {/* Center Info Column */}
                       <div className="flex-1 min-w-0 space-y-2">
-                        {/* Name + Verified Check Badge + Online Status Badge */}
+                        {/* Name + Verified Check Badge + Dynamic Membership Badge */}
                         <div className="flex items-center justify-between gap-3 flex-wrap">
-                          <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex items-center gap-1.5 min-w-0">
                             <h3
                               onClick={() => handleViewProfile(profile)}
-                              className="font-bold text-base sm:text-lg text-stone-900 hover:text-[#8B1E3F] transition-colors cursor-pointer truncate"
+                              className="font-bold text-base sm:text-lg text-stone-900 hover:text-[#9B1B48] transition-colors cursor-pointer truncate"
                               title={profile.name}
                             >
                               {profile.name}
                             </h3>
                             {profile.verified && (
-                              <span className="inline-flex items-center gap-1 bg-emerald-700 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs">
-                                <ShieldCheck className="h-3 w-3 text-emerald-200" />
-                                <span>Verified</span>
+                              <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-[#1D9BF0] text-white shrink-0 shadow-2xs" title="Verified">
+                                <Check className="h-2.5 w-2.5 stroke-[3]" />
                               </span>
                             )}
                           </div>
 
-                          {/* Online / Offline Status Badge */}
-                          <div
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border shrink-0 transition-all ${
-                              isOnline
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-stone-100 text-stone-600 border-stone-200'
-                            }`}
-                          >
-                            <span
-                              className={`h-2 w-2 rounded-full ${
-                                isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'
-                              }`}
-                            />
-                            <span>{isOnline ? 'Online' : 'Offline'}</span>
-                          </div>
+                          {/* Dynamic Membership Badge (Platinum, Premium, Silver, or none) */}
+                          {membershipBadge && (
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-2xs ${membershipBadge.badgeClass}`}>
+                              <Crown className={`w-3 h-3 ${membershipBadge.iconClass}`} />
+                              <span>{membershipBadge.label}</span>
+                            </span>
+                          )}
                         </div>
 
-                        {/* Age • Height • Religion & Caste • Mother Tongue */}
-                        <div className="flex items-center gap-2 text-xs text-stone-600 font-medium flex-wrap">
+                        {/* Age · Height · Religion & Caste · Mother Tongue */}
+                        <div className="flex items-center gap-1.5 text-xs text-stone-600 font-medium flex-wrap">
                           {profile.age && <span>{profile.age} Yrs</span>}
                           {profile.height && (
                             <>
-                              <span className="text-stone-300">•</span>
+                              <span className="text-stone-300">·</span>
                               <span>{profile.height}</span>
                             </>
                           )}
                           {(profile.religion || (profile as any).caste) && (
                             <>
-                              <span className="text-stone-300">•</span>
+                              <span className="text-stone-300">·</span>
                               <span>{[profile.religion, (profile as any).caste].filter(Boolean).join(', ')}</span>
                             </>
                           )}
                           {profile.motherTongue && (
                             <>
-                              <span className="text-stone-300">•</span>
+                              <span className="text-stone-300">·</span>
                               <span>{profile.motherTongue}</span>
                             </>
                           )}
                         </div>
 
-                        {/* Education, Profession, Location Tags */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                        {/* Education, Profession, Location Pills */}
+                        <div className="flex flex-wrap items-center gap-2 pt-0.5">
                           {profile.education && (
-                            <div className="flex items-center gap-1.5 text-xs text-stone-600 truncate bg-stone-50 border border-stone-200/80 px-2.5 py-1.5 rounded-xl">
-                              <GraduationCap className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
+                            <div className="inline-flex items-center gap-1.5 text-xs text-stone-700 bg-stone-50 border border-stone-200/90 px-2.5 py-1 rounded-full">
+                              <GraduationCap className="h-3.5 w-3.5 text-[#B91C56] shrink-0" />
                               <span className="truncate">{profile.education}</span>
                             </div>
                           )}
 
                           {profile.profession && (
-                            <div className="flex items-center gap-1.5 text-xs text-stone-600 truncate bg-stone-50 border border-stone-200/80 px-2.5 py-1.5 rounded-xl">
-                              <Briefcase className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
+                            <div className="inline-flex items-center gap-1.5 text-xs text-stone-700 bg-stone-50 border border-stone-200/90 px-2.5 py-1 rounded-full">
+                              <Briefcase className="h-3.5 w-3.5 text-[#B91C56] shrink-0" />
                               <span className="truncate">{profile.profession}</span>
                             </div>
                           )}
 
-                          <div className="flex items-center gap-1.5 text-xs text-stone-600 truncate bg-stone-50 border border-stone-200/80 px-2.5 py-1.5 rounded-xl">
-                            <MapPin className="h-3.5 w-3.5 text-[#8B1E3F] shrink-0" />
+                          <div className="inline-flex items-center gap-1.5 text-xs text-stone-700 bg-stone-50 border border-stone-200/90 px-2.5 py-1 rounded-full">
+                            <MapPin className="h-3.5 w-3.5 text-[#B91C56] shrink-0" />
                             <span className="truncate">{locationText}</span>
                           </div>
                         </div>
 
-                        {/* Bio snippet if available */}
+                        {/* Bio snippet */}
                         {bioText ? (
-                          <p className="text-xs text-stone-500 line-clamp-1 italic pt-0.5">
+                          <p className="text-xs text-stone-600 line-clamp-2 pt-0.5 font-normal">
                             {bioText}
                           </p>
                         ) : null}
                       </div>
 
                       {/* Right Action Column */}
-                      <div className="flex flex-row md:flex-col items-center justify-end gap-2.5 w-full md:w-auto shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-stone-100">
+                      <div className="flex flex-row md:flex-col items-center justify-center gap-2.5 w-full md:w-36 shrink-0 pt-2 md:pt-0">
                         <button
                           type="button"
                           onClick={() => handleViewProfile(profile)}
-                          className="flex-1 md:flex-none w-full md:w-36 py-2 px-4 bg-[#8B1E3F] hover:bg-[#721733] text-white text-xs font-bold rounded-xl transition-all shadow-xs text-center cursor-pointer active:scale-[0.99]"
+                          className="w-full py-2 px-4 bg-gradient-to-r from-[#9B1B48] to-[#B81D52] hover:opacity-95 text-white text-xs font-bold rounded-full transition-all shadow-sm text-center cursor-pointer active:scale-[0.99] flex items-center justify-center gap-1.5"
                         >
-                          View Profile
+                          <span>View Profile</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </button>
                         <button
                           type="button"
                           onClick={(e) => handleToggleShortlist(profile, e)}
-                          className="flex-1 md:flex-none w-full md:w-36 py-2 px-4 border border-stone-200 hover:border-stone-300 bg-white hover:bg-stone-50 text-stone-800 text-xs font-bold rounded-xl transition-all shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
+                          className="w-full py-1.5 px-4 border border-stone-200 hover:border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold rounded-full transition-all shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
                         >
                           <Heart className={`h-3.5 w-3.5 ${isShortlisted ? 'fill-rose-500 text-rose-500' : 'text-stone-500'}`} />
                           <span>{isShortlisted ? 'Shortlisted' : 'Shortlist'}</span>
@@ -1456,6 +1547,7 @@ export const SearchPage: React.FC = () => {
                   const isShortlisted = shortlistedIds.includes(profile.id);
                   const isOnline = profile.online === true || profile.lastActive === 'Online';
                   const locationText = resolveLocationString(profile);
+                  const membershipBadge = getProfileMembershipBadge(profile);
                   const exactMatchPercentage = (() => {
                     const rawVal =
                       profile.compatibilityScore ??
@@ -1547,11 +1639,19 @@ export const SearchPage: React.FC = () => {
                             >
                               {profile.name}
                             </h4>
-                            {exactMatchPercentage !== null && (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#8B1E3F] bg-[#8B1E3F]/10 px-1.5 py-0.2 rounded-md shrink-0">
-                                {exactMatchPercentage}%
-                              </span>
-                            )}
+                            <div className="flex items-center gap-1 shrink-0">
+                              {membershipBadge && (
+                                <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold shadow-2xs ${membershipBadge.badgeClass}`}>
+                                  <Crown className={`w-2.5 h-2.5 ${membershipBadge.iconClass}`} />
+                                  <span>{membershipBadge.label}</span>
+                                </span>
+                              )}
+                              {exactMatchPercentage !== null && (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#8B1E3F] bg-[#8B1E3F]/10 px-1.5 py-0.2 rounded-md shrink-0">
+                                  {exactMatchPercentage}%
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           <div className="text-xs text-stone-600 font-medium truncate">
@@ -1650,6 +1750,16 @@ export const SearchPage: React.FC = () => {
                 </button>
               </div>
             )}
+
+            {/* Romantic Calligraphy Accent at Bottom Right as in reference design */}
+            <div className="flex justify-end pt-8 pb-4 pointer-events-none select-none">
+              <div className="text-right pr-4 sm:pr-8">
+                <span className="font-['Great_Vibes',cursive] text-[#E05283]/60 text-3xl sm:text-4xl leading-tight block rotate-[-6deg]">
+                  Real People<br />Real Stories<br />Lasting Bonds
+                </span>
+                <span className="text-[#E05283]/60 text-lg block mt-0.5 mr-3">♡</span>
+              </div>
+            </div>
 
           </div>
 

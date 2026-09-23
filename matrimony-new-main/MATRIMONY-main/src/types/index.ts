@@ -122,6 +122,8 @@ export interface Profile {
   state?: string;
   height?: string;
   matchPercentage?: number;
+  membershipTier?: string;
+  isPremium?: boolean;
 }
 
 export interface Match extends Profile {

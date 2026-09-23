@@ -41,7 +41,7 @@ export const RegisterWizard: React.FC = () => {
     profession: 'Senior Software Engineer',
     income: '₹20 - 25 Lakhs',
     about: 'Warm-hearted software professional looking for a soulmate with similar family values and intellectual curiosity.',
-    photoUrl: '/images/profiles/profile_2.jpg',
+    photoUrl: '',
     prefAgeMin: 24,
     prefAgeMax: 32,
     prefReligion: 'Hindu',

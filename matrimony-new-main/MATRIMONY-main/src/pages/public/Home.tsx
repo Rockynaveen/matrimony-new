@@ -146,7 +146,7 @@ export const Home: React.FC = () => {
     <div className="space-y-0 pb-12 overflow-x-hidden">
 
       {/* ================= HERO SECTION (CINEMATIC SUNSET BACKGROUND WITHOUT SEARCH BAR) ================= */}
-      <section className="relative min-h-[95vh] h-[95vh] flex items-center overflow-hidden py-12">
+      <section className="relative min-h-[100vh] h-[100vh] flex items-center overflow-hidden py-12">
 
         {/* Cinematic Sunset Couple Background Image */}
         <img

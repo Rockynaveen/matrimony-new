@@ -369,7 +369,7 @@ export const Register: React.FC = () => {
         initial={{ opacity: 0, scale: 0.99 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className="w-full max-w-[820px] grid grid-cols-1 lg:grid-cols-12 rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
+        className="w-full max-w-[820px] grid grid-cols-1 lg:grid-cols-12 rounded-2xl border border-slate-200 bg-white shadow-md overflow-hidden"
       >
         {/* Left Side: Visual Image */}
         <div className="hidden lg:block lg:col-span-5 relative overflow-hidden bg-stone-900 min-h-[460px]">
@@ -665,7 +665,7 @@ export const Register: React.FC = () => {
                             onChange={(e) => handleOtpChange(idx, e.target.value)}
                             onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                             onPaste={idx === 0 ? handleOtpPaste : undefined}
-                            className="h-9 w-8 text-center text-sm font-semibold border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                            className="h-9 w-8 text-center text-sm font-semibold border border-slate-300 rounded-md bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#8B1E3F] focus:border-[#8B1E3F] transition-all"
                           />
                         ))}
                       </div>
@@ -766,7 +766,7 @@ export const Register: React.FC = () => {
                         onChange={(e) => setValue('accept_terms', e.target.checked)}
                         className="peer sr-only"
                       />
-                      <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border border-input bg-background shadow-xs transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground">
+                      <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border border-slate-300 bg-white shadow-xs transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#8B1E3F] peer-checked:border-[#8B1E3F] peer-checked:bg-[#8B1E3F] peer-checked:text-white">
                         <Check className={`h-2.5 w-2.5 stroke-[3] text-white transition-opacity ${acceptTerms ? 'opacity-100' : 'opacity-0'}`} />
                       </span>
                     </label>
@@ -811,7 +811,7 @@ export const Register: React.FC = () => {
                   <Separator />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground font-medium tracking-wider text-[11px]">
+                  <span className="bg-white px-2 text-muted-foreground font-medium tracking-wider text-[11px]">
                     Or continue with
                   </span>
                 </div>
@@ -821,7 +821,7 @@ export const Register: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsGoogleModalOpen(true)}
-                className="w-full h-9 text-sm font-medium text-foreground hover:text-foreground bg-background hover:bg-muted border border-input rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                className="w-full h-9 text-sm font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
                   <path

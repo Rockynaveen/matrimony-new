@@ -161,7 +161,7 @@ export const CompleteBasicProfile: React.FC = () => {
                       <select
                         id="basic-register-for"
                         {...register('register_for')}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-xs ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 cursor-pointer"
+                        className="flex h-10 w-full rounded-xl border border-slate-300 hover:border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B1E3F]/25 focus-visible:border-[#8B1E3F] cursor-pointer"
                       >
                         <option value="SELF">Myself</option>
                         <option value="SON">Son</option>
@@ -182,7 +182,7 @@ export const CompleteBasicProfile: React.FC = () => {
                       <select
                         id="basic-gender"
                         {...register('gender')}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-xs ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 cursor-pointer"
+                        className="flex h-10 w-full rounded-xl border border-slate-300 hover:border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B1E3F]/25 focus-visible:border-[#8B1E3F] cursor-pointer"
                       >
                         <option value="Male">Male (Groom)</option>
                         <option value="Female">Female (Bride)</option>

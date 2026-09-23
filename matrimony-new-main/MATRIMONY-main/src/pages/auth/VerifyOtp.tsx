@@ -186,7 +186,7 @@ export const VerifyOtp: React.FC = () => {
                       onChange={(e) => handleChange(idx, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(idx, e)}
                       onPaste={idx === 0 ? handlePaste : undefined}
-                      className="h-11 w-10 sm:w-11 text-center text-lg font-bold rounded-lg border border-input bg-background text-foreground shadow-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                      className="h-11 w-10 sm:w-11 text-center text-lg font-bold rounded-lg border border-slate-300 bg-white text-slate-900 shadow-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                     />
                   ))}
                 </div>

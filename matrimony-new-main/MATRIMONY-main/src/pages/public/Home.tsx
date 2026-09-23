@@ -146,7 +146,7 @@ export const Home: React.FC = () => {
     <div className="space-y-0 pb-12 overflow-x-hidden">
 
       {/* ================= HERO SECTION (CINEMATIC SUNSET BACKGROUND WITHOUT SEARCH BAR) ================= */}
-      <section className="relative min-h-[100svh] min-h-[100vh] h-auto lg:h-[100vh] flex items-center overflow-hidden pt-28 pb-14 sm:pt-32 sm:pb-16 lg:py-0">
+      <section className="relative min-h-[100svh] min-h-[100vh] h-auto lg:h-[100vh] flex flex-col justify-start lg:justify-center overflow-hidden pt-36 pb-14 sm:pt-40 sm:pb-16 lg:py-0">
 
         {/* Cinematic Sunset Couple Background Image */}
         <img
@@ -169,14 +169,14 @@ export const Home: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="space-y-3 sm:space-y-4"
+              className="space-y-4 sm:space-y-5"
             >
-              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-amber-300 text-[10px] sm:text-xs font-extrabold uppercase tracking-wider sm:tracking-widest shadow-xl">
+              <div className="inline-flex max-w-full items-center gap-1.5 sm:gap-2 px-3.5 py-1.5 sm:px-4 sm:py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-amber-300 text-[10px] xs:text-[11px] sm:text-xs font-bold sm:font-extrabold uppercase tracking-wide sm:tracking-widest shadow-xl w-fit">
                 <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                <span>India's Premier Royal Matrimony Service</span>
+                <span className="leading-normal break-words">India's Premier Royal Matrimony Service</span>
               </div>
 
-              <h1 className="font-serif text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.18] sm:leading-[1.12]">
+              <h1 className="font-serif text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.2] sm:leading-[1.12] pt-1">
                 Find Your Perfect <br className="hidden xs:inline" />
                 <span className="gold-gradient-text inline-block xs:inline">Life Partner</span>
               </h1>
